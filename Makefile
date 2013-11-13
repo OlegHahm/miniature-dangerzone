@@ -19,15 +19,19 @@ export RIOTBASE =$(CURDIR)/../../RIOT
 
 ## Modules to include. 
 
-#USEMODULE += shell
-#USEMODULE += uart0
-#USEMODULE += posix
-#USEMODULE += vtimer
-#USEMODULE += sht11
-#USEMODULE += ltc4150
-#USEMODULE += cc110x
-#USEMODULE += fat
+USEMODULE += auto_init
+USEMODULE += shell
+USEMODULE += shell_commands
+USEMODULE += uart0
+USEMODULE += posix
+USEMODULE += ps 
+USEMODULE += vtimer 
+USEMODULE += cc110x
+USEMODULE += sixlowpan
+USEMODULE += rpl
+USEMODULE += destiny
+USEMODULE += cc110x
 
-export INCLUDES = -I$(RIOTBOARD)/$(BOARD)/include -I$(RIOTBASE)/core/include -I$(RIOTCPU)/$(CPU)/include -I$(RIOTBASE)/sys/lib -I$(RIOTBASE)/sys/include/ -I$(RIOTBASE)/drivers/include/
+export INCLUDES = -I$(RIOTBOARD)/$(BOARD)/include -I$(RIOTBASE)/core/include -I$(RIOTCPU)/$(CPU)/include -I$(RIOTBASE)/sys/lib -I$(RIOTBASE)/sys/include/ -I$(RIOTBASE)/drivers/include/ -I$(RIOTBASE)/sys/net/include -I$(RIOTBASE)/sys/net/rpl -I$(RIOTBASE)/drivers/cc110x/
 
 include $(RIOTBASE)/Makefile.include
