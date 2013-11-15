@@ -26,11 +26,14 @@ USEMODULE += uart0
 USEMODULE += posix
 USEMODULE += ps 
 USEMODULE += vtimer 
-USEMODULE += cc110x
+ifeq ($(strip $(BOARD)),native)
+	USEMODULE += nativenet
+else
+	USEMODULE += cc110x
+endif
 USEMODULE += sixlowpan
 USEMODULE += rpl
 USEMODULE += destiny
-USEMODULE += cc110x
 
 export INCLUDES = -I$(RIOTBOARD)/$(BOARD)/include -I$(RIOTBASE)/core/include -I$(RIOTCPU)/$(CPU)/include -I$(RIOTBASE)/sys/lib -I$(RIOTBASE)/sys/include/ -I$(RIOTBASE)/drivers/include/ -I$(RIOTBASE)/sys/net/include -I$(RIOTBASE)/sys/net/rpl -I$(RIOTBASE)/drivers/cc110x/
 

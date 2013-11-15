@@ -23,11 +23,9 @@ int main(void)
 {
     puts("SAFEST demo router v0.1");
 
-    destiny_init_transport_layer();
 
     /* start shell */
     posix_open(uart0_handler_pid, 0);
-
 
     shell_t shell;
     shell_init(&shell, shell_commands, uart0_readc, uart0_putc);

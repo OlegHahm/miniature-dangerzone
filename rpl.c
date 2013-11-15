@@ -86,10 +86,12 @@ void init(char *str)
 
     msg_send_receive(&m, &m, transceiver_pid);
 
+    destiny_init_transport_layer();
+    puts("Destiny initialized");
     /* start transceiver watchdog */
     thread_create(tr_wd_stack, TR_WD_STACKSIZE, PRIORITY_MAIN - 3, CREATE_STACKTEST, wakeup_thread, "TX/RX WD");
-
 }
+
 void loop(char *unused)
 {
     (void) unused;
