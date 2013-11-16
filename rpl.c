@@ -9,6 +9,12 @@
 
 #define TR_WD_STACKSIZE     (256)
 
+#ifdef MODULE_NATIVENET
+#define TRANSCEIVER TRANSCEIVER_NATIVE
+#else
+#define TRANSCEIVER TRANSCEIVER_CC1100
+#endif
+
 char tr_wd_stack[TR_WD_STACKSIZE];
 
 void wakeup_thread(void)
@@ -47,13 +53,13 @@ void init(char *str)
     uint8_t state;
 
     if ((command == 'n') || (command == 'r')) {
-        printf("INFO: Initialize as %s on address %d\n", ((command = 'n') ? "node" : "root"), r_addr);
+        printf("INFO: Initialize as %s on address %d\n", ((command == 'n') ? "node" : "root"), r_addr);
         if (r_addr > 255) {
             printf("ERROR: address not an 8 bit integer\n");
             return;
         }
 
-        state = rpl_init(TRANSCEIVER_CC1100, r_addr);
+        state = rpl_init(TRANSCEIVER, r_addr);
 
         if (state != SIXLOWERROR_SUCCESS) {
             printf("Error initializing RPL\n");
@@ -79,7 +85,7 @@ void init(char *str)
     ipv6_iface_add_addr(&tmp, IPV6_ADDR_TYPE_GLOBAL, NDP_ADDR_STATE_PREFERRED, 0, 0);
             
     /* set channel to 10 */
-    tcmd.transceivers = TRANSCEIVER_CC1100;
+    tcmd.transceivers = TRANSCEIVER;
     tcmd.data = &chan;
     m.type = SET_CHANNEL;
     m.content.ptr = (void *) &tcmd;
