@@ -1,36 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "vtimer.h"
-#include "thread.h"
 
 #include "sixlowpan.h"
 #include "rpl.h"
 #include "rpl_dodag.h"
-
-#define TR_WD_STACKSIZE     (256)
 
 #ifdef MODULE_NATIVENET
 #define TRANSCEIVER TRANSCEIVER_NATIVE
 #else
 #define TRANSCEIVER TRANSCEIVER_CC1100
 #endif
-
-char tr_wd_stack[TR_WD_STACKSIZE];
-
-void wakeup_thread(void)
-{
-    while (1) {
-        if (thread_getstatus(transceiver_pid) == STATUS_SLEEPING) {
-            vtimer_usleep(500 * 1000);
-
-            if (thread_getstatus(transceiver_pid) == STATUS_SLEEPING) {
-                thread_wakeup(transceiver_pid);
-            }
-        }
-
-        vtimer_usleep(1000 * 1000);
-    }
-}
 
 void init(char *str)
 {
@@ -95,7 +75,6 @@ void init(char *str)
     destiny_init_transport_layer();
     puts("Destiny initialized");
     /* start transceiver watchdog */
-    thread_create(tr_wd_stack, TR_WD_STACKSIZE, PRIORITY_MAIN - 3, CREATE_STACKTEST, wakeup_thread, "TX/RX WD");
 }
 
 void loop(char *unused)
