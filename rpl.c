@@ -1,16 +1,22 @@
 #include <stdio.h>
 #include <string.h>
 #include "vtimer.h"
-
+#include "thread.h"
 #include "sixlowpan.h"
+#include "destiny.h"
 #include "rpl.h"
 #include "rpl_dodag.h"
+#include "demo.h"
 
 #ifdef MODULE_NATIVENET
 #define TRANSCEIVER TRANSCEIVER_NATIVE
 #else
 #define TRANSCEIVER TRANSCEIVER_CC1100
 #endif
+
+char monitor_stack_buffer[MONITOR_STACK_SIZE];
+radio_address_t id;
+ipv6_addr_t std_addr;
 
 void init(char *str)
 {
@@ -19,9 +25,8 @@ void init(char *str)
     uint8_t chan = 10;
 
     char command;
-    uint16_t r_addr;
 
-    int res = sscanf(str, "init %c %hu", &command, &r_addr);
+    int res = sscanf(str, "init %c %hu", &command, &id);
 
     if (res < 1) {
         printf("Usage: init address\n");
@@ -33,13 +38,13 @@ void init(char *str)
     uint8_t state;
 
     if ((command == 'n') || (command == 'r')) {
-        printf("INFO: Initialize as %s on address %d\n", ((command == 'n') ? "node" : "root"), r_addr);
-        if (r_addr > 255) {
+        printf("INFO: Initialize as %s on address %d\n", ((command == 'n') ? "node" : "root"), id);
+        if (id > 255) {
             printf("ERROR: address not an 8 bit integer\n");
             return;
         }
 
-        state = rpl_init(TRANSCEIVER, r_addr);
+        state = rpl_init(TRANSCEIVER, id);
 
         if (state != SIXLOWERROR_SUCCESS) {
             printf("Error initializing RPL\n");
@@ -48,6 +53,10 @@ void init(char *str)
         if (command == 'r') {
             rpl_init_root();
         }
+        int monitor_pid = thread_create(monitor_stack_buffer, MONITOR_STACK_SIZE, PRIORITY_MAIN-2, CREATE_STACKTEST, monitor, "monitor");
+        transceiver_register(TRANSCEIVER, monitor_pid);
+        ipv6_register_packet_handler(monitor_pid);
+        //sixlowpan_lowpan_register(monitor_pid);
     }
     else {
         printf("ERROR: Unknown command '%c'\n", command);
@@ -55,8 +64,8 @@ void init(char *str)
     }
 
     /* TODO: check if this works as intended */
-    ipv6_addr_t std_addr, prefix, tmp;
-    ipv6_addr_init(&std_addr, 0xABCD, 0xEF12, 0, 0, 0x1034, 0x00FF, 0xFE00, r_addr);
+    ipv6_addr_t prefix, tmp;
+    ipv6_addr_init(&std_addr, 0xABCD, 0xEF12, 0, 0, 0x1034, 0x00FF, 0xFE00, id);
     ipv6_addr_init_prefix(&prefix, &std_addr, 64);
     plist_add(&prefix, 64, NDP_OPT_PI_VLIFETIME_INFINITE, 0, 1, ICMPV6_NDP_OPT_PI_FLAG_AUTONOM);
     ipv6_init_iface_as_router();
@@ -82,7 +91,6 @@ void loop(char *unused)
     (void) unused;
 
     rpl_routing_entry_t *rtable;
-    char addr_str[IPV6_MAX_ADDR_STR_LEN];
 
     while (1) {
         rtable = rpl_get_routing_table();
@@ -128,7 +136,6 @@ void table(char *unused)
     (void) unused;
 
     rpl_routing_entry_t *rtable;
-    char addr_str[IPV6_MAX_ADDR_STR_LEN];
     rtable = rpl_get_routing_table();
     printf("---------------------------\n");
     printf("OUTPUT\n");
@@ -154,7 +161,6 @@ void dodag(char *unused)
 {
     (void) unused;
 
-    char addr_str[IPV6_MAX_ADDR_STR_LEN];
     printf("---------------------------\n");
     rpl_dodag_t *mydodag = rpl_get_my_dodag();
 

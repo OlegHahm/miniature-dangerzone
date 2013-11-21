@@ -10,10 +10,13 @@
 
 #include "net_help.h"
 
-#define UDP_BUFFER_SIZE     (128)
+#include "demo.h"
+
+#define UDP_BUFFER_SIZE     (16)
 #define SERVER_PORT     (0xFF01)
 
 char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
+char addr_str[IPV6_MAX_ADDR_STR_LEN];
 
 void init_udp_server(void);
 
@@ -53,8 +56,15 @@ void init_udp_server(void)
             printf("ERROR: recsize < 0!\n");
         }
 
+        /*
         printf("recsize: %"PRIi32"\n ", recsize);
         printf("datagram: %s\n", buffer_main);
+        */
+        /*
+        ipv6_addr_t my_src;
+        ipv6_iface_get_best_src_addr(&my_src, &sa.sin6_addr);
+        */
+        printf("d: IP %s received UDP datagram from %s with payload %08X #color1\n", ipv6_addr_to_str(addr_str, &std_addr), ipv6_addr_to_str(addr_str, &sa.sin6_addr), (unsigned int)*buffer_main);
     }
 
     destiny_socket_close(sock);
