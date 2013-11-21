@@ -18,7 +18,6 @@ void ip(char *unused)
 void monitor(void) {
     msg_t m;
     radio_packet_t *p;
-    uint8_t i;
     ieee802154_frame_t *frame;
     ipv6_hdr_t *ipv6_buf;
 
@@ -41,7 +40,7 @@ void monitor(void) {
             printf("\tLQI:\t%u\n", p->lqi);
             printf("\tRSSI:\t%u\n", p->rssi);
 
-            for (i = 0; i < p->length; i++) {
+            for (uint8_t i = 0; i < p->length; i++) {
                 printf("%02X ", p->data[i]);
             }
             */

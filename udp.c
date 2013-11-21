@@ -57,10 +57,6 @@ void init_udp_server(void)
         }
 
         /*
-        printf("recsize: %"PRIi32"\n ", recsize);
-        printf("datagram: %s\n", buffer_main);
-        */
-        /*
         ipv6_addr_t my_src;
         ipv6_iface_get_best_src_addr(&my_src, &sa.sin6_addr);
         */
@@ -79,7 +75,10 @@ void udp_send(char *str)
     int bytes_sent;
     int address;
     char text[] = "abc";
-    sscanf(str, "send %i %s", &address, text);
+    if (sscanf(str, "send %i %s", &address, text) < 2) {
+        printf("usage: send <addr> <text>\n");
+        return;
+    }
 
     sock = destiny_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
