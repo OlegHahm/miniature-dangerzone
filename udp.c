@@ -56,11 +56,8 @@ void init_udp_server(void)
             printf("ERROR: recsize < 0!\n");
         }
 
-        /*
-        ipv6_addr_t my_src;
-        ipv6_iface_get_best_src_addr(&my_src, &sa.sin6_addr);
-        */
-        printf("d: IP %s received UDP datagram from %s with payload %08X #color1\n", ipv6_addr_to_str(addr_str, &std_addr), ipv6_addr_to_str(addr_str, &sa.sin6_addr), (unsigned int)*buffer_main);
+        /* d: ID X received event EID */
+        printf("d: ID sn%u received event %s\n", id, buffer_main);
     }
 
     destiny_socket_close(sock);

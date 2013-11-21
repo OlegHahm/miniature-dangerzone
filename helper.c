@@ -30,9 +30,9 @@ void monitor(void) {
             /* m: ID X received msg TYPE from ID Y #color */
             frame = (ieee802154_frame_t*) p->data;
 
-            printf("m: ID %04X", id);
+            printf("m: ID sn%u", id);
             printf(" received msg %hu", frame->payload_len); 
-            printf(" from ID %04X", p->src);
+            printf(" from ID sn%u #color3", p->src);
             /*
             printf("Length:\t%u\n", p->length);
             printf("\tSrc:\t%u\n", p->src);
@@ -47,7 +47,7 @@ void monitor(void) {
             p->processing--;
             printf("\n");
         }
-        if (m.type == PKT_PENDING) {
+        else if (m.type == IPV6_PACKET_RECEIVED) {
             ipv6_buf = (ipv6_hdr_t*) m.content.ptr;
             printf("m: ADDR %s", ipv6_addr_to_str(addr_str, &ipv6_buf->srcaddr));
             printf(" received msg %02X", ipv6_buf->nextheader); 

@@ -55,7 +55,7 @@ void init(char *str)
         }
         int monitor_pid = thread_create(monitor_stack_buffer, MONITOR_STACK_SIZE, PRIORITY_MAIN-2, CREATE_STACKTEST, monitor, "monitor");
         transceiver_register(TRANSCEIVER, monitor_pid);
-        ipv6_register_packet_handler(monitor_pid);
+        //ipv6_register_packet_handler(monitor_pid);
         //sixlowpan_lowpan_register(monitor_pid);
     }
     else {
