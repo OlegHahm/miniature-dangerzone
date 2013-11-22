@@ -6,6 +6,9 @@
 
 #include "demo.h"
 
+#define ENABLE_DEBUG    (1)
+#include "debug.h"
+
 msg_t msg_q[RCV_BUFFER_SIZE];
 
 /* prints current IPv6 adresses */
@@ -37,9 +40,11 @@ void monitor(void) {
             printf("Length:\t%u\n", p->length);
             printf("\tSrc:\t%u\n", p->src);
             printf("\tDst:\t%u\n", p->dst);
-            printf("\tLQI:\t%u\n", p->lqi);
-            printf("\tRSSI:\t%u\n", p->rssi);
+            */
+            DEBUG("\tLQI:\t%u", p->lqi);
+            DEBUG("\tRSSI:\t%u", p->rssi);
 
+            /*
             for (uint8_t i = 0; i < p->length; i++) {
                 printf("%02X ", p->data[i]);
             }

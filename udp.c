@@ -71,7 +71,7 @@ void udp_send(char *str)
     ipv6_addr_t ipaddr;
     int bytes_sent;
     int address;
-    char text[] = "abc";
+    char text[5];
     if (sscanf(str, "send %i %s", &address, text) < 2) {
         printf("usage: send <addr> <text>\n");
         return;
@@ -81,7 +81,7 @@ void udp_send(char *str)
 
     if(-1 == sock) {
         printf("Error Creating Socket!");
-        exit(EXIT_FAILURE);
+        return;
     }
 
     memset(&sa, 0, sizeof sa);

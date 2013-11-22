@@ -53,6 +53,9 @@ void init(char *str)
         if (command == 'r') {
             rpl_init_root();
         }
+        else {
+            ipv6_iface_set_routing_provider(rpl_get_next_hop);
+        }
         int monitor_pid = thread_create(monitor_stack_buffer, MONITOR_STACK_SIZE, PRIORITY_MAIN-2, CREATE_STACKTEST, monitor, "monitor");
         transceiver_register(TRANSCEIVER, monitor_pid);
         //ipv6_register_packet_handler(monitor_pid);
