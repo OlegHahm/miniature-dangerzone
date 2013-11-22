@@ -18,6 +18,8 @@ char monitor_stack_buffer[MONITOR_STACK_SIZE];
 radio_address_t id;
 ipv6_addr_t std_addr;
 
+uint8_t is_root = 0;
+
 void init(char *str)
 {
     transceiver_command_t tcmd;
@@ -52,6 +54,7 @@ void init(char *str)
 
         if (command == 'r') {
             rpl_init_root();
+            is_root = 1;
         }
         else {
             ipv6_iface_set_routing_provider(rpl_get_next_hop);
@@ -95,43 +98,39 @@ void loop(char *unused)
 
     rpl_routing_entry_t *rtable;
 
-    while (1) {
-        rtable = rpl_get_routing_table();
-        rpl_dodag_t *mydodag = rpl_get_my_dodag();
+    rtable = rpl_get_routing_table();
+    rpl_dodag_t *mydodag = rpl_get_my_dodag();
 
-        if (mydodag == NULL) {
-            vtimer_usleep(20 * 1000 * 1000);
-            continue;
-        }
+    if (mydodag == NULL) {
+        return;
+    }
 
-        printf("---------------------------\n");
-        printf("OUTPUT\n");
-        printf("my rank: %d\n", mydodag->my_rank);
+    printf("---------------------------\n");
+    printf("OUTPUT\n");
+    printf("my rank: %d\n", mydodag->my_rank);
+    if (!is_root) {
         printf("my preferred parent:\n");
         printf("%s\n", ipv6_addr_to_str(addr_str, (&mydodag->my_preferred_parent->addr)));
         printf("parent lifetime: %d\n", mydodag->my_preferred_parent->lifetime);
-        printf("---------------------------$\n");
+    }
+    printf("---------------------------$\n");
 
-        for (int i = 0; i < RPL_MAX_ROUTING_ENTRIES; i++) {
-            if (rtable[i].used) {
-                printf("%s\n", ipv6_addr_to_str(addr_str, (&rtable[i].address)));
-                puts("next hop");
-                printf("%s\n", ipv6_addr_to_str(addr_str, (&rtable[i].next_hop)));
-                printf("entry %d lifetime %d\n", i, rtable[i].lifetime);
+    for (int i = 0; i < RPL_MAX_ROUTING_ENTRIES; i++) {
+        if (rtable[i].used) {
+            printf("%s\n", ipv6_addr_to_str(addr_str, (&rtable[i].address)));
+            puts("next hop");
+            printf("%s\n", ipv6_addr_to_str(addr_str, (&rtable[i].next_hop)));
+            printf("entry %d lifetime %d\n", i, rtable[i].lifetime);
 
-                if (!rpl_equal_id(&rtable[i].address, &rtable[i].next_hop)) {
-                    puts("multi-hop");
-                }
-
-                printf("---------------------------$\n");
+            if (!rpl_equal_id(&rtable[i].address, &rtable[i].next_hop)) {
+                puts("multi-hop");
             }
-        }
 
-        printf("########################\n");
-        vtimer_usleep(20 * 1000 * 1000);
+            printf("---------------------------$\n");
+        }
     }
 
-
+    printf("########################\n");
 }
 
 void table(char *unused)
@@ -176,7 +175,9 @@ void dodag(char *unused)
     printf("Part of Dodag:\n");
     printf("%s\n", ipv6_addr_to_str(addr_str, (&mydodag->dodag_id)));
     printf("my rank: %d\n", mydodag->my_rank);
-    printf("my preferred parent:\n");
-    printf("%s\n", ipv6_addr_to_str(addr_str, (&mydodag->my_preferred_parent->addr)));
+    if (!is_root) {
+        printf("my preferred parent:\n");
+        printf("%s\n", ipv6_addr_to_str(addr_str, (&mydodag->my_preferred_parent->addr)));
+    }
     printf("---------------------------$\n");
 }

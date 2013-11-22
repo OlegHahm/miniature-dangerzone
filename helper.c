@@ -34,7 +34,7 @@ void monitor(void) {
             frame = (ieee802154_frame_t*) p->data;
 
             printf("m: ID sn%u", id);
-            printf(" received msg %hu", frame->payload_len); 
+            printf(" received msg %04hu", frame->payload_len); 
             printf(" from ID sn%u #color3", p->src);
             /*
             printf("Length:\t%u\n", p->length);
