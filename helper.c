@@ -77,17 +77,17 @@ void monitor(void) {
                 icmp_type = icmpv6_buf->type;
                 icmp_code = icmpv6_buf->code;
                 if (icmp_code == ICMP_CODE_DIO) {
-                    printf("color#6 ");
+                    printf("#color6 ");
                 }
                 else {
-                    printf("color#6 ");
+                    printf("#color6 ");
                 }
             }
             else if (ipv6_buf->nextheader == IPV6_PROTO_NUM_ICMPV6) {
-                printf("color#30 ");
+                printf("#color30 ");
             }
             else {
-                printf("color#5 ");
+                printf("#color5 ");
             }
 
             DEBUG("\t origin: %s", ipv6_addr_to_str(addr_str, &ipv6_buf->srcaddr));
