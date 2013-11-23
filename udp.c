@@ -12,7 +12,7 @@
 
 #include "demo.h"
 
-#define UDP_BUFFER_SIZE     (16)
+#define UDP_BUFFER_SIZE     (128)
 #define SERVER_PORT     (0xFF01)
 
 char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
@@ -93,7 +93,7 @@ void udp_send(char *str)
     sa.sin6_port = HTONS(SERVER_PORT);
 
     bytes_sent = destiny_socket_sendto(sock, (char *)text,
-            strlen((char *)text) + 1, 0, &sa,
+            strlen(text) + 1, 0, &sa,
             sizeof sa);
 
     if(bytes_sent < 0) {
