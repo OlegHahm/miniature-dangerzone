@@ -64,7 +64,7 @@ void monitor(void) {
             puts("Transceiver buffer full");
         }
         else {
-            puts("Unknown packet received");
+            printf("Unknown packet received, type %04X\n", m.type);
         }
     }
 }
