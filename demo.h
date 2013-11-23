@@ -3,7 +3,7 @@
 
 #include "kernel.h"
 
-#define SAFEST_VERSION "0.7"
+#define SAFEST_VERSION "1.0a"
 
 #define STATION "FUB"
 

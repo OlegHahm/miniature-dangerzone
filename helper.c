@@ -9,7 +9,7 @@
 
 #include "demo.h"
 
-#define ENABLE_DEBUG    (1)
+#define ENABLE_DEBUG    (0)
 #include "debug.h"
 
 #define LL_HDR_LEN  (0x4)
@@ -65,7 +65,7 @@ void monitor(void) {
             }
             */
             p->processing--;
-            printf("\n");
+            DEBUG("\n");
         }
         else if (m.type == IPV6_PACKET_RECEIVED) {
             ipv6_buf = (ipv6_hdr_t*) m.content.ptr;
