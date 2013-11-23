@@ -5,11 +5,17 @@
 #include "sixlowpan/ip.h"
 #include "transceiver.h"
 #include "ieee802154_frame.h"
+#include "rpl_structs.h"
 
 #include "demo.h"
 
 #define ENABLE_DEBUG    (1)
 #include "debug.h"
+
+#define LL_HDR_LEN  (0x4)
+#define IPV6_HDR_LEN    (0x28)
+
+extern uint8_t ipv6_ext_hdr_len;
 
 msg_t msg_q[RCV_BUFFER_SIZE];
 
@@ -25,6 +31,9 @@ void monitor(void) {
     radio_packet_t *p;
     ieee802154_frame_t *frame;
     ipv6_hdr_t *ipv6_buf;
+    uint8_t icmp_type, icmp_code;
+    icmpv6_hdr_t *icmpv6_buf = NULL;
+    radio_address_t last_sender = 0;
 
     msg_init_queue(msg_q, RCV_BUFFER_SIZE);
 
@@ -35,14 +44,18 @@ void monitor(void) {
             /* m: ID X received msg TYPE from ID Y #color */
             frame = (ieee802154_frame_t*) p->data;
 
+            /*
             printf("m: ID sn%u", id);
             printf(" received msg %04hu", frame->payload_len); 
             printf(" from ID sn%u #color3", p->src);
+            */
+            last_sender = p->src;
             /*
             printf("Length:\t%u\n", p->length);
             printf("\tSrc:\t%u\n", p->src);
             printf("\tDst:\t%u\n", p->dst);
             */
+            DEBUG("Packet from %u received:", last_sender);
             DEBUG("\tLQI:\t%u", p->lqi);
             DEBUG("\tRSSI:\t%u", p->rssi);
 
@@ -56,9 +69,34 @@ void monitor(void) {
         }
         else if (m.type == IPV6_PACKET_RECEIVED) {
             ipv6_buf = (ipv6_hdr_t*) m.content.ptr;
-            printf("m: ADDR %s", ipv6_addr_to_str(addr_str, &ipv6_buf->srcaddr));
+            printf("m: ID sn%u", id);
             printf(" received msg %02X", ipv6_buf->nextheader); 
-            printf(" from ADDR %s\n", ipv6_addr_to_str(addr_str, &ipv6_buf->destaddr));
+            printf(" from ID sn%u ", last_sender);
+            if (ipv6_buf->nextheader == IPV6_PROTO_NUM_ICMPV6) {
+                icmpv6_buf = (icmpv6_hdr_t*) &ipv6_buf[(LL_HDR_LEN + IPV6_HDR_LEN) + ipv6_ext_hdr_len];
+                icmp_type = icmpv6_buf->type;
+                icmp_code = icmpv6_buf->code;
+                if (icmp_code == ICMP_CODE_DIO) {
+                    printf("color#6 ");
+                }
+                else {
+                    printf("color#6 ");
+                }
+            }
+            else if (ipv6_buf->nextheader == IPV6_PROTO_NUM_ICMPV6) {
+                printf("color#30 ");
+            }
+            else {
+                printf("color#5 ");
+            }
+
+            DEBUG("\t origin: %s", ipv6_addr_to_str(addr_str, &ipv6_buf->srcaddr));
+            DEBUG("\t destination: %s", ipv6_addr_to_str(addr_str, &ipv6_buf->destaddr));
+            if (ipv6_buf->nextheader == IPV6_PROTO_NUM_ICMPV6) {
+                DEBUG("\t ICMP type: %02X ", icmp_type);
+                DEBUG("\t ICMP code: %02X ", icmp_code);
+            }
+            printf("\n");
         }
         else if (m.type == ENOBUFFER) {
             puts("Transceiver buffer full");
