@@ -22,7 +22,7 @@ const shell_command_t shell_commands[] = {
 
 int main(void)
 {
-    puts("SAFEST demo router v"VERSION);
+    puts("SAFEST demo router v"SAFEST_VERSION);
     puts("station: "STATION);
 
     /* start shell */

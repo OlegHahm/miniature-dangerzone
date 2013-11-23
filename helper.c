@@ -57,7 +57,7 @@ void monitor(void) {
             */
             DEBUG("Packet from %u received:", last_sender);
             DEBUG("\tLQI:\t%u", p->lqi);
-            DEBUG("\tRSSI:\t%u", p->rssi);
+            DEBUG("\tRSSI:\t%i", (int8_t) p->rssi);
 
             /*
             for (uint8_t i = 0; i < p->length; i++) {

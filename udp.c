@@ -99,7 +99,9 @@ void udp_send(char *str)
     if(bytes_sent < 0) {
         printf("Error sending packet!\n");
     }
-
+    else {
+        printf("Successful sent %i bytes over UDP to %s\n", bytes_sent, ipv6_addr_to_str(addr_str, &ipaddr));
+    }
 
     destiny_socket_close(sock);
 }
