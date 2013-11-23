@@ -46,6 +46,8 @@ void udp_send(char *str);
 /* helper command handlers */
 void ip(char *unused);
 
+void ignore(char *addr);
+
 /* monitoring thread */
 void monitor(void);
 

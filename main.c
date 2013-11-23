@@ -16,6 +16,7 @@ const shell_command_t shell_commands[] = {
     {"server", "Starts a UDP server", udp_server},
     {"send", "Send a UDP datagram", udp_send},
     {"ip", "Print all assigned IP addresses", ip},
+    {"ign", "ignore node", ignore},
     {NULL, NULL, NULL}
 };
 
