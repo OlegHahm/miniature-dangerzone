@@ -126,6 +126,11 @@ transceiver_command_t tcmd;
 
 void ignore(char *addr) {
     uint16_t a;
+    if (transceiver_pid < 0) {
+        puts("Transceiver not runnning.");
+        return;
+    }
+
     msg_t mesg;
     mesg.type = DBG_IGN;
     mesg.content.ptr = (char*) &tcmd;
