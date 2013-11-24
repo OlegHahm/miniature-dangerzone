@@ -24,7 +24,7 @@ void init(char *str)
 {
     transceiver_command_t tcmd;
     msg_t m;
-    uint8_t chan = 10;
+    uint8_t chan = RADIO_CHANNEL;
 
     char command;
 
@@ -86,6 +86,7 @@ void init(char *str)
     m.content.ptr = (void *) &tcmd;
 
     msg_send_receive(&m, &m, transceiver_pid);
+    printf("Channel set to %u\n", RADIO_CHANNEL);
 
     destiny_init_transport_layer();
     puts("Destiny initialized");

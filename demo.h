@@ -3,20 +3,29 @@
 
 #include "kernel.h"
 
-#define SAFEST_VERSION "1.0a"
+#define SAFEST_VERSION "1.0b"
 
 #define STATION "FUB"
+
+#define RADIO_CHANNEL   (10)
 
 #define MONITOR_STACK_SIZE  (KERNEL_CONF_STACKSIZE_MAIN)
 #define RCV_BUFFER_SIZE     (32)
 
 /* RPL shell command handlers */
 /**
- * @brief   Shell command to initializes RPL
+ * @brief   Shell command to initializes RPL and Destiny
  *
  * @param[in] str  Shell input
  */
 void init(char *str);
+
+/**
+ * @brief   Shell command to set node's ID
+ *
+ * @param[in] str  Shell input
+ */
+void set_id(char *id);
 
 /**
  * @brief   Loops through the routing table
