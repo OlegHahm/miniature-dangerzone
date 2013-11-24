@@ -9,7 +9,8 @@
 #include "demo.h"
 
 const shell_command_t shell_commands[] = {
-    {"init", "", init},
+    {"init", "Initialize network", init},
+    {"set", "Set ID", set_id},
     {"table", "", table},
     {"dodag", "", dodag},
     {"loop", "", loop},

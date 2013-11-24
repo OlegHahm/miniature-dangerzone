@@ -28,21 +28,20 @@ void init(char *str)
 
     char command;
 
-    int res = sscanf(str, "init %c %hu", &command, &id);
+    int res = sscanf(str, "init %c", &command);
 
     if (res < 1) {
-        printf("Usage: init address\n");
+        printf("Usage: init (r|n)\n");
         printf("\tr\tinitialize as root\n");
         printf("\tn\tinitialize as node router\n");
-        printf("\taddress must be an 8 bit integer\n");
     }
 
     uint8_t state;
 
     if ((command == 'n') || (command == 'r')) {
         printf("INFO: Initialize as %s on address %d\n", ((command == 'n') ? "node" : "root"), id);
-        if (id > 255) {
-            printf("ERROR: address not an 8 bit integer\n");
+        if (!id || (id > 255)) {
+            printf("ERROR: address not a valid 8 bit integer\n");
             return;
         }
 
@@ -50,6 +49,9 @@ void init(char *str)
 
         if (state != SIXLOWERROR_SUCCESS) {
             printf("Error initializing RPL\n");
+        }
+        else {
+            puts("6LoWPAN and RPL initialized.");
         }
 
         if (command == 'r') {

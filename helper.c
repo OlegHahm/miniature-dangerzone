@@ -26,7 +26,22 @@ void ip(char *unused)
     ipv6_iface_print_addrs();
 }
 
-void monitor(void) {
+void set_id(char *id_str)
+{
+    int res = sscanf(id_str, "set %hu", &id);
+
+    if (res < 1) {
+        printf("Usage: init address\n");
+        printf("\taddress must be an 8 bit integer\n");
+        printf("\n\t(Current address is %u)\n", id);
+        return;
+    }
+
+    printf("Set node ID to %u\n", id);
+}
+
+void monitor(void)
+{
     msg_t m;
     radio_packet_t *p;
     ieee802154_frame_t *frame;
