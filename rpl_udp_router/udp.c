@@ -56,8 +56,7 @@ void init_udp_server(void)
             printf("ERROR: recsize < 0!\n");
         }
 
-        /* d: ID X received event EID */
-        printf("d: ID sn%u received event %s\n", id, buffer_main);
+        printf("UDP packet received, payload: %s\n", buffer_main);
     }
 
     destiny_socket_close(sock);

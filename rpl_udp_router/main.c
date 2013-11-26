@@ -23,8 +23,7 @@ const shell_command_t shell_commands[] = {
 
 int main(void)
 {
-    puts("SAFEST demo router v"SAFEST_VERSION);
-    puts("station: "STATION);
+    puts("RPL router v"APP_VERSION);
 
     /* start shell */
     posix_open(uart0_handler_pid, 0);
