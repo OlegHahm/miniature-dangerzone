@@ -17,12 +17,9 @@ endif
 
 # this has to be the absolute path of the RIOT-base dir
 export RIOTBASE =$(CURDIR)/../../RIOT
-export RIOTCPU =$(CURDIR)/../../RIOT/cpu
-export RIOTBOARD =$(CURDIR)/../../boards
 
 ## Modules to include. 
 
-USEMODULE += hwtimer
 USEMODULE += auto_init
 USEMODULE += ps
 
