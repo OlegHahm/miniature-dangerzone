@@ -2,7 +2,7 @@
 export PROJECT = latency
 
 # If no BOARD is found in the environment, use this default:
-export BOARD ?= msba2 
+export BOARD ?= msb-430h
 
 # This has to be the absolute path to the RIOT base directory:
 export RIOTBASE ?= $(CURDIR)/../../RIOT
@@ -13,9 +13,11 @@ export RIOTBASE ?= $(CURDIR)/../../RIOT
 # Change this to 0 show compiler invocation lines by default:
 export QUIET ?= 1
 
-USEMODULE += auto_init
-USEMODULE += gpioint
 USEMODULE += vtimer 
+USEMODULE += ps
+ifneq (,$(filter msba2,$(BOARD)))
+	USEMODULE += gpioint
+endif
 
 include $(RIOTBASE)/Makefile.include
 
