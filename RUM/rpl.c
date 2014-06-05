@@ -97,15 +97,17 @@ void rum_init(uint8_t as_root)
 
     /* TODO: check if this works as intended */
     ipv6_addr_t prefix, tmp;
+/*
     ipv6_addr_init(&std_addr, 0xABCD, 0xEF12, 0, 0, 0x1034, 0x00FF, 0xFE00, id);
     ipv6_addr_init_prefix(&prefix, &std_addr, 64);
     ndp_add_prefix_info(0, &prefix, 64, NDP_OPT_PI_VLIFETIME_INFINITE,
                         NDP_OPT_PI_PLIFETIME_INFINITE, 1,
                         ICMPV6_NDP_OPT_PI_FLAG_AUTONOM);
+                        */
     ipv6_init_as_router();
     /* add global address */
-    ipv6_addr_set_by_eui64(&tmp, 0, &std_addr);
-    ipv6_net_if_add_addr(0, &tmp, NDP_ADDR_STATE_PREFERRED, 0, 0, 0);
+//    ipv6_addr_set_by_eui64(&tmp, 0, &std_addr);
+//    ipv6_net_if_add_addr(0, &tmp, NDP_ADDR_STATE_PREFERRED, 0, 0, 0);
 
     /* set channel to 10 */
     tcmd.transceivers = TRANSCEIVER;

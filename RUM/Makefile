@@ -8,6 +8,7 @@ export BOARD ?= msba2
 export RIOTBASE ?= $(CURDIR)/../../RIOT
 
 CFLAGS += -DSCHEDSTATISTICS
+CFLAGS += -DDEVELHELP
 
 # Change this to 0 show compiler invocation lines by default:
 export QUIET ?= 1

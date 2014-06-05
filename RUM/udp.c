@@ -59,6 +59,9 @@ void init_udp_server(void)
     uint32_t fromlen;
     int sock = destiny_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
+    char full_payload[10];
+    size_t payload_len = 10;
+
     memset(&sa, 0, sizeof(sa));
 
     sa.sin6_family = AF_INET;
@@ -80,6 +83,9 @@ void init_udp_server(void)
         }
 
         printf("UDP packet received, payload: %s\n", buffer_main);
+        printf("Answering to %s\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, &sa.sin6_addr));
+
+        destiny_socket_sendto(sock, (char *)full_payload, payload_len, 0, &sa, sizeof(sa));
     }
 
     destiny_socket_close(sock);
