@@ -56,9 +56,6 @@ void sensethread(void);
 void check_state(void);
 int math_modulus(int16_t *v, int dim);
 
-extern void _transceiver_send_handler(char *pkt);
-
-
 
 void sensethread(void)
 {
