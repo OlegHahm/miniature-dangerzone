@@ -25,8 +25,10 @@
 
 static char worker_stack[KERNEL_CONF_STACKSIZE_MAIN];
 
-void worker_thread(void)
+void *worker_thread(void *unused)
 {
+    (void) unused;
+
     msg_t mesg;
     transceiver_command_t tcmd;
     radio_address_t a;
@@ -77,13 +79,15 @@ void worker_thread(void)
         }
         vtimer_usleep(BACKOFF_TIME);
     }
+
+    return NULL;
 }
 
 int main(void)
 {
     puts("Link Layer Ping test application starting.");
 
-    thread_create(worker_stack, KERNEL_CONF_STACKSIZE_MAIN, PRIORITY_MAIN-1, CREATE_STACKTEST, worker_thread, "worker");
+    thread_create(worker_stack, KERNEL_CONF_STACKSIZE_MAIN, PRIORITY_MAIN-1, CREATE_STACKTEST, worker_thread, NULL, "worker");
 
     shell_t shell;
     (void) posix_open(uart0_handler_pid, 0);
