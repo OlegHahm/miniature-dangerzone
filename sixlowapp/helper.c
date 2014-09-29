@@ -97,7 +97,7 @@ void sixlowapp_netcat(int argc, char **argv)
         return;
     }
 
-    if (strlen(argv[1] == 2)) {
+    if (strlen(argv[1]) == 2) {
         if (strncmp(argv[1], "-l", 2)) {
             puts("! Invalid parameter");
             puts("  usage: nc [-l] [destination] [port]");
