@@ -47,10 +47,11 @@ void *_udp_server_loop(void *arg)
         while(!sixlowapp_netcat_listen_port) {
             thread_sleep();
         }
+
         sock = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+
         memset(&sa, 0, sizeof(sa));
         sa.sin6_family = AF_INET;
-
         sa.sin6_port = HTONS(sixlowapp_netcat_listen_port);
 
         if (-1 == socket_base_bind(sock, &sa, sizeof(sa))) {
@@ -68,6 +69,7 @@ void *_udp_server_loop(void *arg)
         }
 
         printf("UDP packet received, payload: %s\n", buffer_main);
+
         socket_base_close(sock);
         sixlowapp_netcat_listen_port = 0;
     }
@@ -91,7 +93,6 @@ void sixlowapp_udp_send(ipv6_addr_t *dest, uint16_t port, char *payload, size_t 
     }
 
     memset(&sa, 0, sizeof(sa));
-
     sa.sin6_family = AF_INET;
     memcpy(&sa.sin6_addr, dest, 16);
     sa.sin6_port = HTONS(port);

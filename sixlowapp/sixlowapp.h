@@ -6,13 +6,9 @@
 
 #define APP_VERSION "1.1"
 
-#define RADIO_CHANNEL   (14)
-
-#define MONITOR_STACK_SIZE  (KERNEL_CONF_STACKSIZE_MAIN)
 #define RCV_BUFFER_SIZE     (32)
 
 #define ICMP_DATA       "RIOT"
-
 #define ICMP_TIMEOUT    (100)
 
 #define IF_ID   (0)

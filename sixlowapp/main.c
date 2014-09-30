@@ -20,20 +20,20 @@
 
 #include <stdio.h>
 
+#include "kernel.h"
+#include "thread.h"
 #include "net_if.h"
 #include "posix_io.h"
 #include "shell.h"
 #include "shell_commands.h"
 #include "board_uart0.h"
-#include "kernel.h"
-#include "thread.h"
 
 #include "sixlowapp.h"
 
 kernel_pid_t sixlowapp_udp_server_pid = KERNEL_PID_UNDEF;
 
 char addr_str[IPV6_MAX_ADDR_STR_LEN];
-char monitor_stack_buffer[MONITOR_STACK_SIZE];
+char monitor_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 
 const shell_command_t shell_commands[] = {
@@ -47,10 +47,6 @@ int main(void)
     ipv6_addr_t tmp;
 
     puts("RIOT 6LoWPAN example v"APP_VERSION);
-
-    /* configure the network interface to use short address mode */
-    net_if_set_src_address_mode(IF_ID, NET_IF_TRANS_ADDR_M_SHORT);
-
     /* configure link-local address */
     ipv6_addr_set_link_local_prefix(&tmp);
 
@@ -68,8 +64,6 @@ int main(void)
 
     /* add all nodes multicast address */
     ipv6_addr_set_all_nodes_addr(&tmp);
-    printf("Add all nodes multicast address to interface %d: %s\n", IF_ID,
-           inet_ntop(AF_INET6, &tmp, addr_str, IPV6_MAX_ADDR_STR_LEN));
 
     if (!ipv6_net_if_add_addr(IF_ID, &tmp, NDP_ADDR_STATE_PREFERRED,
                               NDP_OPT_PI_VLIFETIME_INFINITE,
@@ -79,15 +73,10 @@ int main(void)
     }
 
     /* start monitor mode */
-    kernel_pid_t monitor_pid = thread_create(
-                        monitor_stack_buffer,
-                        sizeof(monitor_stack_buffer),
-                        PRIORITY_MAIN - 2,
-                        CREATE_STACKTEST,
-                        sixlowapp_monitor,
-                        NULL,
-                        "monitor");
-    transceiver_register(TRANSCEIVER_DEFAULT, monitor_pid);
+    kernel_pid_t monitor_pid = thread_create( monitor_stack_buffer,
+                        sizeof(monitor_stack_buffer), PRIORITY_MAIN - 2,
+                        CREATE_STACKTEST, sixlowapp_monitor, NULL, "monitor");
+
     ipv6_register_packet_handler(monitor_pid);
 
     /* Start the UDP server thread */
@@ -99,12 +88,11 @@ int main(void)
 
     /* Open the UART0 for the shell */
     posix_open(uart0_handler_pid, 0);
-
     /* initialize the shell */
     shell_t shell;
     shell_init(&shell, shell_commands, UART0_BUFSIZE, uart0_readc, uart0_putc);
-
     /* start the shell loop */
     shell_run(&shell);
+
     return 0;
 }

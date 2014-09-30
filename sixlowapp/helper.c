@@ -121,15 +121,18 @@ void sixlowapp_netcat(int argc, char **argv)
     }
     else {
         _ndp_workaround(&dest);
+        size_t plen;
         if (argc > 3 ) {
-            size_t plen = (strlen(argv[3]) > MAX_PAYLOAD_SIZE) ? MAX_PAYLOAD_SIZE : strlen(argv[1]) + 1;
+            plen = (strlen(argv[3]) > MAX_PAYLOAD_SIZE) ? MAX_PAYLOAD_SIZE : strlen(argv[1]) + 1;
             memcpy(payload, argv[3], plen);
             payload[plen - 1] = 0;
         }
         else {
-            strncpy(payload, "RIOT", 5);
+            plen = 5;
+            strncpy(payload, "RIOT", plen);
+
         }
-        sixlowapp_udp_send(&dest, atoi(argv[2]), payload, strlen(argv[3]));
+        sixlowapp_udp_send(&dest, atoi(argv[2]), payload, plen);
     }
 }
 
@@ -138,7 +141,6 @@ void *sixlowapp_monitor(void *unused)
     (void) unused;
 
     msg_t m;
-    radio_packet_t *p;
     ipv6_hdr_t *ipv6_buf;
 
     msg_init_queue(msg_q, RCV_BUFFER_SIZE);
@@ -146,24 +148,7 @@ void *sixlowapp_monitor(void *unused)
     while (1) {
         msg_receive(&m);
 
-        if (m.type == PKT_PENDING) {
-            p = (radio_packet_t *) m.content.ptr;
-
-            DEBUGF("Received packet from ID %u\n", p->src);
-            DEBUG("\tLength:\t%u\n", p->length);
-            DEBUG("\tSrc:\t%u\n", p->src);
-            DEBUG("\tDst:\t%u\n", p->dst);
-            DEBUG("\tLQI:\t%u\n", p->lqi);
-            DEBUG("\tRSSI:\t%i\n", (int8_t) p->rssi);
-
-            for (uint8_t i = 0; i < p->length; i++) {
-                DEBUG("%02X ", p->data[i]);
-            }
-
-            p->processing--;
-            DEBUG("\n");
-        }
-        else if (m.type == IPV6_PACKET_RECEIVED) {
+        if (m.type == IPV6_PACKET_RECEIVED) {
             ipv6_buf = (ipv6_hdr_t *) m.content.ptr;
 
             if (ipv6_buf->nextheader == IPV6_PROTO_NUM_ICMPV6) {
@@ -182,9 +167,6 @@ void *sixlowapp_monitor(void *unused)
             DEBUGF("IPv6 datagram received (next header: %02X)", ipv6_buf->nextheader);
             DEBUG(" from %s\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN,
                                                  &ipv6_buf->srcaddr));
-        }
-        else if (m.type == ENOBUFFER) {
-            puts("! Transceiver buffer full");
         }
         else {
             printf("! Unknown message received, type %04X\n", m.type);
