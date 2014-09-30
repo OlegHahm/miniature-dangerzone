@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "msg.h"
+#include "thread.h"
 #include "sixlowpan/ip.h"
 #include "transceiver.h"
 #include "ieee802154_frame.h"
@@ -40,6 +41,17 @@ msg_t msg_q[RCV_BUFFER_SIZE];
 
 static unsigned waiting_for_pong;
 
+static void _ndp_workaround(ipv6_addr_t *dest)
+{
+    printf("XXX: Adding %s to neighbor cache.\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, dest));
+    /* add the destination to the neighbor cache if is not already in it */
+    if (!ndp_neighbor_cache_search(dest)) {
+        ndp_neighbor_cache_add(IF_ID, dest, &(dest->uint16[7]), 2, 0,
+                               NDP_NCE_STATUS_REACHABLE,
+                               NDP_NCE_TYPE_TENTATIVE, 0xffff);
+    }
+}
+
 void sixlowapp_send_ping(int argc, char **argv)
 {
     ipv6_addr_t dest;
@@ -54,14 +66,8 @@ void sixlowapp_send_ping(int argc, char **argv)
         printf("! %s is not a valid IPv6 address\n", argv[1]);
         return;
     }
-    
-    /* add the destination to the neighbor cache if is not already in it */
-    if (!ndp_neighbor_cache_search(&dest)) {
-    ndp_neighbor_cache_add(IF_ID, &dest, &(dest.uint16[7]), 2, 0,
-                           NDP_NCE_STATUS_REACHABLE,
-                           NDP_NCE_TYPE_TENTATIVE,
-                           0xffff);
-    }
+
+    _ndp_workaround(&dest);
 
     /* send an echo request */
     icmpv6_send_echo_request(&dest, 1, 1, (uint8_t *) icmp_data, sizeof(icmp_data));
@@ -91,7 +97,7 @@ void sixlowapp_netcat(int argc, char **argv)
 {
     ipv6_addr_t dest;
     
-    if (argc < 2) {
+    if (argc < 3) {
         puts("! Not enough parameters");
         puts("  usage: nc [-l] [destination] [port]");
         return;
@@ -104,11 +110,17 @@ void sixlowapp_netcat(int argc, char **argv)
             return;
         }
         else {
+            sixlowapp_netcat_listen_port = atoi(argv[2]);
+            thread_wakeup(sixlowapp_udp_server_pid);
         }
     }
-    if (!inet_pton(AF_INET6, argv[1], &dest)) {
+    else if (!inet_pton(AF_INET6, argv[1], &dest)) {
         printf("! %s is not a valid IPv6 address\n", argv[1]);
-        return;
+    }
+    else if (argc > 3 ) {
+        _ndp_workaround(&dest);
+        char payload[strlen(argv[3])];
+        sixlowapp_udp_send(&dest, atoi(argv[2]), payload, strlen(argv[3]));
     }
 }
 

@@ -31,11 +31,9 @@ export QUIET ?= 1
 
 USEMODULE += shell
 USEMODULE += shell_commands
-USEMODULE += posix
 USEMODULE += ps
-USEMODULE += vtimer
 USEMODULE += defaulttransceiver
-USEMODULE += sixlowpan
+USEMODULE += udp
 USEMODULE += config
 
 include $(RIOTBASE)/Makefile.include

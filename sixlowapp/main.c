@@ -30,8 +30,11 @@
 
 #include "sixlowapp.h"
 
+kernel_pid_t sixlowapp_udp_server_pid = KERNEL_PID_UNDEF;
+
 char addr_str[IPV6_MAX_ADDR_STR_LEN];
 char monitor_stack_buffer[MONITOR_STACK_SIZE];
+char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 
 const shell_command_t shell_commands[] = {
     {"ping", "Send an ICMPv6 echo request to another node", sixlowapp_send_ping},
@@ -86,6 +89,13 @@ int main(void)
                         "monitor");
     transceiver_register(TRANSCEIVER_DEFAULT, monitor_pid);
     ipv6_register_packet_handler(monitor_pid);
+
+    /* Start the UDP server thread */
+    sixlowapp_udp_server_pid = thread_create(udp_server_stack_buffer,
+                                             sizeof(udp_server_stack_buffer),
+                                             PRIORITY_MAIN, CREATE_STACKTEST,
+                                             _udp_server_loop, NULL,
+                                             "UDP receiver");
 
     /* Open the UART0 for the shell */
     posix_open(uart0_handler_pid, 0);
