@@ -40,19 +40,17 @@ void *_udp_server_loop(void *arg)
     sockaddr6_t sa;
     char buffer_main[UDP_BUFFER_SIZE];
     uint32_t fromlen;
-    int sock = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-
-    memset(&sa, 0, sizeof(sa));
-
-    sa.sin6_family = AF_INET;
-
+    int sock;
     fromlen = sizeof(sa);
 
     while (1) {
         while(!sixlowapp_netcat_listen_port) {
             thread_sleep();
         }
-        
+        sock = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+        memset(&sa, 0, sizeof(sa));
+        sa.sin6_family = AF_INET;
+
         sa.sin6_port = HTONS(sixlowapp_netcat_listen_port);
 
         if (-1 == socket_base_bind(sock, &sa, sizeof(sa))) {
@@ -95,9 +93,11 @@ void sixlowapp_udp_send(ipv6_addr_t *dest, uint16_t port, char *payload, size_t 
     memset(&sa, 0, sizeof(sa));
 
     sa.sin6_family = AF_INET;
-    memcpy(&sa.sin6_addr, &dest, 16);
+    memcpy(&sa.sin6_addr, dest, 16);
     sa.sin6_port = HTONS(port);
 
+    printf("Trying to send %i bytes to %s:%" PRIu16 "\n", len,
+           ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, dest), port);
     bytes_sent = socket_base_sendto(sock, payload, len, 0, &sa, sizeof(sa));
 
     if (bytes_sent < 0) {

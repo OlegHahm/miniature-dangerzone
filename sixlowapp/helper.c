@@ -34,18 +34,20 @@
 #include "debug.h"
 
 #define IPV6_HDR_LEN    (0x28)
+#define MAX_PAYLOAD_SIZE    (32)
 
 extern uint8_t ipv6_ext_hdr_len;
 
 msg_t msg_q[RCV_BUFFER_SIZE];
+static char payload[MAX_PAYLOAD_SIZE];
 
 static unsigned waiting_for_pong;
 
 static void _ndp_workaround(ipv6_addr_t *dest)
 {
-    printf("XXX: Adding %s to neighbor cache.\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, dest));
     /* add the destination to the neighbor cache if is not already in it */
     if (!ndp_neighbor_cache_search(dest)) {
+        DEBUGF("XXX: Adding %s to neighbor cache.\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, dest));
         ndp_neighbor_cache_add(IF_ID, dest, &(dest->uint16[7]), 2, 0,
                                NDP_NCE_STATUS_REACHABLE,
                                NDP_NCE_TYPE_TENTATIVE, 0xffff);
@@ -117,9 +119,16 @@ void sixlowapp_netcat(int argc, char **argv)
     else if (!inet_pton(AF_INET6, argv[1], &dest)) {
         printf("! %s is not a valid IPv6 address\n", argv[1]);
     }
-    else if (argc > 3 ) {
+    else {
         _ndp_workaround(&dest);
-        char payload[strlen(argv[3])];
+        if (argc > 3 ) {
+            size_t plen = (strlen(argv[3]) > MAX_PAYLOAD_SIZE) ? MAX_PAYLOAD_SIZE : strlen(argv[1]) + 1;
+            memcpy(payload, argv[3], plen);
+            payload[plen - 1] = 0;
+        }
+        else {
+            strncpy(payload, "RIOT", 5);
+        }
         sixlowapp_udp_send(&dest, atoi(argv[2]), payload, strlen(argv[3]));
     }
 }
