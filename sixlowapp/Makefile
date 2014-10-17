@@ -31,6 +31,7 @@ export QUIET ?= 1
 
 USEMODULE += shell
 USEMODULE += shell_commands
+USEMODULE += uart0
 USEMODULE += ps
 USEMODULE += defaulttransceiver
 USEMODULE += udp
