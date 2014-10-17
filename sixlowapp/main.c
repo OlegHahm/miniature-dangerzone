@@ -47,6 +47,7 @@ int main(void)
     ipv6_addr_t tmp;
 
     puts("RIOT 6LoWPAN example v"APP_VERSION);
+    net_if_set_src_address_mode(0, NET_IF_TRANS_ADDR_M_SHORT);
     /* configure link-local address */
     ipv6_addr_set_link_local_prefix(&tmp);
 
