@@ -4,7 +4,7 @@
 #include "kernel.h"
 #include "ipv6.h"
 
-#define APP_VERSION "1.1"
+#define APP_VERSION "1.2"
 
 #define RCV_BUFFER_SIZE     (32)
 
