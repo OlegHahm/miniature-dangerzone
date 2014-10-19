@@ -7,15 +7,10 @@
  */
 
 /**
- * @ingroup examples
- * @{
- *
- * @file  main.c
- * @brief 6LoWPAN example application - main function
+ * @file
+ * @brief       6LoWPAN example application - main function
  *
  * @author      Oliver Hahm <oliver.hahm@inria.fr>
- *
- * @}
  */
 
 #include <stdio.h>
@@ -47,7 +42,10 @@ int main(void)
     ipv6_addr_t tmp;
 
     puts("RIOT 6LoWPAN example v"APP_VERSION);
+
+    /* configure node to use short address mode */
     net_if_set_src_address_mode(0, NET_IF_TRANS_ADDR_M_SHORT);
+
     /* configure link-local address */
     ipv6_addr_set_link_local_prefix(&tmp);
 
@@ -73,10 +71,13 @@ int main(void)
         return 0;
     }
 
-    /* start monitor mode */
-    kernel_pid_t monitor_pid = thread_create( monitor_stack_buffer,
-                        sizeof(monitor_stack_buffer), PRIORITY_MAIN - 2,
-                        CREATE_STACKTEST, sixlowapp_monitor, NULL, "monitor");
+    /* start thread for monitor mode */
+    kernel_pid_t monitor_pid = thread_create(monitor_stack_buffer,
+                                             sizeof(monitor_stack_buffer),
+                                             PRIORITY_MAIN - 2,
+                                             CREATE_STACKTEST,
+                                             sixlowapp_monitor, NULL,
+                                             "monitor");
 
     ipv6_register_packet_handler(monitor_pid);
 
@@ -84,7 +85,7 @@ int main(void)
     sixlowapp_udp_server_pid = thread_create(udp_server_stack_buffer,
                                              sizeof(udp_server_stack_buffer),
                                              PRIORITY_MAIN, CREATE_STACKTEST,
-                                             _udp_server_loop, NULL,
+                                             sixlowapp_udp_server_loop, NULL,
                                              "UDP receiver");
 
     /* Open the UART0 for the shell */

@@ -7,15 +7,10 @@
  */
 
 /**
- * @ingroup examples
- * @{
- *
  * @file
  * @brief       6LoWPAN example application helper functions
  *
  * @author      Oliver Hahm <oliver.hahm@inria.fr>
- *
- * @}
  */
 
 #include <stdio.h>
@@ -31,11 +26,16 @@
 
 #include "sixlowapp.h"
 
-#define ENABLE_DEBUG    (0)
+#define ENABLE_DEBUG            (0)
 #include "debug.h"
 
-#define IPV6_HDR_LEN    (0x28)
-#define MAX_PAYLOAD_SIZE    (32)
+#define RCV_BUFFER_SIZE         (32)
+
+#define ICMP_DATA               "RIOT"
+#define ICMP_TIMEOUT            (100)
+
+#define IPV6_HDR_LEN            (0x28)
+#define MAX_PAYLOAD_SIZE        (32)
 
 #define ICMP_ECHO_REPLY_RCVD    (4444)
 
@@ -47,6 +47,7 @@ static char payload[MAX_PAYLOAD_SIZE];
 static unsigned _waiting_for_pong;
 static kernel_pid_t _waiter_pid;
 
+/* --------------- internal functions ------------------*/
 static void _ndp_workaround(ipv6_addr_t *dest)
 {
     /* add the destination to the neighbor cache if is not already in it */
@@ -77,6 +78,7 @@ static uint64_t _wait_for_msg_type(msg_t *m, timex_t timeout, uint16_t mtype)
     return 0;
 }
 
+/* --------------- public functions --------------------*/
 void sixlowapp_send_ping(int argc, char **argv)
 {
     ipv6_addr_t dest;

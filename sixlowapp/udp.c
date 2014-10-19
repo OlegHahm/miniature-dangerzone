@@ -7,14 +7,9 @@
  */
 
 /**
- * @ingroup examples
- * @{
- *
  * @file
  *
  * @author      Oliver Hahm <oliver.hahm@inria.fr>
- *
- * @}
  */
 
 #include <stdint.h>
@@ -33,7 +28,7 @@
 uint16_t sixlowapp_netcat_listen_port;
 
 /* UDP server thread */
-void *_udp_server_loop(void *arg)
+void *sixlowapp_udp_server_loop(void *arg)
 {
     (void) arg;
 
@@ -74,7 +69,6 @@ void *_udp_server_loop(void *arg)
         sixlowapp_netcat_listen_port = 0;
     }
 
-
     return NULL;
 }
 
@@ -91,7 +85,6 @@ void sixlowapp_udp_send(ipv6_addr_t *dest, uint16_t port, char *payload, size_t 
         printf("Error Creating Socket!");
         return;
     }
-
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET;
     memcpy(&sa.sin6_addr, dest, 16);
