@@ -84,8 +84,9 @@ void sixlowapp_send_ping(int argc, char **argv)
     ipv6_addr_t dest;
     const char *icmp_data = ICMP_DATA;
     
-    if (argc < 2) {
+    if (argc != 2) {
         puts("! Not enough parameters");
+        printf("  usage: %s destination\n", argv[0]);
         return;
     }
 
