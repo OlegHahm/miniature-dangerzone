@@ -1,8 +1,8 @@
 # name of your application
-export PROJECT = l2_ping
+APPLICATION = l2_ping
 
 # If no BOARD is found in the environment, use this default:
-export BOARD ?= native
+BOARD ?= native
 
 # This has to be the absolute path to the RIOT base directory:
 export RIOTBASE ?= $(CURDIR)/../../RIOT
