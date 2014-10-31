@@ -107,10 +107,11 @@ void sixlowapp_send_ping(int argc, char **argv)
     m.type = 0;
     rtt = _wait_for_msg_type(&m, timex_set(0, ICMP_TIMEOUT * 1000), ICMP_ECHO_REPLY_RCVD);
     if (_waiting_for_pong == 0) {
-        printf("Echo reply from %s received, rtt: ", inet_ntop(AF_INET6, &dest,
+        char ts[TIMEX_MAX_STR_LEN];
+        printf("Echo reply from %s received, rtt: %s", inet_ntop(AF_INET6, &dest,
                                                                addr_str,
-                                                               IPV6_MAX_ADDR_STR_LEN));
-        timex_print(timex_from_uint64(rtt));
+                                                               IPV6_MAX_ADDR_STR_LEN),
+                                                        timex_to_str(timex_from_uint64(rtt), ts));
     }
     else {
         printf("! Destination %s is unreachable\n", inet_ntop(AF_INET6,
@@ -183,7 +184,7 @@ void *sixlowapp_monitor(void *unused)
                         msg_t m;
                         m.type = ICMP_ECHO_REPLY_RCVD;
                         _waiting_for_pong = 0;
-                        msg_send(&m, _waiter_pid, false);
+                        msg_send(&m, _waiter_pid);
                     }
                 }
             }
