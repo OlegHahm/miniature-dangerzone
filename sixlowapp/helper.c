@@ -85,7 +85,7 @@ void sixlowapp_send_ping(int argc, char **argv)
     const char *icmp_data = ICMP_DATA;
     
     if (argc != 2) {
-        puts("! Not enough parameters");
+        puts("! Invalid number of parameters");
         printf("  usage: %s destination\n", argv[0]);
         return;
     }
