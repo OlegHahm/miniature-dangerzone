@@ -108,7 +108,7 @@ void sixlowapp_send_ping(int argc, char **argv)
     rtt = _wait_for_msg_type(&m, timex_set(0, ICMP_TIMEOUT * 1000), ICMP_ECHO_REPLY_RCVD);
     if (_waiting_for_pong == 0) {
         char ts[TIMEX_MAX_STR_LEN];
-        printf("Echo reply from %s received, rtt: %s", inet_ntop(AF_INET6, &dest,
+        printf("Echo reply from %s received, rtt: %s\n", inet_ntop(AF_INET6, &dest,
                                                                addr_str,
                                                                IPV6_MAX_ADDR_STR_LEN),
                                                         timex_to_str(timex_from_uint64(rtt), ts));
