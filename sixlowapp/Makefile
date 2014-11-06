@@ -25,5 +25,12 @@ USEMODULE += uart0
 USEMODULE += ps
 USEMODULE += defaulttransceiver
 USEMODULE += udp
+ifneq (,$(filter iot-lab_M3,$(BOARD)))
+	USEMODULE += isl29020
+	USEMODULE += lps331ap
+	USEMODULE += l3g4200d
+	USEMODULE += lsm303dlhc
+endif
+
 
 include $(RIOTBASE)/Makefile.include
