@@ -39,37 +39,9 @@ const shell_command_t shell_commands[] = {
 
 int main(void)
 {
-    ipv6_addr_t tmp;
-
     puts("RIOT 6LoWPAN example v"APP_VERSION);
 
-    /* configure node to use short address mode */
-    net_if_set_src_address_mode(0, NET_IF_TRANS_ADDR_M_SHORT);
-
-    /* configure link-local address */
-    ipv6_addr_set_link_local_prefix(&tmp);
-
-    if (!ipv6_addr_set_by_eui64(&tmp, IF_ID, &tmp)) {
-        printf("Can not set link-local by EUI-64 on interface %d\n", IF_ID);
-        return 0;
-    }
-
-    if (!ipv6_net_if_add_addr(IF_ID, &tmp, NDP_ADDR_STATE_PREFERRED,
-                NDP_OPT_PI_VLIFETIME_INFINITE,
-                NDP_OPT_PI_PLIFETIME_INFINITE, 0)) {
-        printf("Can not add link-local address to interface %d\n", IF_ID);
-        return 0;
-    }
-
-    /* add all nodes multicast address */
-    ipv6_addr_set_all_nodes_addr(&tmp);
-
-    if (!ipv6_net_if_add_addr(IF_ID, &tmp, NDP_ADDR_STATE_PREFERRED,
-                              NDP_OPT_PI_VLIFETIME_INFINITE,
-                              NDP_OPT_PI_PLIFETIME_INFINITE, 0)) {
-        printf("Can not add all nodes address to interface %d\n", IF_ID);
-        return 0;
-    }
+    sixlowpan_lowpan_init_interface(IF_ID);
 
     /* start thread for monitor mode */
     kernel_pid_t monitor_pid = thread_create(monitor_stack_buffer,
