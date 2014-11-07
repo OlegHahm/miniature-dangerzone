@@ -30,6 +30,7 @@
 
 #define MAX_PAYLOAD_SIZE        (32)
 
+
 extern uint8_t ipv6_ext_hdr_len;
 
 static char payload[MAX_PAYLOAD_SIZE];
@@ -41,7 +42,7 @@ void sixlowapp_send_ping(int argc, char **argv)
 {
     ipv6_addr_t dest;
     const char *icmp_data = ICMP_DATA;
-    
+
     if (argc != 2) {
         puts("! Invalid number of parameters");
         printf("  usage: %s destination\n", argv[0]);
@@ -82,17 +83,17 @@ void sixlowapp_send_ping(int argc, char **argv)
 void sixlowapp_netcat(int argc, char **argv)
 {
     ipv6_addr_t dest;
-    
+
     if (argc < 3) {
         puts("! Not enough parameters");
-        puts("  usage: nc [-l] [destination] [port]");
+        puts("  usage: nc [-l] [destination] [port] [message] [sensor]");
         return;
     }
 
     if (strlen(argv[1]) == 2) {
         if (strncmp(argv[1], "-l", 2)) {
             puts("! Invalid parameter");
-            puts("  usage: nc [-l] [destination] [port]");
+            puts("  usage: nc [-l] [destination] [port] [message] [sensor]");
             return;
         }
         else {
@@ -105,11 +106,51 @@ void sixlowapp_netcat(int argc, char **argv)
     }
     else {
         sixlowapp_ndp_workaround(&dest);
-        size_t plen;
+        size_t plen = 0;
         if (argc > 3 ) {
-            plen = (strlen(argv[3]) > MAX_PAYLOAD_SIZE) ? MAX_PAYLOAD_SIZE : strlen(argv[1]) + 1;
+#if defined MODULE_LSM303DLHC && defined MODULE_LPS331AP \
+    && defined MODULE_LPS331AP && defined MODULE_ISL29020
+            int sensor_id = atoi(argv[3]);
+            l3g4200d_data_t ad;
+            lsm303dlhc_3d_data_t md;
+            if (sensor_id) {
+                switch(sensor_id) {
+                    case 1:
+                        plen = snprintf(payload, MAX_PAYLOAD_SIZE, "%i LUX",
+                                        isl29020_read(&sixlowapp_isl29020_dev));
+                        break;
+                    case 2:
+                        l3g4200d_read(&sixlowapp_l3g4200d_dev, &ad);
+                        plen = snprintf(payload, MAX_PAYLOAD_SIZE,
+                                        "%" PRIi16 ":%" PRIi16 ":%" PRIi16 " ACC",
+                                        ad.acc_x, ad.acc_y, ad.acc_z);
+                        break;
+                    case 3:
+                        plen = snprintf(payload, MAX_PAYLOAD_SIZE, "%i m°C",
+                                        lps331ap_read_temp(&sixlowapp_lps331ap_dev));
+                        break;
+                    case 4:
+                        plen = snprintf(payload, MAX_PAYLOAD_SIZE, "%i mBar",
+                                        lps331ap_read_pres(&sixlowapp_lps331ap_dev));
+                        break;
+                    default:
+                        lsm303dlhc_read_mag(&sixlowapp_lsm303_dev, &md);
+                        plen = snprintf(payload, MAX_PAYLOAD_SIZE,
+                                        "%" PRIi16 ":%" PRIi16 ":%" PRIi16 " MAG",
+                                        md.x_axis, md.y_axis, md.z_axis);
+
+                        break;
+                }
+            }
+            else {
+#endif
+            plen = (strlen(argv[3]) > MAX_PAYLOAD_SIZE) ? MAX_PAYLOAD_SIZE : strlen(argv[3]) + 1;
             memcpy(payload, argv[3], plen);
             payload[plen - 1] = 0;
+#if defined MODULE_LSM303DLHC && defined MODULE_LPS331AP \
+    && defined MODULE_LPS331AP && defined MODULE_ISL29020
+            }
+#endif
         }
         else {
             plen = 5;

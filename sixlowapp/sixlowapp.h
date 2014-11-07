@@ -3,6 +3,13 @@
 
 #include "kernel.h"
 #include "ipv6.h"
+#if defined MODULE_LSM303DLHC && defined MODULE_LPS331AP \
+    && defined MODULE_LPS331AP && defined MODULE_ISL29020
+#include "isl29020.h"
+#include "l3g4200d.h"
+#include "lps331ap.h"
+#include "lsm303dlhc.h"
+#endif
 
 /**
  * @brief   The application version number
@@ -38,6 +45,14 @@ extern unsigned sixlowapp_waiting_for_pong;
  * @brief   The PID of the thread waiting for the ICMP echo reply
  */
 extern kernel_pid_t sixlowapp_waiter_pid;
+
+#if defined MODULE_LSM303DLHC && defined MODULE_LPS331AP \
+    && defined MODULE_LPS331AP && defined MODULE_ISL29020
+extern isl29020_t sixlowapp_isl29020_dev;
+extern l3g4200d_t sixlowapp_l3g4200d_dev;
+extern lps331ap_t sixlowapp_lps331ap_dev;
+extern lsm303dlhc_t sixlowapp_lsm303_dev;
+#endif
 
 /**
  * @brief   Helper variable for IP address printing
@@ -104,5 +119,7 @@ void sixlowapp_ndp_workaround(ipv6_addr_t *dest);
  * @return  The number of microseconds before the message was received
  */
 uint64_t sixlowapp_wait_for_msg_type(msg_t *m, timex_t timeout, uint16_t mtype);
+
+int sixlowapp_sensor_init(void);
 
 #endif /* SIXLOWAPP_H */

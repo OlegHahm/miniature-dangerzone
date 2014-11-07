@@ -42,6 +42,9 @@ int main(void)
     puts("RIOT 6LoWPAN example v"APP_VERSION);
 
     sixlowpan_lowpan_init_interface(IF_ID);
+    if (sixlowapp_sensor_init() < 0) {
+        puts("Sensor init failed");
+    }
 
     /* start thread for monitor mode */
     kernel_pid_t monitor_pid = thread_create(monitor_stack_buffer,
