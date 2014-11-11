@@ -3,7 +3,7 @@
 
 #define APP_VERSION "0.1"
 
-#define RADIO_CHANNEL   (10)
+#define RADIO_CHANNEL   (11)
 
 #define MONITOR_STACK_SIZE  (KERNEL_CONF_STACKSIZE_MAIN)
 #define RCV_BUFFER_SIZE     (32)
