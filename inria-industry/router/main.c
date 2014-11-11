@@ -39,7 +39,7 @@ char relay_stack[KERNEL_CONF_STACKSIZE_MAIN];
 #if RIOT_CCN_APPSERVER
 char appserver_stack[KERNEL_CONF_STACKSIZE_MAIN];
 #endif
-int relay_pid, appserver_pid;
+kernel_pid_t relay_pid, appserver_pid;
 
 /*
 #define SHELL_MSG_BUFFER_SIZE (64)
@@ -66,7 +66,7 @@ static void riot_ccn_appserver(int argc, char **argv)
     appserver_pid = thread_create(
             appserver_stack, sizeof(appserver_stack),
             PRIORITY_MAIN - 1, CREATE_STACKTEST,
-            ccnl_riot_appserver_start, (void *) relay_pid, "appserver");
+            ccnl_riot_appserver_start, (void *) &relay_pid, "appserver");
     DEBUG("ccn-lite appserver on thread_id %d...\n", appserver_pid);
 }
 #endif
