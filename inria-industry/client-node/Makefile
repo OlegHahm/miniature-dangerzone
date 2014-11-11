@@ -32,12 +32,13 @@ QUIET ?= 1
 
 USEMODULE += shell
 USEMODULE += shell_commands
-USEMODULE += posix
+USEMODULE += uart0
 USEMODULE += ps
 USEMODULE += random
 USEMODULE += defaulttransceiver
 USEMODULE += vtimer
 USEMODULE += ccn_lite
 USEMODULE += ccn_lite_client
+USEMODULE += l3g4200d
 
 include $(RIOTBASE)/Makefile.include

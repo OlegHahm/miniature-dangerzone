@@ -40,17 +40,18 @@
 #include "ccn_lite/util/ccnl-riot-client.h"
 
 #include "events.h"
+#include "sense.h"
 
 #define RIOT_CCN_APPSERVER (1)
 #define RIOT_CCN_TESTS (0)
 
-long long relay_stack[KERNEL_CONF_STACKSIZE_MAIN];
-long long blinker_stack[KERNEL_CONF_STACKSIZE_DEFAULT];
+char relay_stack[KERNEL_CONF_STACKSIZE_MAIN];
+char blinker_stack[KERNEL_CONF_STACKSIZE_DEFAULT];
 
 #if RIOT_CCN_APPSERVER
-long long appserver_stack[KERNEL_CONF_STACKSIZE_MAIN];
+char appserver_stack[KERNEL_CONF_STACKSIZE_MAIN];
 #endif
-int relay_pid, appserver_pid;
+kernel_pid_t relay_pid, appserver_pid;
 
 #define SHELL_MSG_BUFFER_SIZE (64)
 msg_t msg_buffer_shell[SHELL_MSG_BUFFER_SIZE];
@@ -77,7 +78,7 @@ static void riot_ccn_appserver(int argc, char **argv)
     appserver_pid = thread_create(
             appserver_stack, sizeof(appserver_stack),
             PRIORITY_MAIN - 1, CREATE_STACKTEST,
-            ccnl_riot_appserver_start, (void *) relay_pid, "appserver");
+            ccnl_riot_appserver_start, (void *) &relay_pid, "appserver");
     DEBUG("ccn-lite appserver on thread_id %d...\n", appserver_pid);
 }
 #endif
@@ -169,7 +170,7 @@ static void riot_ccn_transceiver_start(int relay_pid)
     /* set channel to CCNL_CHAN */
     msg_t mesg;
     transceiver_command_t tcmd;
-    int32_t c = 10;
+    int32_t c = 11;
     tcmd.transceivers = TRANSCEIVER;
     tcmd.data = &c;
     mesg.content.ptr = (char *) &tcmd;
@@ -200,7 +201,7 @@ static void riot_ccn_relay_start(void)
     riot_ccn_transceiver_start(relay_pid);
 }
 
-static void blinker_thread(void *u)
+static void *blinker_thread(void *u)
 {
     (void) u;
     while (1) {
@@ -427,7 +428,7 @@ int main(void)
     
     thread_create(blinker_stack, sizeof(blinker_stack),
             PRIORITY_MAIN - 1, CREATE_STACKTEST,
-            blinker_stack, NULL, "blinker");
+            blinker_thread, NULL, "blinker");
 
     puts("starting shell...");
     puts("  posix open");

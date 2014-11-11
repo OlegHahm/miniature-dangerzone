@@ -19,15 +19,15 @@
  */
 
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
 
 #include "thread.h"
-#include "smb380-board.h"
 #include "vtimer.h"
 #include "kernel.h"
 #include "board.h"
 
 #include "sense.h"
+#include "l3g4200d.h"
 #include "evt_handler.h"
 
 
@@ -35,7 +35,7 @@
 
 #define AXIS_THRESHOLD      (230)
 #define SAMPLING_PERIOD     (50000U)
-#define REP_LIMIT           (3U)
+#define REP_LIMIT           (1U)
 
 #define STATE_NORMAL        (0U)
 #define STATE_DOWN1         (2U)
@@ -43,20 +43,19 @@
 
 #define STACKSIZE           KERNEL_CONF_STACKSIZE_MAIN
 
-long long stack[STACKSIZE];
+char stack[STACKSIZE];
 static int sensepid;
 
 
-static int16_t acc_data[6];
 static int state = -1;
 static int rep_count = 0;
 
-
-void check_state(void);
+void check_state(l3g4200d_data_t *ad);
 int math_modulus(int16_t *v, int dim);
 
-extern void _transceiver_send_handler(char *pkt);
+l3g4200d_t _l3g4200d_dev;
 
+extern void _transceiver_send_handler(char *pkt);
 
 
 void *sensethread(void *unused)
@@ -65,42 +64,44 @@ void *sensethread(void *unused)
 
     timex_t delay = timex_set(0, SAMPLING_PERIOD);
     for (;;) {
-        SMB380_getAcceleration(SMB380_X_AXIS, &acc_data[SMB380_X_AXIS], &acc_data[SMB380_X_AXIS + 3]);
-        SMB380_getAcceleration(SMB380_Y_AXIS, &acc_data[SMB380_Y_AXIS], &acc_data[SMB380_Y_AXIS + 3]);
-        SMB380_getAcceleration(SMB380_Z_AXIS, &acc_data[SMB380_Z_AXIS], &acc_data[SMB380_Z_AXIS + 3]);
-        check_state();
+        l3g4200d_data_t ad;
+        l3g4200d_read(&_l3g4200d_dev, &ad);
+        //printf("%" PRIi16 "-%" PRIi16 "-%" PRIi16 "\n", ad.acc_x, ad.acc_y, ad.acc_z);
+        check_state(&ad);
         vtimer_sleep(delay);
     }
     return NULL;
 }
 
-void check_state(void)
+void check_state(l3g4200d_data_t *ad)
 {
-    int norm = math_modulus(acc_data, 3);
-    // printf("--- norm: %d, x: %d, y: %d, z: %d ---\n", norm, acc_data[0], acc_data[1], acc_data[2]);
-
-    if (norm > 235 && norm < 275) {
-        // puts("NORM OK");
-        for (int i = 0; i < 3; i++) {
-            if (acc_data[i] > AXIS_THRESHOLD || acc_data[i] < -AXIS_THRESHOLD) {
-                // printf("axis %d;  %d > %d", i, acc_data[i], AXIS_THRESHOLD);
-                if (state == i) {
-                    if (rep_count < REP_LIMIT) {
-                        ++rep_count;
-                    }
-                    // printf("inc %i\n", i);
-                } else {
-                    state = i;
-                    rep_count = 0;
-                    // printf("new dir: %i\n", i);
-                }
-            }
+    unsigned dir = 0;
+    if ((ad->acc_x > AXIS_THRESHOLD) || (ad->acc_y > AXIS_THRESHOLD) || ad->acc_z > AXIS_THRESHOLD) {
+        puts("Movement detected");
+    }
+    if (abs(ad->acc_x) > AXIS_THRESHOLD) {
+        dir = 1;
+    }
+    else if (abs(ad->acc_y) > AXIS_THRESHOLD) {
+        dir = 2;
+    }
+    else if (abs(ad->acc_z) > AXIS_THRESHOLD) {
+        dir = 3;
+    }
+    if (state == dir) {
+        if (rep_count < REP_LIMIT) {
+            ++rep_count;
         }
+        //printf("inc %i\n", dir);
+    } else {
+        state = dir;
+        rep_count = 0;
+        printf("new dir: %i\n", dir);
     }
     
     if (rep_count == REP_LIMIT) {
         rep_count = REP_LIMIT + 1;
-        switch (state) {
+        switch (state - 1) {
             case STATE_NORMAL:
                 evt_handler_ok();
                 break;
@@ -117,21 +118,16 @@ void check_state(void)
 
 void sense_init(void)
 {
-    // initialize the SMB380 acceleration sensor
-    SMB380_init_simple(100, SMB380_BAND_WIDTH_375HZ, SMB380_RANGE_2G);
-    puts("SMB380 initialized.");
+    if (l3g4200d_init(&_l3g4200d_dev, L3G4200D_I2C, L3G4200D_ADDR,
+                       L3G4200D_INT, L3G4200D_DRDY, L3G4200D_MODE_100_25,
+                       L3G4200D_SCALE_500DPS)) {
+        puts("! Failed to initialze L3G4300D.");
+        return;
+    }
+    puts("L3G4300D initialized.");
 
     // setup and start sense thread
     sensepid = thread_create(stack, sizeof(stack), THREAD_PRIO, CREATE_STACKTEST, sensethread, NULL, "sense");
     puts("Sense thread created.");
 }
 
-
-int math_modulus(int16_t *v, int dim)
-{
-    float mod = 0.0f;
-    for (int i = 0; i < dim; i++) {
-        mod += powf(v[i], 2.0f);
-    }
-    return (int)sqrtf(mod);
-}
