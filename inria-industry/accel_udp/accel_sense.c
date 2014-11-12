@@ -41,17 +41,15 @@
 #define STATE_DOWN1         (2U)
 #define STATE_DOWN2         (1U)
 
-#define STACKSIZE           KERNEL_CONF_STACKSIZE_MAIN
-
-char stack[STACKSIZE];
+static char _stack[KERNEL_CONF_STACKSIZE_MAIN];
 static int sensepid;
 
 
 static int state = -1;
 static int rep_count = 0;
 
+void *sensethread(void *unused);
 void check_state(l3g4200d_data_t *ad);
-int math_modulus(int16_t *v, int dim);
 
 l3g4200d_t _l3g4200d_dev;
 
@@ -127,7 +125,7 @@ void sense_init(void)
     puts("L3G4300D initialized.");
 
     // setup and start sense thread
-    sensepid = thread_create(stack, sizeof(stack), THREAD_PRIO, CREATE_STACKTEST, sensethread, NULL, "sense");
+    sensepid = thread_create(_stack, sizeof(_stack), THREAD_PRIO, CREATE_STACKTEST, sensethread, NULL, "sense");
     puts("Sense thread created.");
 }
 
