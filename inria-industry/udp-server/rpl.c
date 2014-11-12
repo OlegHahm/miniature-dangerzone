@@ -23,7 +23,7 @@
 
 #define TRANSCEIVER TRANSCEIVER_DEFAULT
 
-long long monitor_stack_buffer[MONITOR_STACK_SIZE];
+char monitor_stack_buffer[MONITOR_STACK_SIZE];
 radio_address_t id;
 ipv6_addr_t std_addr;
 
@@ -91,8 +91,9 @@ void rpl_ex_init(char command)
         return;
     }
 
+    sixlowpan_lowpan_init_interface(IF_ID);
     /* TODO: check if this works as intended */
-    ipv6_addr_t prefix, tmp;
+    ipv6_addr_t prefix;
     ipv6_addr_init(&std_addr, 0xabcd, 0x0, 0x0, 0x0, 0x3612, 0x00ff, 0xfe00, id);
     ipv6_addr_init_prefix(&prefix, &std_addr, 64);
     //ndp_add_prefix_info(0, &prefix, 64, NDP_OPT_PI_VLIFETIME_INFINITE,
@@ -100,8 +101,6 @@ void rpl_ex_init(char command)
     //                   ICMPV6_NDP_OPT_PI_FLAG_AUTONOM);
     ipv6_init_as_router();
     /* add global address */
-    ipv6_addr_set_by_eui64(&tmp, 0, &std_addr);
-    //ipv6_net_if_add_addr(0, &tmp, NDP_ADDR_STATE_PREFERRED, 0, 0, 0);
 
     /* set channel to 10 */
     tcmd.transceivers = TRANSCEIVER;

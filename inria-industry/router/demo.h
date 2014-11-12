@@ -8,6 +8,11 @@
 #define MONITOR_STACK_SIZE  (KERNEL_CONF_STACKSIZE_MAIN)
 #define RCV_BUFFER_SIZE     (32)
 
+/**
+ * @brief   Which interface should be used for 6LoWPAN
+ */
+#define IF_ID   (0)
+
 /* RPL shell command handlers */
 /**
  * @brief   Shell command to initializes RPL and Destiny
