@@ -43,6 +43,24 @@ char addr_str[IPV6_MAX_ADDR_STR_LEN];
 
 uint8_t is_root = 0;
 
+void fill_nc(void)
+{
+    ipv6_addr_t r_addr;
+    uint16_t l_addr;
+
+    printf("Adding %u as neighbor\n", (id - 1));
+    udpif_get_ipv6_address(&r_addr, (id - 1));
+    l_addr = HTONS(id - 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE, 
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+    printf("Adding %u as neighbor\n", (id + 1));
+    udpif_get_ipv6_address(&r_addr, (id + 1));
+    l_addr = HTONS(id + 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE, 
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+}
+
+
 void rpl_udp_init(int argc, char **argv)
 {
     transceiver_command_t tcmd;
@@ -82,9 +100,7 @@ void rpl_udp_init(int argc, char **argv)
             rpl_init_root();
             is_root = 1;
         }
-        else {
-            ipv6_iface_set_routing_provider(rpl_get_next_hop);
-        }
+        ipv6_iface_set_routing_provider(rpl_get_next_hop);
 
         int monitor_pid = thread_create(monitor_stack_buffer, MONITOR_STACK_SIZE, PRIORITY_MAIN - 2, CREATE_STACKTEST, rpl_udp_monitor, "monitor");
         transceiver_register(TRANSCEIVER, monitor_pid);
@@ -105,7 +121,7 @@ void rpl_udp_init(int argc, char **argv)
                         ICMPV6_NDP_OPT_PI_FLAG_AUTONOM);
     ipv6_init_as_router();
     /* add global address */
-    ipv6_addr_set_by_eui64(&tmp, 0, &std_addr);
+    ipv6_addr_set_by_eui64(&tmp, 0, &std_addr); 
     ipv6_net_if_add_addr(0, &tmp, NDP_ADDR_STATE_PREFERRED, 0, 0, 0);
 
     /* set channel to 10 */
@@ -118,6 +134,7 @@ void rpl_udp_init(int argc, char **argv)
     printf("Channel set to %u\n", RADIO_CHANNEL);
 
     puts("Destiny initialized");
+    fill_nc();
     /* start transceiver watchdog */
 }
 

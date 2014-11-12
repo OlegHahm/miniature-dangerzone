@@ -32,6 +32,16 @@
 #include "demo.h"
 #include "udpif.h"
 
+#include "ps.h"
+
+void _stat(int argc, char **argv)
+{
+    thread_print_all();
+
+    extern void native_print_stats(void);
+    native_print_stats();
+}
+
 const shell_command_t shell_commands[] = {
     {"init", "Initialize network", rpl_udp_init},
     {"set", "Set ID", rpl_udp_set_id},
@@ -41,35 +51,17 @@ const shell_command_t shell_commands[] = {
     {"server", "Starts a UDP server", udpif_shell_server},
     {"send", "Send a UDP datagram", udpif_shell_send},
     {"ign", "ignore node", rpl_udp_ignore_cmd},
+    {"stat", "print statistics", _stat},
     {NULL, NULL, NULL}
 };
 
-
-void fill_nc(void)
-{
-    int numne = 20;
-    uint16_t neighbors[] = {12, 42, 56, 43, 45, 10, 25, 54, 52, 35, 26, 29, 38, 46, 11, 53, 27, 47, 6, 36};
-
-    ipv6_addr_t r_addr;
-    uint16_t l_addr;
-
-    for (int i = 0; i < numne; i++) {
-        printf("Adding %u as neighbor\n", neighbors[i]);
-        udpif_get_ipv6_address(&r_addr, neighbors[i]);
-        l_addr = HTONS(neighbors[i]);
-        ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0,
-                               NDP_NCE_STATUS_REACHABLE, 
-                               NDP_NCE_TYPE_TENTATIVE, 
-                               0xffff);
-    }
-}
 
 int main(void)
 {
     puts("CeBIT demo -router node v"APP_VERSION);
 
     // fill neighbor cache
-    fill_nc();
+    //fill_nc();
 
     /* init RPL */
 //    char *init[] = {"init", NODE_MODE};

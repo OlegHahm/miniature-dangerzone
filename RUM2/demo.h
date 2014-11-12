@@ -29,7 +29,7 @@
 #endif
 
 #define NODE_MODE               "n"
-#define RADIO_CHANNEL           (10)
+#define RADIO_CHANNEL           (6)
 #define GW_ADDRESS              "23"
 #define APPLICATION_PORT        (2350)
 

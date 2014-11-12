@@ -50,7 +50,7 @@ else ifeq ($(strip $(BOARD)),msba2)
 else ifeq ($(strip $(BOARD)),avsextrem)
 	USEMODULE += cc110x_ng
 endif
-USEMODULE += ltc4150
+#USEMODULE += ltc4150
 
 export INCLUDES += -I$(RIOTBASE)/sys/net/include -I$(RIOTBASE)/sys/net/routing/rpl -I$(RIOTBASE)/drivers/cc110x
 

@@ -46,6 +46,7 @@ static int server_socket = -1;
 static sockaddr6_t server_addr;
 static void(*server_on_data)(uint16_t src_addr, char* data, int length);
 
+char mypayload[150];
 
 void init_send_socket(void);
 void server_loop(void);
@@ -179,7 +180,17 @@ void server_loop(void)
         } else {                // handle received data
             src_local_addr = src_addr.sin6_addr.uint8[15];
             server_on_data(src_local_addr, receive_buffer, bytes_received);
-            printf("UDP: received %i bytes from %i\n", bytes_received, src_local_addr);
+            printf("----->UDP: received %i bytes from %i, first byte in receive buffer is %c\n", bytes_received, src_local_addr, receive_buffer[0]);
+
+            if (receive_buffer[0] == 'r') {
+                udpif_send(src_local_addr, SHELL_PORT,  mypayload, sizeof(mypayload));
+                vtimer_usleep(10000);
+                udpif_send(src_local_addr, SHELL_PORT,  mypayload, sizeof(mypayload));
+                vtimer_usleep(10000);
+                udpif_send(src_local_addr, SHELL_PORT,  mypayload, sizeof(mypayload));
+                vtimer_usleep(10000);
+                udpif_send(src_local_addr, SHELL_PORT,  mypayload, sizeof(mypayload));
+            }
         }
     }
 }
