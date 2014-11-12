@@ -1,5 +1,5 @@
 # name of your application
-export PROJECT = cebit_light
+export PROJECT = inria_industry_light
 
 # If no BOARD is found in the environment, use this default:
 export BOARD ?= msba2
@@ -30,7 +30,7 @@ export QUIET ?= 1
 # get rid of the mandatory RPL warning
 CFLAGS += "-Wno-cpp"
 CFLAGS += "-DDBG_IGNORE"
-CFLAGS += -DCEBIT_RX_TOGGLE=1
+CFLAGS += -DINRIA_INDUSTRY_RX_TOGGLE=1
 
 # Modules to include:
 

@@ -7,11 +7,11 @@
  */
 
 /**
- * @ingroup     cebit_demo
+ * @ingroup     inria_industry_demo
  * @{
  *
  * @file        main.c
- * @brief       CeBIT 2014 demo application - sensor node
+ * @brief       INRIA-Industry 2014 demo application - sensor node
  *
  * @author      Oliver Hahm <oliver.hahm@inria.fr>
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
@@ -92,7 +92,7 @@ void fill_nc(void)
 
 int main(void)
 {
-    puts("CeBIT demo - sensor node v" APP_VERSION);
+    puts("INRIA-Industry demo - sensor node v" APP_VERSION);
 
     // fill neighbor cache
     fill_nc();

@@ -7,11 +7,11 @@
  */
 
 /**
- * @ingroup     cebit_demo
+ * @ingroup     inria_industry_demo
  * @{
  *
  * @file        light.c
- * @brief       CeBIT 2014 demo application - light node
+ * @brief       INRIA-Industry 2014 demo application - light node
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  *

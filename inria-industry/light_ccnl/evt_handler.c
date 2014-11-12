@@ -7,11 +7,11 @@
  */
 
 /**
- * @ingroup     cebit_sensor
+ * @ingroup     inria_industry_sensor
  * @{
  *
  * @file        evt_handler.c
- * @brief       CeBIT 2014 demo application - sensor node
+ * @brief       INRIA-Industry 2014 demo application - sensor node
  *
  * @author      Hauke Petersen <hauke.petersen@fu-berlin.de>
  *

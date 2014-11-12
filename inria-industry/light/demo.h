@@ -23,7 +23,7 @@
  */
 // #define VIZ_REMOTE              1
 
-#define CEBIT_RX_TOGGLE         1
+#define INRIA_INDUSTRY_RX_TOGGLE         1
 
 /**
  * List of addresses (as strings) of nodes interested in sensor events
