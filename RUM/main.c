@@ -49,16 +49,15 @@ void udpif_get_ipv6_address(ipv6_addr_t *addr, uint16_t local_addr)
 
 void fill_nc(void)
 {
-    int numne = 20;
-    uint16_t neighbors[] = {12, 42, 56, 43, 45, 10, 25, 54, 52, 35, 26, 29, 38, 46, 11, 53, 27, 47, 6, 36};
+    uint16_t numne = 20;
 
     ipv6_addr_t r_addr;
     uint16_t l_addr;
 
-    for (int i = 0; i < numne; i++) {
-        printf("Adding %u as neighbor\n", neighbors[i]);
-        udpif_get_ipv6_address(&r_addr, neighbors[i]);
-        l_addr = HTONS(neighbors[i]);
+    for (uint16_t i = 0; i < numne; i++) {
+        printf("Adding %u as neighbor\n", i);
+        udpif_get_ipv6_address(&r_addr, i);
+        l_addr = HTONS(i);
         ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0,
                                NDP_NCE_STATUS_REACHABLE, 
                                NDP_NCE_TYPE_TENTATIVE, 

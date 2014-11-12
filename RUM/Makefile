@@ -40,10 +40,3 @@ USEMODULE += destiny
 USEMODULE += ltc4150
 
 include $(RIOTBASE)/Makefile.include
-
-FORCE:
-	touch main.c
-
-root: CFLAGS += -DROOT
-root: HEXFILE = rum_root.hex
-root: FORCE all
