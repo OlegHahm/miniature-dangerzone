@@ -39,7 +39,7 @@ char relay_stack[KERNEL_CONF_STACKSIZE_MAIN];
 #if RIOT_CCN_APPSERVER
 char appserver_stack[KERNEL_CONF_STACKSIZE_MAIN];
 #endif
-kernel_pid_t relay_pid, appserver_pid;
+volatile kernel_pid_t relay_pid, appserver_pid;
 
 /*
 #define SHELL_MSG_BUFFER_SIZE (64)
@@ -66,7 +66,7 @@ static void riot_ccn_appserver(int argc, char **argv)
     appserver_pid = thread_create(
             appserver_stack, sizeof(appserver_stack),
             PRIORITY_MAIN - 1, CREATE_STACKTEST,
-            ccnl_riot_appserver_start, (void *) &relay_pid, "appserver");
+            ccnl_riot_appserver_start, (void *) ((int) relay_pid), "appserver");
     DEBUG("ccn-lite appserver on thread_id %d...\n", appserver_pid);
 }
 #endif
@@ -313,20 +313,21 @@ static const shell_command_t sc[] = {
 
 void fill_nc(void)
 {
-    int numne = 5;
-
     ipv6_addr_t r_addr;
     uint16_t l_addr;
 
-    for (int16_t i = 0; i < numne; i++) {
-        printf("Adding %u as neighbor\n", i);
-        ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, i);
-        l_addr = HTONS(i);
-        ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0,
-                               NDP_NCE_STATUS_REACHABLE, 
-                               NDP_NCE_TYPE_TENTATIVE, 
-                               0xffff);
-    }
+    printf("Adding %u as neighbor\n", id - 1);
+    ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, id - 1);
+    l_addr = HTONS(id - 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE,
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+
+    printf("Adding %u as neighbor\n", id + 1);
+    ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, id + 1);
+    l_addr = HTONS(id + 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE,
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+
 }
 
 int main(void)
@@ -342,10 +343,11 @@ int main(void)
 
     riot_ccn_relay_start();
     
+    id = 2;
+
     /* fill neighbor cache */
     fill_nc();
 
-    id = 2;
     riot_ccn_appserver(1, NULL);
     rpl_ex_init('n');
     udp_server(1, NULL);

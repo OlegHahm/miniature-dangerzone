@@ -94,7 +94,7 @@ void check_state(l3g4200d_data_t *ad)
     } else {
         state = dir;
         rep_count = 0;
-        printf("new dir: %i\n", dir);
+        printf("new dir: %u\n", dir);
     }
     
     if (rep_count == REP_LIMIT) {

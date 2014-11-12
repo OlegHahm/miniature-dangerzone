@@ -139,7 +139,6 @@ void rpl_udp_ignore(uint16_t a)
 
 void rpl_udp_ignore_cmd(int argc, char **argv)
 {
-    uint16_t a;
 
     if (transceiver_pid < 0) {
         puts("Transceiver not runnning.");
@@ -147,6 +146,7 @@ void rpl_udp_ignore_cmd(int argc, char **argv)
     }
     
     if (argc == 2) {
+        uint16_t a;
         a = atoi(argv[1]);
         printf("sending to transceiver (%u): %u\n", transceiver_pid, (*(uint8_t *)tcmd.data));
         rpl_udp_ignore(a);

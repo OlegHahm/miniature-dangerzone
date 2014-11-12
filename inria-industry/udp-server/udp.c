@@ -14,7 +14,7 @@
 
 #include "thread.h"
 
-#include "destiny/socket.h"
+#include "socket_base/socket.h"
 
 #include "net_help.h"
 
@@ -23,10 +23,10 @@
 #define UDP_BUFFER_SIZE     (128)
 #define SERVER_PORT     (0xFF01)
 
-long long udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
+char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 char addr_str[IPV6_MAX_ADDR_STR_LEN];
 
-const char *content = "RIOT is friendly";
+const char *content = "RIOT is nice";
 
 static void *init_udp_server(void *);
 
@@ -40,7 +40,20 @@ void udp_server(int argc, char **argv)
             udp_server_stack_buffer, sizeof(udp_server_stack_buffer),
             PRIORITY_MAIN, CREATE_STACKTEST,
             init_udp_server, NULL, "init_udp_server");
-    printf("UDP SERVER ON PORT %d (THREAD PID: %d)\n", HTONS(SERVER_PORT), udp_server_thread_pid);
+    printf("UDP SERVER ON PORT %X (THREAD PID: %d)\n", SERVER_PORT, udp_server_thread_pid);
+}
+
+static void inet_request(uint8_t src, char *req)
+{
+    uint8_t payload;
+
+    payload = 3;
+    // fw src id data -> sender event receiver
+    // bw 2 4 23' und 'bw 23 4 web' 
+    printf("bw 3 %u %u\n", payload, src);
+    printf("bw %u %u %u\n", src, payload, id);
+    payload = 4;
+    printf("bw %u %u web\n", id, payload);
 }
 
 static void *init_udp_server(void *arg)
@@ -51,22 +64,22 @@ static void *init_udp_server(void *arg)
     char buffer_main[UDP_BUFFER_SIZE];
     int32_t recsize;
     uint32_t fromlen;
-    int sock = destiny_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    int sock = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
     memset(&sa, 0, sizeof(sa));
 
     sa.sin6_family = AF_INET;
-    sa.sin6_port = HTONS(SERVER_PORT);
+    sa.sin6_port = SERVER_PORT;
 
     fromlen = sizeof(sa);
 
-    if (-1 == destiny_socket_bind(sock, &sa, sizeof(sa))) {
+    if (-1 == socket_base_bind(sock, &sa, sizeof(sa))) {
         printf("Error bind failed!\n");
-        destiny_socket_close(sock);
+        socket_base_close(sock);
     }
 
     while (1) {
-        recsize = destiny_socket_recvfrom(sock, (void *)buffer_main, UDP_BUFFER_SIZE, 0,
+        recsize = socket_base_recvfrom(sock, (void *)buffer_main, UDP_BUFFER_SIZE, 0,
                                           &sa, &fromlen);
 
         if (recsize < 0) {
@@ -75,13 +88,15 @@ static void *init_udp_server(void *arg)
 
         printf("UDP packet received from %s, payload: %s\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, &sa.sin6_addr), buffer_main);
 
-        printf("replying\n");
-        sa.sin6_port = HTONS(SERVER_PORT);
-        destiny_socket_sendto(sock, content, strlen(content) + 1, 0, &sa, sizeof(sa));
+        inet_request(sa.sin6_addr.uint8[15], buffer_main);
+
+        sa.sin6_port = SERVER_PORT;
+        printf("replying to port %X\n", sa.sin6_port);
+        socket_base_sendto(sock, content, strlen(content) + 1, 0, &sa, sizeof(sa));
 
     }
 
-    destiny_socket_close(sock);
+    socket_base_close(sock);
 
     return NULL;
 }
@@ -106,7 +121,7 @@ void udp_send(int argc, char **argv)
     strncpy(text, argv[2], sizeof(text));
     text[sizeof(text) - 1] = 0;
 
-    sock = destiny_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+    sock = socket_base_socket(PF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 
     if (-1 == sock) {
         printf("Error Creating Socket!");
@@ -119,9 +134,9 @@ void udp_send(int argc, char **argv)
 
     sa.sin6_family = AF_INET;
     memcpy(&sa.sin6_addr, &ipaddr, 16);
-    sa.sin6_port = HTONS(SERVER_PORT);
+    sa.sin6_port = SERVER_PORT;
 
-    bytes_sent = destiny_socket_sendto(sock, (char *)text,
+    bytes_sent = socket_base_sendto(sock, (char *)text,
                                        strlen(text) + 1, 0, &sa,
                                        sizeof(sa));
 
@@ -129,10 +144,11 @@ void udp_send(int argc, char **argv)
         printf("Error sending packet!\n");
     }
     else {
-        printf("Successful deliverd %i bytes over UDP to %s to 6LoWPAN\n",
-               bytes_sent, ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN,
+        printf("Successful deliverd %i bytes over UDP (Port %x) to %s to 6LoWPAN\n",
+               bytes_sent, sa.sin6_port, ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN,
                                             &ipaddr));
     }
 
-    destiny_socket_close(sock);
+    socket_base_close(sock);
+
 }

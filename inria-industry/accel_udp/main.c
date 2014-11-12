@@ -67,10 +67,10 @@ void fill_nc(void)
 //     uint16_t ignore[] = {23, 31, 51};
 // #endif
 
-    int numne = 2;
-    int numig = 4;
-    uint16_t neighbors[] = {33, 41};
-    uint16_t ignore[] = {23, 31, 32, 51};
+    int numne = 1;
+    int numig = 1;
+    uint16_t neighbors[] = {2};
+    uint16_t ignore[] = {1};
 
     ipv6_addr_t r_addr;
     uint16_t l_addr;

@@ -30,12 +30,6 @@
 
 #include "demo.h"
 
-#ifdef MODULE_NATIVENET
-#define TRANSCEIVER TRANSCEIVER_NATIVE
-#else
-#define TRANSCEIVER TRANSCEIVER_CC1100
-#endif
-
 char monitor_stack_buffer[MONITOR_STACK_SIZE];
 radio_address_t id = NODE_ADDRESS;
 ipv6_addr_t std_addr;
@@ -56,10 +50,10 @@ void rpl_udp_init(int argc, char **argv)
         return;
     }
 
-    uint8_t state;
 
     char command = argv[1][0];
     if ((command == 'n') || (command == 'r')) {
+        uint8_t state;
         printf("INFO: Initialize as %s on address %d (0x%X)\n", ((command == 'n') ? "node" : "root"), id, id);
 
         if (!id || (id > 255)) {
@@ -87,7 +81,7 @@ void rpl_udp_init(int argc, char **argv)
         }
 
         kernel_pid_t monitor_pid = thread_create(monitor_stack_buffer, MONITOR_STACK_SIZE, PRIORITY_MAIN - 2, CREATE_STACKTEST, rpl_udp_monitor, NULL, "monitor");
-        transceiver_register(TRANSCEIVER, monitor_pid);
+        transceiver_register(TRANSCEIVER_DEFAULT, monitor_pid);
         ipv6_register_packet_handler(monitor_pid);
         //sixlowpan_lowpan_register(monitor_pid);
     }
@@ -96,18 +90,19 @@ void rpl_udp_init(int argc, char **argv)
         return;
     }
 
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
     sixlowpan_lowpan_init_interface(IF_ID);
     /* TODO: check if this works as intended */
-    ipv6_addr_t prefix;
-    ipv6_addr_init(&std_addr, 0xABCD, 0xEF12, 0, 0, 0x1034, 0x00FF, 0xFE00, id);
-    ipv6_addr_init_prefix(&prefix, &std_addr, 64);
-    ndp_add_prefix_info(0, &prefix, 64, NDP_OPT_PI_VLIFETIME_INFINITE,
-                        NDP_OPT_PI_PLIFETIME_INFINITE, 1,
-                        ICMPV6_NDP_OPT_PI_FLAG_AUTONOM);
+    puts("initializing as router");
     ipv6_init_as_router();
 
+    puts("Setting channel");
     /* set channel to 10 */
-    tcmd.transceivers = TRANSCEIVER;
+    tcmd.transceivers = TRANSCEIVER_DEFAULT;
     tcmd.data = &chan;
     m.type = SET_CHANNEL;
     m.content.ptr = (void *) &tcmd;

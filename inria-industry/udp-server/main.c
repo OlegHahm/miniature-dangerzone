@@ -20,7 +20,7 @@
 #include "vtimer.h"
 #include "ps.h"
 #include "ltc4150.h"
-#include "destiny.h"
+#include "socket_base.h"
 #include "net_if.h"
 
 #define ENABLE_DEBUG (1)
@@ -45,20 +45,21 @@ static const shell_command_t sc[] = {
 
 void fill_nc(void)
 {
-    int numne = 5;
-
     ipv6_addr_t r_addr;
     uint16_t l_addr;
 
-    for (int16_t i = 0; i < numne; i++) {
-        printf("Adding %u as neighbor\n", i);
-        ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, i);
-        l_addr = HTONS(i);
-        ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0,
-                               NDP_NCE_STATUS_REACHABLE, 
-                               NDP_NCE_TYPE_TENTATIVE, 
-                               0xffff);
-    }
+    printf("Adding %u as neighbor\n", id - 1);
+    ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, id - 1);
+    l_addr = HTONS(id - 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE,
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+
+    printf("Adding %u as neighbor\n", id + 1);
+    ipv6_addr_init(&r_addr, 0xfe80, 0x0, 0x0, 0x0, 0x0, 0x00ff, 0xfe00, id + 1);
+    l_addr = HTONS(id + 1);
+    ndp_neighbor_cache_add(0, &r_addr, &l_addr, 2, 0, NDP_NCE_STATUS_REACHABLE,
+                           NDP_NCE_TYPE_TENTATIVE, 0xffff);
+
 }
 
 int main(void)
@@ -70,10 +71,11 @@ int main(void)
         return -1;
     }
     
+    id = 1;
+
     /* fill neighbor cache */
     fill_nc();
 
-    id = 1;
     helper_ignore(3);
     rpl_ex_init('r');
     udp_server(1, NULL);

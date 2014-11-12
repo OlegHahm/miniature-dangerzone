@@ -10,12 +10,12 @@
 /**
  * Basic network configuration (addresses, channel, etc)
  */
-#define NODE_ADDRESS            41    // 0x29
+#define NODE_ADDRESS            3 // 0x29
 #define LEVEL3
 #define NODE_MODE               "n"     // normal node
-#define RADIO_CHANNEL           (10)
+#define RADIO_CHANNEL           (11)
 #define GW_ADDRESS              "23"
-#define APPLICATION_PORT        (2350)
+#define APPLICATION_PORT        (511)
 
 /**
  * Set this value to 1 when you want to send the RIOT-TV information
@@ -26,8 +26,8 @@
 /**
  * List of addresses (as strings) of nodes interested in sensor events
  */
-#define OBSERVER_NUMOF          (2U)
-#define OBSERVER_NODES          {51, 23} // and the watch
+#define OBSERVER_NUMOF          (1U)
+#define OBSERVER_NODES          {1} // and the watch
 
 /**
  * List a number of nodes that are ignored from this node

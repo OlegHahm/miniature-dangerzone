@@ -136,7 +136,7 @@ void udpif_start_server(uint16_t port, void(*ondata)(uint16_t src, char *data, i
     // set server address
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin6_family = AF_INET;
-    server_addr.sin6_port = HTONS(port);
+    server_addr.sin6_port = port;
 
     // bind server socket
     if (-1 == socket_base_bind(server_socket, &server_addr, sizeof(server_addr))) {
@@ -163,7 +163,6 @@ void *server_loop(void *unused)
 {
     (void) unused;
 
-    int bytes_received;
     char receive_buffer[UDP_BUFFER_SIZE];
     sockaddr6_t src_addr;
     socklen_t fromlen = sizeof(src_addr);
@@ -171,6 +170,7 @@ void *server_loop(void *unused)
 
     // listen for data
     while (1) {
+        int bytes_received;
         bytes_received = socket_base_recvfrom(server_socket,
                                             (void *)receive_buffer, 
                                             UDP_BUFFER_SIZE, 

@@ -25,7 +25,7 @@
 #include "sixlowpan/ip.h"
 #include "transceiver.h"
 #include "ieee802154_frame.h"
-#include "rpl_structs.h"
+#include "rpl/rpl_structs.h"
 
 #include "demo.h"
 
@@ -147,5 +147,5 @@ void helper_ignore(uint16_t a)
     tcmd.transceivers = TRANSCEIVER_CC1100;
     tcmd.data = &a;
 
-    msg_send(&mesg, transceiver_pid, 1);
+    msg_send(&mesg, transceiver_pid);
 }

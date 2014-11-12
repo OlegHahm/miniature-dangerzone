@@ -25,8 +25,6 @@
 #include "evt_handler.h"
 #include "events.h"
 
-static uint8_t sequ_no = 0;
-static uint8_t evt_no = 0;
 
 void send_event(evt_t event);
 
@@ -63,21 +61,16 @@ extern void interest(const char *argv);
 void send_event(evt_t event)
 {
     static const char *riot_interest = "/riot/appserver/test";
-    char cmd[3];
-    if (event != CONFIRM) {         // if CONFIRM reuse old evt_no
-        ++evt_no;
-    }
-    cmd[0] = (char)event;      // id
-    cmd[1] = (char)evt_no;   // data
-    cmd[2] = (char)sequ_no++;  // sequence number
     switch (event) {
         case CONFIRM:
             break;
         case WARN:
         case ALARM:
-            puts("send interest");
-            state = WAITING;
-            interest(riot_interest);
+            if (state != READY) {
+                puts("send interest");
+                state = WAITING;
+                interest(riot_interest);
+            }
             break;
         default:
             puts("What the heck???");

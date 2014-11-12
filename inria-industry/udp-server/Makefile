@@ -32,12 +32,12 @@ QUIET ?= 1
 
 USEMODULE += shell
 USEMODULE += shell_commands
-USEMODULE += posix
+USEMODULE += uart0 
 USEMODULE += ps
 USEMODULE += random
 USEMODULE += defaulttransceiver
 USEMODULE += vtimer
 USEMODULE += rpl
-USEMODULE += destiny
+USEMODULE += udp
 
 include $(RIOTBASE)/Makefile.include

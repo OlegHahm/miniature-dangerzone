@@ -23,14 +23,14 @@
 
 #include "demo.h"
 
-#define UDP_BUFFER_SIZE     (128)
+#define UDP_BUFFER_SIZE     (90)
 #define SERVER_PORT     (0xFF01)
 
 char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 char addr_str[IPV6_MAX_ADDR_STR_LEN];
 char buffer_main[UDP_BUFFER_SIZE];
 
-extern int appserver_pid;
+extern volatile kernel_pid_t appserver_pid;
 
 static void *init_udp_server(void *);
 
@@ -44,7 +44,7 @@ void udp_server(int argc, char **argv)
             udp_server_stack_buffer, sizeof(udp_server_stack_buffer),
             PRIORITY_MAIN, CREATE_STACKTEST,
             init_udp_server, NULL, "init_udp_server");
-    printf("UDP SERVER ON PORT %d (THREAD PID: %d)\n", HTONS(SERVER_PORT), udp_server_thread_pid);
+    printf("UDP SERVER ON PORT %X (THREAD PID: %d)\n", SERVER_PORT, udp_server_thread_pid);
 }
 
 msg_t m;
@@ -62,7 +62,7 @@ static void *init_udp_server(void *arg)
     memset(&sa, 0, sizeof(sa));
 
     sa.sin6_family = AF_INET;
-    sa.sin6_port = HTONS(SERVER_PORT);
+    sa.sin6_port = SERVER_PORT;
 
     fromlen = sizeof(sa);
 
@@ -80,8 +80,8 @@ static void *init_udp_server(void *arg)
         }
 
         printf("UDP packet of size %" PRIi32 " received, payload: %s\n", recsize, buffer_main);
-        printf("relaying to appserver at PID %i\n", appserver_pid);
-        m.type = UPPER_LAYER_4;
+        printf("relaying to appserver at PID %" PRIkernel_pid "\n", appserver_pid);
+        m.type = CCNL_RIOT_UDP; 
         rmsg.size = recsize;
         rmsg.payload = buffer_main;
         m.content.ptr = (char *) &rmsg;
@@ -126,7 +126,7 @@ void udp_send(int argc, char **argv)
 
     sa.sin6_family = AF_INET;
     memcpy(&sa.sin6_addr, &ipaddr, 16);
-    sa.sin6_port = HTONS(SERVER_PORT);
+    sa.sin6_port = SERVER_PORT;
 
     bytes_sent = socket_base_sendto(sock, (char *)text,
                                        strlen(text) + 1, 0, &sa,

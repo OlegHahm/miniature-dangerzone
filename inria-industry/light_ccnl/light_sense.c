@@ -31,9 +31,9 @@
 
 #define THREAD_PRIO         (10U)
 
-#define LUX_THRESHOLD_WARN  (230)
-#define LUX_THRESHOLD_ALARM (230)
-#define SAMPLING_PERIOD     (50000U)
+#define LUX_THRESHOLD_WARN  (530)
+#define LUX_THRESHOLD_ALARM (730)
+#define SAMPLING_PERIOD     (500000U)
 
 #define STATE_NORMAL        (0U)
 #define STATE_DOWN1         (1U)
@@ -61,6 +61,7 @@ void *sensethread(void *unused)
     timex_t delay = timex_set(0, SAMPLING_PERIOD);
     while (1) {
         int l = isl29020_read(&_isl29020_dev);
+       printf("Light: %i LUX\n", l);
         check_state(l);
         vtimer_sleep(delay);
     }
