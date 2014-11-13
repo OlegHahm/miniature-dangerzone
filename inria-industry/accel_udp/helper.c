@@ -131,7 +131,7 @@ void rpl_udp_ignore(uint16_t a)
     mesg.type = DBG_IGN;
     mesg.content.ptr = (char *) &tcmd;
 
-    tcmd.transceivers = TRANSCEIVER_CC1100;
+    tcmd.transceivers = TRANSCEIVER_DEFAULT;
     tcmd.data = &a;
 
     msg_send(&mesg, transceiver_pid);

@@ -377,7 +377,7 @@ static void _ignore(radio_address_t a)
     mesg.type = DBG_IGN;
     mesg.content.ptr = (char *) &tcmd;
 
-    tcmd.transceivers = TRANSCEIVER_CC1100;
+    tcmd.transceivers = TRANSCEIVER_DEFAULT;
     tcmd.data = &a;
 
     printf("sending to transceiver (%u): %u\n", transceiver_pid, (*(uint8_t *)tcmd.data));

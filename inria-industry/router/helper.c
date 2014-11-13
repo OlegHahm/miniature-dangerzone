@@ -136,7 +136,7 @@ void rpl_udp_ignore(int argc, char **argv)
     mesg.type = DBG_IGN;
     mesg.content.ptr = (char *) &tcmd;
 
-    tcmd.transceivers = TRANSCEIVER_CC1100;
+    tcmd.transceivers = TRANSCEIVER_DEFAULT;
     tcmd.data = &a;
 
     if (argc == 2) {
