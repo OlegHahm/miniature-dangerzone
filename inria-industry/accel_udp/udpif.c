@@ -33,8 +33,7 @@
 #include "udpif.h"
 #include "demo.h"
 #include "viz.h"
-
-#define SHELL_PORT          APPLICATION_PORT
+#include "lps331ap.h"
 
 #define UDP_BUFFER_SIZE     (128)
 
@@ -51,6 +50,7 @@ void init_send_socket(void);
 void *server_loop(void *unused);
 void default_data_handler(uint16_t src, char *data, int length);
 
+char content[32];
 
 
 /* UDP server thread */
@@ -60,7 +60,7 @@ void udpif_shell_server(int argc, char **argv)
 
     // check command line arguments
     if (argc < 2) {
-        port = SHELL_PORT;
+        port = SERVER_PORT;
     } else {
         port = (uint16_t)atoi(argv[1]);
     }
@@ -85,7 +85,7 @@ void udpif_shell_send(int argc, char **argv)
     length = strlen(argv[2]);
 
     // send packet
-    udpif_send(dst_addr, SHELL_PORT, argv[2], length);
+    udpif_send(dst_addr, SERVER_PORT, argv[2], length);
 }
 
 /* send data via UDP */
@@ -105,7 +105,7 @@ int udpif_send(uint16_t dst_addr, uint16_t port, char *data, int length)
     udpif_get_ipv6_address(&dst, dst_addr);
     // write address and port to socket address
     memcpy(&socket_addr.sin6_addr, &dst, sizeof(ipv6_addr_t));
-    socket_addr.sin6_port = HTONS(port);
+    socket_addr.sin6_port = port;
 
     // send data
     bytes_send = socket_base_sendto(socket, data, length, 0, &socket_addr, sizeof(sockaddr6_t));
@@ -155,7 +155,7 @@ void udpif_start_server(uint16_t port, void(*ondata)(uint16_t src, char *data, i
                                               server_loop, 
                                               NULL,
                                               "udp_server");
-    printf("UDP server started on port %d (Thread PID: %d)\n", port, udpif_server_thread_pid);
+    printf("UDP server started on port %X (Thread PID: %d)\n", port, udpif_server_thread_pid);
 }
 
 
@@ -166,7 +166,6 @@ void *server_loop(void *unused)
     char receive_buffer[UDP_BUFFER_SIZE];
     sockaddr6_t src_addr;
     socklen_t fromlen = sizeof(src_addr);
-    uint16_t src_local_addr;
 
     // listen for data
     while (1) {
@@ -179,10 +178,23 @@ void *server_loop(void *unused)
                                             &fromlen);
         if (bytes_received < 0) {      // receive error
             printf("ERROR: UDP server bytes_received < 0!\n");
-        } else {                // handle received data
-            src_local_addr = src_addr.sin6_addr.uint8[15];
-            server_on_data(src_local_addr, receive_buffer, bytes_received);
-            printf("UDP: received %i bytes from %i\n", bytes_received, src_local_addr);
+        } 
+        else {
+            src_addr.sin6_port = SERVER_PORT;
+            printf("UDP: received %i bytes from %i\n", bytes_received, src_addr.sin6_addr.uint8[15]);
+            printf("replying to port %X\n", src_addr.sin6_port);
+            extern lps331ap_t _lps331ap_dev;
+            int temp = lps331ap_read_temp(&_lps331ap_dev);
+            int temp_abs = temp / 1000;
+            temp -= (temp_abs * 1000);
+            printf("LPS331AP: temperature:  %i.%03i °C\n", temp_abs, temp);
+            size_t plen = snprintf(content, 32, "%i.%03i °C", temp_abs, temp);
+
+            socket_base_sendto(server_socket, content, plen + 1, 0, &src_addr, sizeof(src_addr));
+
+            // handle received data
+            //src_local_addr = src_addr.sin6_addr.uint8[15];
+            //server_on_data(src_local_addr, receive_buffer, bytes_received);
         }
     }
 

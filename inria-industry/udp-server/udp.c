@@ -26,7 +26,6 @@
 char udp_server_stack_buffer[KERNEL_CONF_STACKSIZE_MAIN];
 char addr_str[IPV6_MAX_ADDR_STR_LEN];
 
-const char *content = "RIOT is nice";
 
 static void *init_udp_server(void *);
 
@@ -89,10 +88,6 @@ static void *init_udp_server(void *arg)
         printf("UDP packet received from %s, payload: %s\n", ipv6_addr_to_str(addr_str, IPV6_MAX_ADDR_STR_LEN, &sa.sin6_addr), buffer_main);
 
         inet_request(sa.sin6_addr.uint8[15], buffer_main);
-
-        sa.sin6_port = SERVER_PORT;
-        printf("replying to port %X\n", sa.sin6_port);
-        socket_base_sendto(sock, content, strlen(content) + 1, 0, &sa, sizeof(sa));
 
     }
 

@@ -111,6 +111,10 @@ int main(void)
     /* start looking for accelerometer events */
     sense_init();
 
+    extern void default_data_handler(uint16_t src, char *data, int length);
+
+    udpif_start_server(SERVER_PORT, default_data_handler);
+
     /* start shell */
     posix_open(uart0_handler_pid, 0);
     shell_t shell;

@@ -72,7 +72,7 @@ void send_event(evt_t event)
     cmd[2] = (char)sequ_no++;  // sequence number
     for (int retrans = 0; retrans < RETRANSMISSIONS; retrans++) {
         for (unsigned i = 0; i < OBSERVER_NUMOF; i++) {
-            udpif_send(observers[i], APPLICATION_PORT, cmd, 3);
+            udpif_send(observers[i], SERVER_PORT, cmd, 3);
             printf("UDP: send id:%i, data:%i, sequ:%i\n", cmd[0], cmd[1], cmd[2]);
             vtimer_usleep(1000);
         }

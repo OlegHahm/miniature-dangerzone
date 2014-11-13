@@ -25,14 +25,14 @@
 #include "events.h"
 
 
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
 #include "udpif.h"
 
 #define VIZ_ADDR        23
-#define VIZ_PORT        APPLICATION_PORT
+#define VIZ_PORT        SERVER_PORT 
 #endif
 
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
 static uint8_t next_sequ = 0;
 #endif
 
@@ -41,7 +41,7 @@ extern radio_address_t id;
 
 void viz_udp_pkt(uint8_t src)
 {
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
     char evt[3];
     evt[0] = DTA_RCVD;
     evt[1] = (uint8_t)src;
@@ -55,7 +55,7 @@ void viz_udp_pkt(uint8_t src)
 
 void viz_parent_select(uint8_t parent)
 {
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
     char evt[3];
     evt[0] = PARENT_SELECT;
     evt[1] = parent;
@@ -69,7 +69,7 @@ void viz_parent_select(uint8_t parent)
 
 void viz_parent_deselect(uint8_t parent)
 {
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
     char evt[3];
     evt[0] = PARENT_DELETE;
     evt[1] = parent;
@@ -83,7 +83,7 @@ void viz_parent_deselect(uint8_t parent)
 
 void viz_dio(uint8_t src)
 {
-#ifdef VIZ_REMOTE
+#if VIZ_REMOTE
     char evt[3];
     evt[0] = DIO_RCVD;
     evt[1] = (uint8_t)src;

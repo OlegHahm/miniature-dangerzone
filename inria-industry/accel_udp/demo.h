@@ -15,13 +15,13 @@
 #define NODE_MODE               "n"     // normal node
 #define RADIO_CHANNEL           (11)
 #define GW_ADDRESS              "23"
-#define APPLICATION_PORT        (511)
+#define SERVER_PORT             (0xFF01)
 
 /**
  * Set this value to 1 when you want to send the RIOT-TV information
  * via UDP instead of printing it to the std out.
  */
-#define VIZ_REMOTE              1
+#define VIZ_REMOTE              0
 
 /**
  * List of addresses (as strings) of nodes interested in sensor events

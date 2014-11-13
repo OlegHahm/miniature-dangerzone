@@ -33,6 +33,7 @@ USEMODULE += vtimer
 USEMODULE += rpl
 USEMODULE += udp
 USEMODULE += l3g4200d
+USEMODULE += lps331ap
 
 #include events.h
 export INCLUDES += -I$(CURDIR)/.. -I$(CURDIR)
