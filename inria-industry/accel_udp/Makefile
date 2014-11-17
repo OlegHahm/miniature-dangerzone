@@ -1,11 +1,11 @@
 # name of your application
-export PROJECT = accel_sensor
+APPLICATION = accel_sensor
 
 # If no BOARD is found in the environment, use this default:
-export BOARD ?= iot-lab_M3 
+BOARD ?= iot-lab_M3
 
 # This has to be the absolute path to the RIOT base directory:
-export RIOTBASE ?= $(CURDIR)/../../../RIOT
+RIOTBASE ?= $(CURDIR)/../../../RIOT
 
 # Uncomment this to enable scheduler statistics for ps:
 CFLAGS += -DSCHEDSTATISTICS

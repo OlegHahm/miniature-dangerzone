@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#ifdef BOARD_IOT_LAB_M3
 
 #include "thread.h"
 #include "vtimer.h"
@@ -97,7 +98,6 @@ void check_state(int lux)
     }
 }
 
-
 void sense_init(void)
 {
     if (isl29020_init(&_isl29020_dev, ISL29020_I2C, ISL29020_ADDR,
@@ -111,3 +111,9 @@ void sense_init(void)
     sensepid = thread_create(_stack, sizeof(_stack), THREAD_PRIO, CREATE_STACKTEST, sensethread, NULL, "sense");
     puts("Sense thread created.");
 }
+#else
+void sense_init(void)
+{
+    puts("No sensors on this platform");
+}
+#endif

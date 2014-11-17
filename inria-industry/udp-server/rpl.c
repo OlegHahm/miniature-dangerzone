@@ -92,6 +92,11 @@ void rpl_ex_init(char command)
     }
 
     puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
+    puts("initializing interface");
     sixlowpan_lowpan_init_interface(IF_ID);
     /* TODO: check if this works as intended */
     ipv6_init_as_router();

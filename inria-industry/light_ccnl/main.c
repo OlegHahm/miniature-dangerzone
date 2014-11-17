@@ -436,7 +436,6 @@ int main(void)
     thread_create(blinker_stack, sizeof(blinker_stack),
             PRIORITY_MAIN - 1, CREATE_STACKTEST,
             blinker_thread, NULL, "blinker");
-
     puts("starting shell...");
     puts("  posix open");
     posix_open(uart0_handler_pid, 0);

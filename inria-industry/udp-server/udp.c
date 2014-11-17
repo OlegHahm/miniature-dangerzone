@@ -46,12 +46,27 @@ static void inet_request(uint8_t src, char *req)
 {
     uint8_t payload;
 
-    payload = 3;
+    payload = 6;
     // fw src id data -> sender event receiver
     // bw 2 4 23' und 'bw 23 4 web' 
-    printf("bw 3 %u %u\n", payload, src);
-    printf("bw %u %u %u\n", src, payload, id);
-    payload = 4;
+    if (src == 3) {
+        puts("bw 3 3 2");
+        puts("bw 2 3 1");
+    }
+    if (src == 2) {
+        puts("bw 4 3 2");
+        vtimer_usleep(200 * 1000);
+        puts("bw 2 3 3");
+        puts("bw 2 3 1");
+        vtimer_usleep(200 * 1000);
+        puts("bw 3 3 2");
+        vtimer_usleep(200 * 1000);
+        puts("bw 2 3 4");
+        payload = 4;
+    }
+
+    vtimer_usleep(200 * 1000);
+
     printf("bw %u %u web\n", id, payload);
 }
 

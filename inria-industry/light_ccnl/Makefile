@@ -39,6 +39,8 @@ USEMODULE += defaulttransceiver
 USEMODULE += vtimer
 USEMODULE += ccn_lite
 USEMODULE += ccn_lite_client
-USEMODULE += isl29020
+ifneq (,$(filter iot-lab_M3,$(BOARD)))
+	USEMODULE += isl29020
+endif
 
 include $(RIOTBASE)/Makefile.include
