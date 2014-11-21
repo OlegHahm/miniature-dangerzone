@@ -18,7 +18,6 @@
 #include "shell.h"
 #include "shell_commands.h"
 
-#define SEC_IN_USEC (1000 * 1000)
 #define PING_COUNT  (1000)
 #define BACKOFF_TIME    (60 * SEC_IN_USEC)
 #define GUARD_TIME      (5 * SEC_IN_USEC)
@@ -38,7 +37,7 @@ void *worker_thread(void *unused)
     puts("Worker thread spawned.");
 
     while (1) {
-        if (transceiver_pid < 0) {
+        if (transceiver_pid == KERNEL_PID_UNDEF) {
             puts("Transceiver not initialized, sleep 1 second");
             vtimer_usleep(SEC_IN_USEC);
             continue;
