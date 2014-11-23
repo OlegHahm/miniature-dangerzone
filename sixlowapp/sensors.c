@@ -55,5 +55,10 @@ int sixlowapp_sensor_init(void)
     }
     return 0;
 }
+#else
+int sixlowapp_sensor_init(void)
+{
+    return 0;
+}
 
 #endif
