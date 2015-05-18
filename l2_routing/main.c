@@ -12,8 +12,8 @@
 
 static char _stack[NG_PKTDUMP_STACKSIZE];
 kernel_pid_t *if_id;
-timex_t interval;
-vtimer_t vt;
+timex_t interval = INTEREST_INTERVAL;
+vtimer_t periodic_vt;
 
 int main(void)
 {
@@ -21,8 +21,8 @@ int main(void)
     ng_netreg_entry_t dump;
     size_t ifnum;
     unsigned res = 8;
+    uint16_t seq_nr = 0;
 
-    interval = timex_set(5, 0);
 
     puts("L2 routing app");
     if_id = ng_netif_get(&ifnum);
@@ -35,11 +35,14 @@ int main(void)
     ng_netreg_register(NG_NETTYPE_UNDEF, &dump);
 
     res = ng_netapi_get(*if_id, NETCONF_OPT_ADDRESS_LONG, 0, myId.uint8, ADDR_LEN_64B);
+
     printf("My ID is %s\n",
             ng_netif_addr_to_str(l2addr_str, sizeof(l2addr_str),
                 myId.uint8, res));
 
-    vtimer_set_msg(&vt, interval, dump.pid, ICN_SEND_INTEREST, NULL);
+    if (WANT_CONTENT) {
+        vtimer_set_msg(&periodic_vt, interval, dump.pid, ICN_SEND_INTEREST, &seq_nr);
+    }
     /* start the shell */
     (void) posix_open(uart0_handler_pid, 0);
     shell_init(&shell, NULL, UART0_BUFSIZE, uart0_readc, uart0_putc);

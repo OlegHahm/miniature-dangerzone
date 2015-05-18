@@ -24,20 +24,22 @@ typedef struct {
 typedef struct {
     icn_packet_type_t type;
     uint16_t seq;
-} icn_hdr_t;
+    char payload[100];
+} icn_pkt_t;
 
 //=========================== prototypes ======================================
 
-void icn_initContent(eui64_t *lastHop);
-void icn_initInterest(void);
+void icn_initContent(eui64_t *lastHop, uint16_t seq);
+void icn_initInterest(uint16_t seq);
 void icn_send(eui64_t *dst, ng_pktsnip_t *pkt);
 unsigned _linkIsScheduled(eui64_t *dst);
 eui64_t* _routeLookup(eui64_t *dst);
 
 //=========================== initialization ==================================
 
-#define TIMED_SENDING       (1)
-#define INTEREST_INTERVAL   (1000)
+#define TIMED_SENDING       (0)
+#define INTEREST_INTERVAL   { .seconds = 0, .microseconds = 200000}
+#define RETRY_INTERVAL      {.seconds = 0, .microseconds = 600000}
 #define FLOW_CONTROL        (1)
 #define FLOW_THR            (5)
 
@@ -74,4 +76,6 @@ eui64_t* _routeLookup(eui64_t *dst);
 #define SSF_INT_SIZE    (17) // NUMBER_OF_NODES + (NUMBER_OF_LINKS * 2)
 
 #define RRT_SIZE        (11)
+
+extern eui64_t node_ids[NUMBER_OF_NODES];
 #endif /* ICN_H */

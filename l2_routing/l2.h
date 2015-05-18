@@ -6,7 +6,7 @@
 
 extern kernel_pid_t *if_id;
 extern timex_t interval;
-extern vtimer_t vt;
+extern vtimer_t periodic_vt, retry_vt;
 extern eui64_t myId;
 extern char l2addr_str[3 * 8];
 
