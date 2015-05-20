@@ -17,7 +17,7 @@
 #include "l2.h"
 #include "od.h"
 
-BITFIELD(128, received_chunks);
+BITFIELD(received_chunks, 128);
 
 eui64_t node_ids[NUMBER_OF_NODES] = {
     NODE_01,
