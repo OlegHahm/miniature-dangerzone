@@ -17,6 +17,7 @@
 #include "l2.h"
 #include "od.h"
 
+BITFIELD(128, received_chunks);
 
 eui64_t node_ids[NUMBER_OF_NODES] = {
     NODE_01,
@@ -76,8 +77,6 @@ icn_routing_entry_t routing_table[RRT_SIZE] = {
     /* route for 01 to 05 over 02 */
     {&(node_ids[0]), &(node_ids[4]), &(node_ids[1])},
 };
-
-static uint8_t received_chunks[16];
 
 eui64_t myId;
 
@@ -319,7 +318,6 @@ void *_eventloop(void *arg)
     /* setup the message queue */
     msg_init_queue(msg_queue, NG_PKTDUMP_MSG_QUEUE_SIZE);
 
-    BITFIELD(128, received_chunks);
     memset(received_chunks, 0, sizeof(received_chunks));
 
     while (1) {
