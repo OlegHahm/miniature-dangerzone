@@ -22,7 +22,8 @@ int main(void)
     size_t ifnum;
     unsigned res = 8;
     uint16_t seq_nr = 0;
-
+    bool rx_irq = true;
+    uint8_t retries = 7;
 
     puts("L2 routing app");
     if_id = ng_netif_get(&ifnum);
@@ -34,6 +35,8 @@ int main(void)
                              CREATE_STACKTEST, _eventloop, NULL, "pktdump");
     ng_netreg_register(NG_NETTYPE_UNDEF, &dump);
 
+    ng_netapi_set(*if_id, NETCONF_OPT_RX_START_IRQ, 0, &rx_irq, sizeof(bool));
+    ng_netapi_set(*if_id, NETCONF_OPT_RETRANS, 0, &retries, sizeof(uint8_t));
     res = ng_netapi_get(*if_id, NETCONF_OPT_ADDRESS_LONG, 0, myId.uint8, ADDR_LEN_64B);
 
     printf("My ID is %s\n",
