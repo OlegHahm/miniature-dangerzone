@@ -43,8 +43,15 @@ int main(void)
             ng_netif_addr_to_str(l2addr_str, sizeof(l2addr_str),
                 myId.uint8, res));
 
+    timex_t start_interval = {.seconds = 5, .microseconds = 0};
     if (WANT_CONTENT) {
-        vtimer_set_msg(&periodic_vt, interval, dump.pid, ICN_SEND_INTEREST, &seq_nr);
+        vtimer_set_msg(&periodic_vt, start_interval, dump.pid, ICN_SEND_INTEREST, &seq_nr);
+    }
+    else if (BACKGROUND_NODE) {
+    puts("start some noise\n");
+        msg_t m;
+        m.type = ICN_SEND_BACKGROUND;
+        msg_send(&m, dump.pid);
     }
     else if (BACKGROUND_NODE) {
         msg_t m;

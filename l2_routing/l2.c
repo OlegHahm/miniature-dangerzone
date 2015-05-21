@@ -88,7 +88,7 @@ uint16_t receive_counter = 0;
 
 char l2addr_str[3 * 8];
 
-vtimer_t retry_vt;;
+vtimer_t retry_vt, bg_vt;
 timex_t retry_interval = RETRY_INTERVAL;
 timex_t background_interval = BACKGROUND_INTERVAL;
 
@@ -204,8 +204,12 @@ void icn_initBackground(void)
     memcpy(icn_pkt.payload, content, strlen(content) + 1);
     pkt = ng_pktbuf_add(NULL, &icn_pkt, sizeof(icn_pkt_t), NG_NETTYPE_UNDEF);
 
+    LOG_DEBUG("make some noise\n");
     // send interest packet
     icn_send(CONTENT_STORE, pkt);
+
+    vtimer_remove(&bg_vt);
+    vtimer_set_msg(&bg_vt, background_interval, thread_getpid(), ICN_SEND_BACKGROUND, NULL);
 }
 
 void icn_send(eui64_t *dst, ng_pktsnip_t *pkt)
@@ -252,7 +256,7 @@ static void rcv(ng_pktsnip_t *pkt)
 {
     ng_pktsnip_t *netif_pkt = pkt;
     ng_netif_hdr_t *netif_hdr;
-    
+
     netif_pkt = pkt->next;
     if (netif_pkt->type == NG_NETTYPE_NETIF) {
         netif_hdr = netif_pkt->data;
@@ -306,15 +310,14 @@ static void rcv(ng_pktsnip_t *pkt)
                     }
                     receive_counter = (receive_counter < tmp) ? tmp : receive_counter;
                     ng_pktbuf_release(pkt);
-#if (TIMED_SENDING == 0)
-                        tmp++;
-                    icn_initInterest(tmp);
-#endif
                 }
                 else {
                     LOG_ERROR("Received content, but no PIT entry is available\n");
                     ng_pktbuf_release(pkt);
                 }
+                break;
+            case ICN_BACKGROUND:
+                ng_pktbuf_release(pkt);
                 break;
             default:
                 LOG_ERROR("unexpected packet received\n");
@@ -351,7 +354,7 @@ void *_eventloop(void *arg)
                 break;
             case ICN_SEND_BACKGROUND:
                 LOG_DEBUG("ICN_SEND_BACKGROUND: trigger background traffic:\n");
-                icn_initBackground((uint16_t) *msg.content.ptr);
+                icn_initBackground();
                 break;
             default:
                 LOG_ERROR("PKTDUMP: received something unexpected\n");
