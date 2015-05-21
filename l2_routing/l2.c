@@ -142,17 +142,39 @@ void icn_initContent(eui64_t *lastHop, uint16_t seq) {
     icn_send(lastHop, pkt);
 }
 
+static inline int32_t _getSmallestMissing(void)
+{
+    for (unsigned i = 0; i < NUMBER_OF_CHUNKS; i++) {
+        if(!bf_isset(received_chunks, i)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void icn_initInterest(uint16_t seq) {
     if (WANT_CONTENT) {
-        uint16_t tmp = seq;
+        uint32_t tmp1;
+        uint16_t tmp2;
+        tmp1 = _getSmallestMissing();
+        LOG_DEBUG("Smallest missing is %lu\n", tmp1);
+        tmp2 = seq;
+
+        if ((tmp1 < NUMBER_OF_CHUNKS) && (tmp1 >= 0)) {
+            LOG_INFO("Scheduling retransmission for %lu\n", tmp1);
+            vtimer_remove(&retry_vt);
+            vtimer_set_msg(&retry_vt, retry_interval, thread_getpid(), ICN_RESEND_INTEREST, &tmp1);
+        }
         if (bf_isset(received_chunks, seq)) {
             LOG_INFO("Already received a chunk for %u, not sending again\n", seq);
             return;
         }
 #if FLOW_CONTROL
         if (seq > (receive_counter + FLOW_THR)) {
-            LOG_INFO("Flow control, send counter is %u, receive counter is %u\n",
+            LOG_INFO("Flow control, seq is %u, receive counter is %u\n",
                     seq, receive_counter);
+
+
             return;
         }
 #endif
@@ -162,31 +184,26 @@ void icn_initInterest(uint16_t seq) {
         icn_pkt.type = ICN_INTEREST;
         icn_pkt.seq = seq;
         memcpy(icn_pkt.payload, interest, strlen(interest) + 1);
-        
+
         pkt = ng_pktbuf_add(NULL, &icn_pkt, sizeof(icn_pkt_t), NG_NETTYPE_UNDEF);
 
         // send interest packet
-        if (tmp < NUMBER_OF_CHUNKS) {
+        if (tmp2 < NUMBER_OF_CHUNKS) {
                     LOG_INFO("Sending Interest for %u to %s\n", seq,
                     ng_netif_addr_to_str(l2addr_str, sizeof(l2addr_str),
                         CONTENT_STORE->uint8, ADDR_LEN_64B));
 
             icn_send(CONTENT_STORE, pkt);
         }
-        if (tmp < NUMBER_OF_CHUNKS) {
-            LOG_INFO("Scheduling retransmission for %u\n", tmp);
-            vtimer_remove(&retry_vt);
-            vtimer_set_msg(&retry_vt, retry_interval, thread_getpid(), ICN_SEND_INTEREST, &tmp);
-        }
+        if (tmp2 < NUMBER_OF_CHUNKS) {
+            tmp2++;
 #if TIMED_SENDING
-        if (tmp < NUMBER_OF_CHUNKS) {
-            tmp++;
             vtimer_remove(&periodic_vt);
-            vtimer_set_msg(&periodic_vt, interval, thread_getpid(), ICN_SEND_INTEREST, &tmp);
-        }
+            vtimer_set_msg(&periodic_vt, interval, thread_getpid(), ICN_SEND_INTEREST, &tmp2);
 #else
-        icn_initInterest(tmp);
+            icn_initInterest(tmp2);
 #endif
+        }
     }
     else {
         LOG_DEBUG("nothing to do\n");
@@ -348,6 +365,8 @@ void *_eventloop(void *arg)
                 LOG_DEBUG("PKTDUMP: data received:\n");
                 rcv((ng_pktsnip_t *)msg.content.ptr);
                 break;
+            case ICN_RESEND_INTEREST:
+                LOG_DEBUG("ICN_RESEND_INTEREST: trigger retransmission for %u:\n", (uint16_t) *msg.content.ptr);
             case ICN_SEND_INTEREST:
                 LOG_DEBUG("ICN_SEND_INTEREST: trigger an interest:\n");
                 icn_initInterest((uint16_t) *msg.content.ptr);

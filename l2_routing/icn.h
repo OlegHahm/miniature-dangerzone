@@ -5,6 +5,7 @@
 
 #define ICN_SEND_INTEREST   (4711)
 #define ICN_SEND_BACKGROUND (4712)
+#define ICN_RESEND_INTEREST (4713)
 
 typedef enum {
     ICN_INTEREST    = 1,
