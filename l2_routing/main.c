@@ -46,6 +46,11 @@ int main(void)
     if (WANT_CONTENT) {
         vtimer_set_msg(&periodic_vt, interval, dump.pid, ICN_SEND_INTEREST, &seq_nr);
     }
+    else if (BACKGROUND_NODE) {
+        msg_t m;
+        m.type = ICN_SEND_BACKGROUND;
+        msg_send(&m, dump.pid);
+    }
     /* start the shell */
     (void) posix_open(uart0_handler_pid, 0);
     shell_init(&shell, NULL, UART0_BUFSIZE, uart0_readc, uart0_putc);

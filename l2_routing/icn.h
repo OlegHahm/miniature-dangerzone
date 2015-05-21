@@ -3,11 +3,13 @@
 
 #include "net/ng_ieee802154.h"
 
-#define ICN_SEND_INTEREST (4711)
+#define ICN_SEND_INTEREST   (4711)
+#define ICN_SEND_BACKGROUND (4712)
 
 typedef enum {
     ICN_INTEREST    = 1,
     ICN_CONTENT     = 2,
+    ICN_BACKGROUND  = 3
 } icn_packet_type_t;
 
 typedef struct {
@@ -31,6 +33,7 @@ typedef struct {
 
 void icn_initContent(eui64_t *lastHop, uint16_t seq);
 void icn_initInterest(uint16_t seq);
+void icn_initBackground(void);
 void icn_send(eui64_t *dst, ng_pktsnip_t *pkt);
 unsigned _linkIsScheduled(eui64_t *dst);
 eui64_t* _routeLookup(eui64_t *dst);
@@ -39,9 +42,11 @@ eui64_t* _routeLookup(eui64_t *dst);
 
 #define TIMED_SENDING       (0)
 #define INTEREST_INTERVAL   { .seconds = 0, .microseconds = 200000}
-#define RETRY_INTERVAL      {.seconds = 0, .microseconds = 600000}
+#define RETRY_INTERVAL      { .seconds = 0, .microseconds = 600000}
+#define BACKGROUND_INTERVAL { .seconds = 0, .microseconds = 100000}
 #define FLOW_CONTROL        (1)
 #define FLOW_THR            (5)
+#define BACKGROUND          (1)
 
 #define NUMBER_OF_CHUNKS    (100)
 #define ADDR_LEN_64B    (8U)
@@ -49,6 +54,9 @@ eui64_t* _routeLookup(eui64_t *dst);
 #define CONTENT_STORE   (&node_ids[0])
 #define HAS_CONTENT     (memcmp(&myId, CONTENT_STORE, ADDR_LEN_64B) == 0)
 #define WANT_CONTENT    (memcmp(&myId, &(node_ids[7]), ADDR_LEN_64B) == 0)
+#define BACKGROUND_NODE ((memcmp(myId, &(node_ids[3]), ADDR_LEN_64B) == 0) || \
+        (memcmp(myId, &(node_ids[3]), ADDR_LEN_64B) == 0) || (memcmp(myId, \
+                &(node_ids[3]), ADDR_LEN_64B) == 0))
 
 #define NUMBER_OF_NODES     (10)
 

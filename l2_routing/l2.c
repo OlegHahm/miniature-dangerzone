@@ -90,6 +90,7 @@ char l2addr_str[3 * 8];
 
 vtimer_t retry_vt;;
 timex_t retry_interval = RETRY_INTERVAL;
+timex_t background_interval = BACKGROUND_INTERVAL;
 
 char *interest = "/ndn/RIOT/sensor";
 
@@ -144,7 +145,6 @@ void icn_initContent(eui64_t *lastHop, uint16_t seq) {
 void icn_initInterest(uint16_t seq) {
     if (WANT_CONTENT) {
         uint16_t tmp = seq;
-            ;
         if (bf_isset(received_chunks, seq)) {
             LOG_INFO("Already received a chunk for %u, not sending again\n", seq);
             return;
@@ -184,11 +184,28 @@ void icn_initInterest(uint16_t seq) {
             vtimer_remove(&periodic_vt);
             vtimer_set_msg(&periodic_vt, interval, thread_getpid(), ICN_SEND_INTEREST, &tmp);
         }
+#else
+        icn_initInterest(tmp);
 #endif
     }
     else {
         LOG_DEBUG("nothing to do\n");
     }
+}
+
+void icn_initBackground(void)
+{
+    /* create packet */
+    ng_pktsnip_t *pkt;
+    icn_pkt_t icn_pkt;
+    icn_pkt.type = ICN_BACKGROUND;
+    icn_pkt.seq = 0;
+
+    memcpy(icn_pkt.payload, content, strlen(content) + 1);
+    pkt = ng_pktbuf_add(NULL, &icn_pkt, sizeof(icn_pkt_t), NG_NETTYPE_UNDEF);
+
+    // send interest packet
+    icn_send(CONTENT_STORE, pkt);
 }
 
 void icn_send(eui64_t *dst, ng_pktsnip_t *pkt)
@@ -331,6 +348,10 @@ void *_eventloop(void *arg)
             case ICN_SEND_INTEREST:
                 LOG_DEBUG("ICN_SEND_INTEREST: trigger an interest:\n");
                 icn_initInterest((uint16_t) *msg.content.ptr);
+                break;
+            case ICN_SEND_BACKGROUND:
+                LOG_DEBUG("ICN_SEND_BACKGROUND: trigger background traffic:\n");
+                icn_initBackground((uint16_t) *msg.content.ptr);
                 break;
             default:
                 LOG_ERROR("PKTDUMP: received something unexpected\n");
