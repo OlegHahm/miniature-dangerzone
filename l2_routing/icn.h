@@ -41,13 +41,13 @@ eui64_t* _routeLookup(eui64_t *dst);
 
 //=========================== initialization ==================================
 
-#define TIMED_SENDING       (0)
-#define INTEREST_INTERVAL   { .seconds = 0, .microseconds = 200000}
-#define RETRY_INTERVAL      { .seconds = 0, .microseconds = 600000}
+#define TIMED_SENDING       (1)
+#define INTEREST_INTERVAL   { .seconds = 0, .microseconds = 100000}
+#define RETRY_INTERVAL      { .seconds = 1, .microseconds = 000000}
 #define BACKGROUND_INTERVAL { .seconds = 0, .microseconds = 100000}
 #define L2_RETRIES          (3)
 #define FLOW_CONTROL        (1)
-#define FLOW_THR            (5)
+#define FLOW_THR            (4)
 #define BACKGROUND          (1)
 
 #define NUMBER_OF_CHUNKS    (100)
