@@ -23,7 +23,7 @@ int main(void)
     unsigned res = 8;
     uint16_t seq_nr = 0;
     bool rx_irq = true;
-    uint8_t retries = 7;
+    uint8_t retries = L2_RETRIES;
 
     puts("L2 routing app");
     if_id = ng_netif_get(&ifnum);
