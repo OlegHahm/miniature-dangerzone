@@ -30,11 +30,13 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 extern int udp_cmd(int argc, char **argv);
 extern int coap_cmd(int argc, char **argv);
 extern int coap_server_cmd(int argc, char **argv);
+extern int coap_server_stop_cmd(int argc, char **argv);
 
 static const shell_command_t shell_commands[] = {
     { "udp", "send data over UDP and listen on UDP ports", udp_cmd },
     { "coapping", "sends a CoAP ping", coap_cmd},
     { "coapserver", "starts a CoAP ping server", coap_server_cmd},
+    { "coapstop", "stops CoAP ping server", coap_server_stop_cmd},
     { NULL, NULL, NULL }
 };
 

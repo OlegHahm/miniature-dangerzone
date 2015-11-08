@@ -20,6 +20,9 @@ static char _server_stack[THREAD_STACKSIZE_MAIN];
 
 uint16_t msg_seq_cnt = 0;
 uint8_t cbuf[COAPPING_SIZE];
+uint8_t server_running = false;
+kernel_pid_t coap_server_pid;
+uint16_t srcport;
 
 void *_coap_server(void *src_port)
 {
@@ -28,15 +31,15 @@ void *_coap_server(void *src_port)
     uint8_t buf[COAPPING_SIZE];
 
     ipv6_addr_t srcaddr = IPV6_ADDR_UNSPECIFIED;
-    uint16_t srcport = *((uint16_t*) src_port);
+    srcport = *((uint16_t*) src_port);
     ipv6_addr_t raddr;
     uint16_t rport;
 
     printf("Starting a CoAP ping server at port %" PRIu16 "\n", srcport);
 
-    conn_udp_create(&conn, &srcaddr, sizeof(ipv6_addr_t), AF_INET6, srcport);
+    coap_server_pid = conn_udp_create(&conn, &srcaddr, sizeof(ipv6_addr_t), AF_INET6, srcport);
 
-    while (1) {
+    while (server_running) {
         size_t addr_len = sizeof(ipv6_addr_t);
         int n = conn_udp_recvfrom(&conn, buf, sizeof(buf), &raddr, &addr_len, &rport);
         int rc;
@@ -74,7 +77,7 @@ void *_coap_server(void *src_port)
                     coap_dumpPacket(&rsppkt);
                     conn_udp_sendto(buf, COAPPING_SIZE, NULL, 0, &raddr,
                                     sizeof(ipv6_addr_t), AF_INET6,
-                                    DEFAULT_SOURCE_PORT, byteorder_htons(rport).u16);
+                                    srcport, byteorder_htons(rport).u16);
                 }
             }
             else {
@@ -82,6 +85,7 @@ void *_coap_server(void *src_port)
             }
         }
     }
+    puts("stopping server");
 
     return NULL;
 }
@@ -92,8 +96,21 @@ int coap_server_cmd(int argc, char **argv)
     if (argc > 1) {
         port = atoi(argv[1]);
     }
+    server_running = true;
     thread_create(_server_stack, sizeof(_server_stack), THREAD_PRIORITY_MAIN -
                   1, CREATE_STACKTEST, _coap_server, (void*) &port, "CoAP");
+    return 0;
+}
+
+int coap_server_stop_cmd(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    server_running = false;
+    ipv6_addr_t addr = IPV6_ADDR_LOOPBACK;
+    conn_udp_sendto(cbuf, COAPPING_SIZE, NULL, 0, &addr, sizeof(ipv6_addr_t), AF_INET6,
+            srcport, srcport);
+    puts("Stop CoAP server");
     return 0;
 }
 
