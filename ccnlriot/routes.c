@@ -40,21 +40,29 @@ void ccnlriot_routes_setup(void)
     }
     int my_pos = _get_pos(hwaddr, CCNLRIOT_ADDRLEN);
     if (my_pos < 0) {
-        puts("ccnlriot_routes_setup: critical error, aborting");
+        puts("ccnlriot_routes_setup: critical error, couldn't find my address in list, aborting");
         return;
     }
 
     printf("I am %s, number %i in the list, adding ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), hwaddr, CCNLRIOT_ADDRLEN), my_pos);
-    printf("%s and ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN));
-    printf("%s\n", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN));
-
-    if (ccnlriot_routes_add(CCNLRIOT_PREFIX, ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
-        puts("ccnlriot_routes_setup: critical error setting up the first FIB entry, aborting");
-        return;
+    if (my_pos > 0) {
+        printf("%s and ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN));
     }
-    if (ccnlriot_routes_add(CCNLRIOT_PREFIX, ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
-        puts("ccnlriot_routes_setup: critical error setting up the second FIB entry, aborting");
-        return;
+    if (my_pos < CCNLRIOT_NUMBER_OF_NODES - 1) {
+        printf("%s\n", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN));
+    }
+
+    if (my_pos > 0) {
+        if (ccnlriot_routes_add(ccnlriot_prefix, ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
+            puts("ccnlriot_routes_setup: critical error setting up the first FIB entry, aborting");
+            return;
+        }
+    }
+    if (my_pos < CCNLRIOT_NUMBER_OF_NODES - 1) {
+        if (ccnlriot_routes_add(ccnlriot_prefix, ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
+            puts("ccnlriot_routes_setup: critical error setting up the second FIB entry, aborting");
+            return;
+        }
     }
 }
 
