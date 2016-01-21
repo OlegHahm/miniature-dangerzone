@@ -1,7 +1,7 @@
 #ifndef ROUTES_H
 #define ROUTES_H
 
-#define NUMBER_OF_NODES     (25)
+#define CCNLRIOT_NUMBER_OF_NODES     (25)
 
 #define NODE_SHORT_1 {0x2a, 0x02}  
 #define NODE_SHORT_2 {0x2e, 0x02}  
@@ -55,7 +55,7 @@
 #define NODE_LONG_25 {0x36, 0x32, 0x48, 0x33, 0x46, 0xd6, 0xa9, 0x26} 
 #define NODE_LONG_26 {0x36, 0x32, 0x48, 0x33, 0x46, 0xd9, 0x8f, 0x22} 
 
-uint8_t short_id[NUMBER_OF_NODES] = {
+uint8_t ccnlriot_short_id[CCNLRIOT_NUMBER_OF_NODES][2] = {
     NODE_SHORT_1,
     NODE_SHORT_2,
     NODE_SHORT_3,

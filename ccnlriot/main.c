@@ -24,6 +24,7 @@
 #include "msg.h"
 #include "shell.h"
 #include "ccn-lite-riot.h"
+#include "ccnlriot.h"
 
 /* main thread's message queue */
 #define MAIN_QUEUE_SIZE     (8)
@@ -41,7 +42,12 @@ int main(void)
     puts("Basic CCN-Lite example");
 
     ccnl_core_init();
-
+    ccnl_start();
+    if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
+        puts("main: critical error, aborting");
+        return -1;
+    }
+    ccnlriot_routes_setup();
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
     return 0;
