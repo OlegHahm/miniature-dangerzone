@@ -9,7 +9,8 @@
 #   define CCNLRIOT_ADDRLEN     (2)
 #endif
 
-extern char ccnlriot_prefix[];
+extern char ccnlriot_prefix1[];
+extern char ccnlriot_prefix2[];
 
 void ccnlriot_routes_setup(void);
 int ccnlriot_routes_add(char *pfx, uint8_t *relay_addr, size_t addr_len);

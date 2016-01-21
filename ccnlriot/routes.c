@@ -12,7 +12,7 @@ static char addr_str[CCNLRIOT_ADDRLEN * 3];
 
 static inline int _addr_cmp(uint8_t *a, uint8_t *b, size_t addr_len)
 {
-    for (int i = 0; i < addr_len; i++) {
+    for (unsigned int i = 0; i < addr_len; i++) {
         if (a[i] != b[i]) {
             return 1;
         }
@@ -53,13 +53,13 @@ void ccnlriot_routes_setup(void)
     }
 
     if (my_pos > 0) {
-        if (ccnlriot_routes_add(ccnlriot_prefix, ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
+        if (ccnlriot_routes_add(ccnlriot_prefix1, ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
             puts("ccnlriot_routes_setup: critical error setting up the first FIB entry, aborting");
             return;
         }
     }
     if (my_pos < CCNLRIOT_NUMBER_OF_NODES - 1) {
-        if (ccnlriot_routes_add(ccnlriot_prefix, ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
+        if (ccnlriot_routes_add(ccnlriot_prefix2, ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
             puts("ccnlriot_routes_setup: critical error setting up the second FIB entry, aborting");
             return;
         }

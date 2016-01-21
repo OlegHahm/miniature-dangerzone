@@ -34,7 +34,8 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
-char ccnlriot_prefix[] = "/riot/peter/schmerzl";
+char ccnlriot_prefix1[] = "/riot/peter/schmerzl";
+char ccnlriot_prefix2[] = "/start/the/riot";
 
 int main(void)
 {
@@ -44,6 +45,9 @@ int main(void)
     puts("Basic CCN-Lite example");
 
     ccnl_core_init();
+    extern int debug_level;
+    debug_level = DEBUG;
+    ccnl_relay.max_cache_entries = 20;
     ccnl_start();
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
         puts("main: critical error, aborting");
