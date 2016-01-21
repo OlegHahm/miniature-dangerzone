@@ -1,7 +1,9 @@
 #ifndef ROUTES_H
 #define ROUTES_H
 
-#define CCNLRIOT_NUMBER_OF_NODES     (25)
+#define CCNLRIOT_NUMBER_OF_NODES     (19)
+
+/* XXX: REMOVE
 
 #define NODE_SHORT_1 {0x2a, 0x02}  
 #define NODE_SHORT_2 {0x2e, 0x02}  
@@ -10,6 +12,7 @@
 #define NODE_SHORT_5 {0x2c, 0x26}  
 #define NODE_SHORT_6 {0x2a, 0x22}  
 #define NODE_SHORT_7 {0x6f, 0x16}  
+#define NODE_LOCAL   {0x4d, 0x0a}
 #define NODE_SHORT_9 {0x2a, 0x22}  
 #define NODE_SHORT_10 {0x29, 0x12}  
 #define NODE_SHORT_11 {0x28, 0x26}  
@@ -28,6 +31,29 @@
 #define NODE_SHORT_24 {0x27, 0x22}  
 #define NODE_SHORT_25 {0x29, 0x26}  
 #define NODE_SHORT_26 {0x0f, 0x22}  
+*/
+
+#define NODE_SHORT_1 {0xaa, 0x02}
+#define NODE_SHORT_2 {0xae, 0x02}
+#define NODE_SHORT_9 {0xaa, 0x22}
+//#define NODE_LOCAL   {0x4d, 0x0a}
+#define NODE_SHORT_10 {0xa9, 0x12}
+#define NODE_SHORT_12 {0xa7, 0x22}
+#define NODE_SHORT_13 {0xaa, 0x06}
+#define NODE_SHORT_14 {0x77, 0x06}
+#define NODE_SHORT_15 {0xaf, 0x12}
+#define NODE_SHORT_16 {0xaa, 0x16}
+#define NODE_SHORT_17 {0xaa, 0x12}
+#define NODE_SHORT_18 {0xab, 0x2a}
+#define NODE_SHORT_19 {0xaa, 0x16}
+#define NODE_SHORT_20 {0xac, 0x02}
+#define NODE_SHORT_21 {0xad, 0x16}
+#define NODE_SHORT_22 {0xa7, 0x16}
+#define NODE_SHORT_23 {0xab, 0x06}
+#define NODE_SHORT_24 {0xa7, 0x22}
+#define NODE_SHORT_25 {0xa9, 0x26}
+#define NODE_SHORT_26 {0x8f, 0x22}  
+
 
 #define NODE_LONG_1 {0x36, 0x32, 0x48, 0x33, 0x46, 0xdf, 0xaa, 0x02} 
 #define NODE_LONG_2 {0x36, 0x32, 0x48, 0x33, 0x46, 0xdb, 0xae, 0x02} 
@@ -58,14 +84,9 @@
 uint8_t ccnlriot_short_id[CCNLRIOT_NUMBER_OF_NODES][2] = {
     NODE_SHORT_1,
     NODE_SHORT_2,
-    NODE_SHORT_3,
-    NODE_SHORT_4,
-    NODE_SHORT_5,
-    NODE_SHORT_6,
-    NODE_SHORT_7,
+//    NODE_LOCAL,
     NODE_SHORT_9,
     NODE_SHORT_10,
-    NODE_SHORT_11,
     NODE_SHORT_12,
     NODE_SHORT_13,
     NODE_SHORT_14,
