@@ -34,6 +34,8 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
+char ccnlriot_prefix[] = "/riot/peter/schmerzl";
+
 int main(void)
 {
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
