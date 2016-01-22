@@ -23,6 +23,7 @@
 #include "tlsf-malloc.h"
 #include "msg.h"
 #include "shell.h"
+#include "net/gnrc/netapi.h"
 #include "ccn-lite-riot.h"
 #include "ccnlriot.h"
 
@@ -47,6 +48,11 @@ int main(void)
     ccnl_core_init();
     extern int debug_level;
     debug_level = DEBUG;
+
+    unsigned int res = CCNLRIOT_ADDRLEN;
+    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_SRC_LEN, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
+        puts("main: error setting addressing mode");
+    }
     ccnl_relay.max_cache_entries = 20;
     ccnl_start();
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {

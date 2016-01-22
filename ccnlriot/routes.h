@@ -1,42 +1,17 @@
 #ifndef ROUTES_H
 #define ROUTES_H
 
+#include "ccnlriot.h"
+
 #define CCNLRIOT_NUMBER_OF_NODES     (19)
 
-/* XXX: REMOVE
+#define NODE_SHORT_LOCAL   {0x4d, 0x0a}
 
-#define NODE_SHORT_1 {0x2a, 0x02}  
-#define NODE_SHORT_2 {0x2e, 0x02}  
-#define NODE_SHORT_3 {0x2f, 0x12}  
-#define NODE_SHORT_4 {0x26, 0x02}  
-#define NODE_SHORT_5 {0x2c, 0x26}  
-#define NODE_SHORT_6 {0x2a, 0x22}  
-#define NODE_SHORT_7 {0x6f, 0x16}  
-#define NODE_LOCAL   {0x4d, 0x0a}
-#define NODE_SHORT_9 {0x2a, 0x22}  
-#define NODE_SHORT_10 {0x29, 0x12}  
-#define NODE_SHORT_11 {0x28, 0x26}  
-#define NODE_SHORT_12 {0x27, 0x22}  
-#define NODE_SHORT_13 {0x2a, 0x06}  
-#define NODE_SHORT_14 {0x77, 0x06}  
-#define NODE_SHORT_15 {0x2f, 0x12}  
-#define NODE_SHORT_16 {0x2a, 0x16}  
-#define NODE_SHORT_17 {0x2a, 0x12}  
-#define NODE_SHORT_18 {0x2b, 0x2a}  
-#define NODE_SHORT_19 {0x2a, 0x16}  
-#define NODE_SHORT_20 {0x2c, 0x02}  
-#define NODE_SHORT_21 {0x2d, 0x16}  
-#define NODE_SHORT_22 {0x27, 0x16}  
-#define NODE_SHORT_23 {0x2b, 0x06}  
-#define NODE_SHORT_24 {0x27, 0x22}  
-#define NODE_SHORT_25 {0x29, 0x26}  
-#define NODE_SHORT_26 {0x0f, 0x22}  
-*/
+#if (CCNLRIOT_SITE == LILLE)
 
 #define NODE_SHORT_1 {0xaa, 0x02}
 #define NODE_SHORT_2 {0xae, 0x02}
 #define NODE_SHORT_9 {0xaa, 0x22}
-//#define NODE_LOCAL   {0x4d, 0x0a}
 #define NODE_SHORT_10 {0xa9, 0x12}
 #define NODE_SHORT_12 {0xa7, 0x22}
 #define NODE_SHORT_13 {0xaa, 0x06}
@@ -53,7 +28,6 @@
 #define NODE_SHORT_24 {0xa7, 0x22}
 #define NODE_SHORT_25 {0xa9, 0x26}
 #define NODE_SHORT_26 {0x8f, 0x22}  
-
 
 #define NODE_LONG_1 {0x36, 0x32, 0x48, 0x33, 0x46, 0xdf, 0xaa, 0x02} 
 #define NODE_LONG_2 {0x36, 0x32, 0x48, 0x33, 0x46, 0xdb, 0xae, 0x02} 
@@ -81,10 +55,41 @@
 #define NODE_LONG_25 {0x36, 0x32, 0x48, 0x33, 0x46, 0xd6, 0xa9, 0x26} 
 #define NODE_LONG_26 {0x36, 0x32, 0x48, 0x33, 0x46, 0xd9, 0x8f, 0x22} 
 
-uint8_t ccnlriot_short_id[CCNLRIOT_NUMBER_OF_NODES][2] = {
+#elif (CCNLRIOT_SITE == PARIS)
+
+
+#endif
+
+#if USE_LONG
+uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN] = {
+    NODE_LONG_1,
+    NODE_LONG_2,
+//    NODE_LOCAL,
+    NODE_LONG_9,
+    NODE_LONG_10,
+    NODE_LONG_12,
+    NODE_LONG_13,
+    NODE_LONG_14,
+    NODE_LONG_15,
+    NODE_LONG_16,
+    NODE_LONG_17,
+    NODE_LONG_18,
+    NODE_LONG_19,
+    NODE_LONG_20,
+    NODE_LONG_21,
+    NODE_LONG_22,
+    NODE_LONG_23,
+    NODE_LONG_24,
+    NODE_LONG_25,
+    NODE_LONG_26
+};
+
+#else
+
+uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN] = {
     NODE_SHORT_1,
     NODE_SHORT_2,
-//    NODE_LOCAL,
+//    NODE_SHORT_LOCAL,
     NODE_SHORT_9,
     NODE_SHORT_10,
     NODE_SHORT_12,
@@ -103,5 +108,7 @@ uint8_t ccnlriot_short_id[CCNLRIOT_NUMBER_OF_NODES][2] = {
     NODE_SHORT_25,
     NODE_SHORT_26
 };
+
+#endif
 
 #endif /* ROUTES_H */

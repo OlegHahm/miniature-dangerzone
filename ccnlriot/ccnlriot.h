@@ -3,10 +3,24 @@
 
 #define CCNLRIOT_NETIF      (3)
 
+#define USE_LONG    (1)
+
+enum {
+    SITE_LILLE,
+    SITE_GRENOBLE,
+    SITE_PARIS
+};
+
+#define CCNLRIOT_SITE  (SITE_PARIS)
+
 #ifdef BOARD_NATIVE
 #   define CCNLRIOT_ADDRLEN     (6)
 #else
-#   define CCNLRIOT_ADDRLEN     (2)
+#  if USE_LONG
+#    define CCNLRIOT_ADDRLEN     (8)
+#  else
+#    define CCNLRIOT_ADDRLEN     (2)
+#  endif
 #endif
 
 extern char ccnlriot_prefix1[];

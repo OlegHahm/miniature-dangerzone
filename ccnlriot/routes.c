@@ -23,7 +23,7 @@ static inline int _addr_cmp(uint8_t *a, uint8_t *b, size_t addr_len)
 static inline int _get_pos(uint8_t *addr, size_t addr_len)
 {
     for (int i = 0; i < CCNLRIOT_NUMBER_OF_NODES; i++) {
-        if (_addr_cmp(addr, ccnlriot_short_id[i], addr_len) == 0) {
+        if (_addr_cmp(addr, ccnlriot_id[i], addr_len) == 0) {
             return i;
         }
     }
@@ -33,7 +33,11 @@ static inline int _get_pos(uint8_t *addr, size_t addr_len)
 void ccnlriot_routes_setup(void)
 {
     uint8_t hwaddr[CCNLRIOT_ADDRLEN];
+#if USE_LONG
+    int res = gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS_LONG, 0, hwaddr, sizeof(hwaddr));
+#else
     int res = gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));
+#endif
     if (res < 0) {
         puts("ccnlriot_routes_setup: critical error, aborting");
         return;
@@ -46,20 +50,20 @@ void ccnlriot_routes_setup(void)
 
     printf("I am %s, number %i in the list, adding ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), hwaddr, CCNLRIOT_ADDRLEN), my_pos);
     if (my_pos > 0) {
-        printf("%s and ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN));
+        printf("%s and ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_id[my_pos - 1], CCNLRIOT_ADDRLEN));
     }
     if (my_pos < CCNLRIOT_NUMBER_OF_NODES - 1) {
-        printf("%s\n", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN));
+        printf("%s\n", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_id[my_pos + 1], CCNLRIOT_ADDRLEN));
     }
 
     if (my_pos > 0) {
-        if (ccnlriot_routes_add(ccnlriot_prefix1, ccnlriot_short_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
+        if (ccnlriot_routes_add(ccnlriot_prefix1, ccnlriot_id[my_pos - 1], CCNLRIOT_ADDRLEN) < 0) {
             puts("ccnlriot_routes_setup: critical error setting up the first FIB entry, aborting");
             return;
         }
     }
     if (my_pos < CCNLRIOT_NUMBER_OF_NODES - 1) {
-        if (ccnlriot_routes_add(ccnlriot_prefix2, ccnlriot_short_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
+        if (ccnlriot_routes_add(ccnlriot_prefix2, ccnlriot_id[my_pos + 1], CCNLRIOT_ADDRLEN) < 0) {
             puts("ccnlriot_routes_setup: critical error setting up the second FIB entry, aborting");
             return;
         }
