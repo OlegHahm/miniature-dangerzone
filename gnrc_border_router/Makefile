@@ -27,6 +27,7 @@ USEMODULE += gnrc_slip
 USEMODULE += gnrc_pktdump
 # Additional networking modules that can be dropped if not needed
 USEMODULE += gnrc_icmpv6_echo
+USEMODULE += fib
 # Add also the shell, some shell commands
 USEMODULE += shell
 USEMODULE += shell_commands
