@@ -17,6 +17,7 @@ CFLAGS += -DUSE_SUITE_NDNTLV
 CFLAGS += -DNEEDS_PREFIX_MATCHING
 CFLAGS += -DNEEDS_PACKET_CRAFTING
 CFLAGS += -DUSE_HMAC256
+CFLAGS += -DUSE_DUP_CHECK
 
 # Change this to 0 show compiler invocation lines by default:
 QUIET ?= 1
