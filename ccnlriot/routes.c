@@ -30,7 +30,7 @@ static inline int _get_pos(uint8_t *addr, size_t addr_len)
     return -1;
 }
 
-void ccnlriot_routes_setup(void)
+int ccnlriot_get_mypos(void)
 {
     uint8_t hwaddr[CCNLRIOT_ADDRLEN];
 #if USE_LONG
@@ -40,15 +40,20 @@ void ccnlriot_routes_setup(void)
 #endif
     if (res < 0) {
         puts("ccnlriot_routes_setup: critical error, aborting");
-        return;
+        return -1;
     }
-    int my_pos = _get_pos(hwaddr, CCNLRIOT_ADDRLEN);
+    return _get_pos(hwaddr, CCNLRIOT_ADDRLEN);
+}
+
+void ccnlriot_routes_setup(void)
+{
+    int my_pos = ccnlriot_get_mypos();
     if (my_pos < 0) {
         puts("ccnlriot_routes_setup: critical error, couldn't find my address in list, aborting");
         return;
     }
 
-    printf("I am %s, number %i in the list, adding ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), hwaddr, CCNLRIOT_ADDRLEN), my_pos);
+    printf("I am number %i in the list, adding ", my_pos);
     if (my_pos > 0) {
         printf("%s and ", gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), ccnlriot_id[my_pos - 1], CCNLRIOT_ADDRLEN));
     }
