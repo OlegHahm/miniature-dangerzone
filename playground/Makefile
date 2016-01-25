@@ -35,7 +35,7 @@ QUIET ?= 1
 #USEMODULE += shell
 #USEMODULE += uart0
 #USEMODULE += posix
-#USEMODULE += vtimer
+USEMODULE += xtimer
 #USEMODULE += defaulttransceiver
 #USEMODULE += sixlowpan
 
