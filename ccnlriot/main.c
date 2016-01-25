@@ -29,7 +29,7 @@
 #include "ccnlriot.h"
 #include "ccnl-pkt-ndntlv.h"
 
-static unsigned char _out[CCNL_MAX_PACKET_SIZE];
+static unsigned char _out[CCNL_MAX_PACKET_SIZE * 10];
 /* main thread's message queue */
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
@@ -45,32 +45,50 @@ static unsigned char _cont_buf[CCNLRIOT_BUF_SIZE];
 char ccnlriot_prefix1[] = CCNLRIOT_PREFIX1;
 char ccnlriot_prefix2[] = CCNLRIOT_PREFIX2;
 
+const shell_command_t shell_commands[] = {
+    {"stats", "Print CCNL statistics", ccnlriot_stats},
+    {NULL, NULL, NULL}
+};
+
 static void _create_content(void)
 {
     char *body = (char*) CCNLRIOT_CONT;
     int offs = CCNL_MAX_PACKET_SIZE;
     int suite = CCNL_SUITE_NDNTLV;
-    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(ccnlriot_prefix1, suite, NULL, NULL);
+    struct ccnl_prefix_s *prefix;
 
     int arg_len = strlen(CCNLRIOT_CONT) + 1;
-    arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
 
-    unsigned char *olddata;
-    unsigned char *data = olddata = _out + offs;
 
-    int len;
-    unsigned typ;
+    unsigned chunk_num = 0;
+    for (int i = 0; i < 10; i++) {
+        prefix = ccnl_URItoPrefix(ccnlriot_prefix1, suite, NULL, &chunk_num);
+        if (i == 9) {
+            arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
+        }
+        else {
+            arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, &chunk_num, &offs, _out);
+        }
 
-    if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
-        typ != NDN_TLV_Data) {
-        return;
+        chunk_num++;
+
+        int len;
+        unsigned typ;
+
+        unsigned char *olddata;
+        unsigned char *data = olddata = _out + offs;
+
+        if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
+            typ != NDN_TLV_Data) {
+            return;
+        }
+
+        struct ccnl_content_s *c = 0;
+        struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
+        c = ccnl_content_new(&ccnl_relay, &pk);
+        ccnl_content_add2cache(&ccnl_relay, c);
+        c->flags |= CCNL_CONTENT_FLAGS_STATIC;
     }
-
-    struct ccnl_content_s *c = 0;
-    struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
-    c = ccnl_content_new(&ccnl_relay, &pk);
-    ccnl_content_add2cache(&ccnl_relay, c);
-    c->flags |= CCNL_CONTENT_FLAGS_STATIC;
 }
 
 static void _get_content(uint8_t *next_hop)
@@ -84,17 +102,26 @@ static void _get_content(uint8_t *next_hop)
 
     memset(_int_buf, '\0', CCNLRIOT_BUF_SIZE);
     memset(_cont_buf, '\0', CCNLRIOT_BUF_SIZE);
-    char pfx[] = CCNLRIOT_PREFIX1;
 
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
+        char pfx[] = CCNLRIOT_PREFIX1;
         ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, next_hop, CCNLRIOT_ADDRLEN, NULL, _int_buf, CCNLRIOT_BUF_SIZE);
         if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
-            printf("Content received: %s\n", _cont_buf);
+            LOG_DEBUG("Content received: %s\n", _cont_buf);
+            LOG_WARNING("\n +++ SUCCESS +++\n");
             return;
         }
     }
-    printf("Timeout! No content received in response to the Interest for %s.\n", ccnlriot_prefix1);
+    LOG_WARNING("\n !!! TIMEOUT !!!\n");
+    LOG_DEBUG("Timeout! No content received in response to the Interest for %s.\n", ccnlriot_prefix1);
 
+}
+
+int ccnlriot_stats(int argc, char **argv) {
+    (void) argc; (void) argv;
+    extern uint32_t rx_cnt, tx_cnt;
+    printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", rx_cnt, tx_cnt);
+    return 0;
 }
 
 int main(void)
@@ -105,22 +132,27 @@ int main(void)
     puts("Basic CCN-Lite example");
 
     ccnl_core_init();
-    extern int debug_level;
-    debug_level = DEBUG;
+    ccnl_debug_level = CCNLRIOT_LOGLEVEL;
 
     unsigned int res = CCNLRIOT_ADDRLEN;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_SRC_LEN, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
-        puts("main: error setting addressing mode");
+        LOG_ERROR("main: error setting addressing mode\n");
     }
 
     res = CCNLRIOT_CHANNEL;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_CHANNEL, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
-        puts("main: error setting channel");
+        LOG_ERROR("main: error setting channel\n");
     }
+
+    res = CCNLRIOT_CSMA_RETRIES;
+    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_CSMA_RETRIES, 0, (uint8_t *)&res, sizeof(uint8_t)) < 0) {
+        LOG_ERROR("main: error setting csma retries\n");
+    }
+
     ccnl_relay.max_cache_entries = 20;
     ccnl_start();
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
-        puts("main: critical error, aborting");
+        LOG_ERROR("main: critical error, aborting\n");
         return -1;
     }
     ccnlriot_routes_setup();
@@ -129,13 +161,13 @@ int main(void)
         _create_content();
     }
 #if USE_AUTOSTART
-    else if (my_id == (CCNLRIOT_NUMBER_OF_NODES - 1)) {
-        xtimer_usleep(1000 * 500);
-        puts("\n --------#######************* GETTING CONTENT **************#############---------- \n");
+    else if (my_id >= (CCNLRIOT_NUMBER_OF_NODES - CCNLRIOT_CONSUMERS)) {
+        xtimer_usleep(((CCNLRIOT_NUMBER_OF_NODES - my_id) * 1000 * 500));
+        LOG_WARNING("\n --------#######************* GETTING CONTENT **************#############---------- \n");
         _get_content(ccnlriot_id[my_id - 1]);
     }
 #endif
     char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
     return 0;
 }
