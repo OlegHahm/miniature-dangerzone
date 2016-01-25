@@ -6,8 +6,10 @@
 #include "net/gnrc/pktbuf.h"
 #include "net/gnrc/netif/hdr.h"
 
-#define SILENT_INTERVAL     (500000)
-
+#define SILENT_INTERVAL     (50000)
+#define NOISE_NETIF         (3)
+#define NOISE_CHAN          (26)
+#define NOISE_PAN           (44)
 #define PAYLOAD     "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 static void _send(void)
@@ -19,6 +21,17 @@ static void _send(void)
     kernel_pid_t ifs[GNRC_NETIF_NUMOF];
     size_t numof = gnrc_netif_get(ifs);
 
+    unsigned res = NOISE_CHAN;
+    if (gnrc_netapi_set(NOISE_NETIF, NETOPT_CHANNEL, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
+        puts("main: error setting channel");
+    }
+    res = NOISE_PAN;
+    if (gnrc_netapi_set(NOISE_NETIF, NETOPT_NID, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
+        puts("main: error setting pan");
+    }
+    if (gnrc_netapi_set(NOISE_NETIF, NETOPT_CSMA, 0, NETOPT_DISABLE, sizeof(netopt_enable_t)) < 0) {
+        puts("failed to disable CSMA");
+    }
     for (size_t i = 0; i < numof && i < GNRC_NETIF_NUMOF; i++) {
 
         flags |= GNRC_NETIF_HDR_FLAGS_BROADCAST;
@@ -43,7 +56,6 @@ int main(void)
     while (1) {
         xtimer_usleep(SILENT_INTERVAL);
         _send();
-        puts(".");
     }
     return 0;
 }
