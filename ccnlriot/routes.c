@@ -33,7 +33,7 @@ static inline int _get_pos(uint8_t *addr, size_t addr_len)
 int ccnlriot_get_mypos(void)
 {
     uint8_t hwaddr[CCNLRIOT_ADDRLEN];
-#if USE_LONG
+#if USE_LONG && !defined(BOARD_NATIVE)
     int res = gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS_LONG, 0, hwaddr, sizeof(hwaddr));
 #else
     int res = gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));
