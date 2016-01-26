@@ -29,7 +29,8 @@
 #include "ccnlriot.h"
 #include "ccnl-pkt-ndntlv.h"
 
-static unsigned char _out[CCNL_MAX_PACKET_SIZE * 10];
+static unsigned char _out[CCNL_MAX_PACKET_SIZE * CCNLRIOT_CHUNKNUMBERS];
+
 /* main thread's message queue */
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
@@ -61,8 +62,10 @@ static void _create_content(void)
 
 
     unsigned chunk_num = 0;
-    for (int i = 0; i < 10; i++) {
-        prefix = ccnl_URItoPrefix(ccnlriot_prefix1, suite, NULL, &chunk_num);
+    for (int i = 0; i < CCNLRIOT_CHUNKNUMBERS; i++) {
+        offs = CCNL_MAX_PACKET_SIZE;
+        char pfx[] = CCNLRIOT_PREFIX1;
+        prefix = ccnl_URItoPrefix(pfx, suite, NULL, &chunk_num);
         if (i == 9) {
             arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
         }
@@ -80,10 +83,12 @@ static void _create_content(void)
 
         if (ccnl_ndntlv_dehead(&data, &arg_len, (int*) &typ, &len) ||
             typ != NDN_TLV_Data) {
+            puts("EXIT!");
             return;
         }
 
         struct ccnl_content_s *c = 0;
+        printf("Here I should chunk number %u\n", chunk_num);
         struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
         c = ccnl_content_new(&ccnl_relay, &pk);
         ccnl_content_add2cache(&ccnl_relay, c);
@@ -103,17 +108,28 @@ static void _get_content(uint8_t *next_hop)
     memset(_int_buf, '\0', CCNLRIOT_BUF_SIZE);
     memset(_cont_buf, '\0', CCNLRIOT_BUF_SIZE);
 
-    for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
-        char pfx[] = CCNLRIOT_PREFIX1;
-        ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, next_hop, CCNLRIOT_ADDRLEN, NULL, _int_buf, CCNLRIOT_BUF_SIZE);
-        if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
-            LOG_DEBUG("Content received: %s\n", _cont_buf);
-            LOG_WARNING("\n +++ SUCCESS +++\n");
-            return;
+    unsigned success = 0;
+    for (unsigned i = 0; i < CCNLRIOT_CHUNKNUMBERS; i++) {
+        for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
+            char pfx[] = CCNLRIOT_PREFIX1;
+            unsigned cn = i;
+            printf("cn is %u\n", cn);
+
+            ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, next_hop, CCNLRIOT_ADDRLEN, &cn, _int_buf, CCNLRIOT_BUF_SIZE);
+            if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
+                LOG_DEBUG("Content received: %s\n", _cont_buf);
+                success++;
+                break;
+            }
         }
     }
-    LOG_WARNING("\n !!! TIMEOUT !!!\n");
-    LOG_DEBUG("Timeout! No content received in response to the Interest for %s.\n", ccnlriot_prefix1);
+    if (success == CCNLRIOT_CHUNKNUMBERS) {
+        LOG_WARNING("\n +++ SUCCESS +++\n");
+    }
+    else {
+        LOG_WARNING("\n !!! TIMEOUT !!!\n");
+        LOG_DEBUG("Timeout! No content received in response to the Interest for %s.\n", ccnlriot_prefix1);
+    }
 
 }
 
