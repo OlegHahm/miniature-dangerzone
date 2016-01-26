@@ -46,8 +46,13 @@ static unsigned char _cont_buf[CCNLRIOT_BUF_SIZE];
 char ccnlriot_prefix1[] = CCNLRIOT_PREFIX1;
 char ccnlriot_prefix2[] = CCNLRIOT_PREFIX2;
 
+static int _create_cont(int argc, char **argv);
+static int _send_int(int argc, char **argv);
+
 const shell_command_t shell_commands[] = {
     {"stats", "Print CCNL statistics", ccnlriot_stats},
+    {"int", "Send preconfigured interest", _send_int},
+    {"cont", "Create content", _create_cont},
     {NULL, NULL, NULL}
 };
 
@@ -58,12 +63,12 @@ static void _create_content(void)
     int suite = CCNL_SUITE_NDNTLV;
     struct ccnl_prefix_s *prefix;
 
-    int arg_len = strlen(CCNLRIOT_CONT) + 1;
-
+    int arg_len;
 
     unsigned chunk_num = 0;
     for (int i = 0; i < CCNLRIOT_CHUNKNUMBERS; i++) {
         offs = CCNL_MAX_PACKET_SIZE;
+        arg_len = strlen(CCNLRIOT_CONT) + 1;
         char pfx[] = CCNLRIOT_PREFIX1;
         prefix = ccnl_URItoPrefix(pfx, suite, NULL, &chunk_num);
         if (i == 9) {
@@ -88,7 +93,7 @@ static void _create_content(void)
         }
 
         struct ccnl_content_s *c = 0;
-        printf("Here I should chunk number %u\n", chunk_num);
+        printf("Here I should create chunk number %u\n", chunk_num);
         struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
         c = ccnl_content_new(&ccnl_relay, &pk);
         ccnl_content_add2cache(&ccnl_relay, c);
@@ -96,14 +101,29 @@ static void _create_content(void)
     }
 }
 
+static int _create_cont(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    _create_content();
+    return 0;
+}
+
 static void _get_content(uint8_t *next_hop)
 {
 #if USE_BROADCAST
-    /* initialize address with 0xFF for broadcast */
-    uint8_t relay_addr[CCNLRIOT_ADDRLEN];
-    memset(relay_addr, UINT8_MAX, CCNLRIOT_ADDRLEN);
-    next_hop = (uint8_t*) relay_addr;
+    next_hop = NULL;
 #endif
+
+    if (next_hop == NULL) {
+        /* initialize address with 0xFF for broadcast */
+        uint8_t relay_addr[CCNLRIOT_ADDRLEN];
+        memset(relay_addr, UINT8_MAX, CCNLRIOT_ADDRLEN);
+        next_hop = (uint8_t*) relay_addr;
+    }
+
+    char pfx[] = CCNLRIOT_PREFIX1;
+    ccnlriot_routes_add(pfx, next_hop, CCNLRIOT_ADDRLEN);
 
     memset(_int_buf, '\0', CCNLRIOT_BUF_SIZE);
     memset(_cont_buf, '\0', CCNLRIOT_BUF_SIZE);
@@ -115,7 +135,7 @@ static void _get_content(uint8_t *next_hop)
             unsigned cn = i;
             printf("cn is %u\n", cn);
 
-            ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, next_hop, CCNLRIOT_ADDRLEN, &cn, _int_buf, CCNLRIOT_BUF_SIZE);
+            ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, &cn, _int_buf, CCNLRIOT_BUF_SIZE);
             if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
                 LOG_DEBUG("Content received: %s\n", _cont_buf);
                 success++;
@@ -140,6 +160,20 @@ int ccnlriot_stats(int argc, char **argv) {
     return 0;
 }
 
+static int _send_int(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    int my_id = ccnlriot_get_mypos();
+    if (my_id < 0) {
+        _get_content(NULL);
+    }
+    else {
+        _get_content(ccnlriot_id[my_id - 1]);
+    }
+    return 0;
+}
+
 int main(void)
 {
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
@@ -150,6 +184,7 @@ int main(void)
     ccnl_core_init();
     ccnl_debug_level = CCNLRIOT_LOGLEVEL;
 
+#ifndef BOARD_NATIVE
     unsigned int res = CCNLRIOT_ADDRLEN;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_SRC_LEN, 0, (uint16_t *)&res, sizeof(uint16_t)) < 0) {
         LOG_ERROR("main: error setting addressing mode\n");
@@ -164,6 +199,7 @@ int main(void)
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_CSMA_RETRIES, 0, (uint8_t *)&res, sizeof(uint8_t)) < 0) {
         LOG_ERROR("main: error setting csma retries\n");
     }
+#endif
 
     ccnl_relay.max_cache_entries = 20;
     ccnl_start();
@@ -171,6 +207,7 @@ int main(void)
         LOG_ERROR("main: critical error, aborting\n");
         return -1;
     }
+#ifndef BOARD_NATIVE
     ccnlriot_routes_setup();
     int my_id = ccnlriot_get_mypos();
     if (my_id == 0) {
@@ -182,6 +219,7 @@ int main(void)
         LOG_WARNING("\n --------#######************* GETTING CONTENT **************#############---------- \n");
         _get_content(ccnlriot_id[my_id - 1]);
     }
+#endif
 #endif
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
