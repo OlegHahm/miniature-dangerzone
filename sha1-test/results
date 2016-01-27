@@ -1,0 +1,46 @@
+GOOGLE
+   9072	    184	   2760	  12016	   2ef0	/home/oleg/git/miniature-dangerzone/sha1-test/bin/samr21-xpro/sha1.elf
+ORYX
+   9168	    184	   2760	  12112	   2f50	/home/oleg/git/miniature-dangerzone/sha1-test/bin/samr21-xpro/sha1.elf
+PD
+  12944	    184	   2760	  15888	   3e10	/home/oleg/git/miniature-dangerzone/sha1-test/bin/samr21-xpro/sha1.elf
+RFC
+   9344	    184	   2760	  12288	   3000	/home/oleg/git/miniature-dangerzone/sha1-test/bin/samr21-xpro/sha1.elf
+DEFAULT
+  12896	    184	   2760	  15840	   3de0	/home/oleg/git/miniature-dangerzone/sha1-test/bin/samr21-xpro/sha1.elf
+
+                                                                                                     
+GOOGLE
+   9000	    184	   2752	  11936	   2ea0	/home/oleg/git/miniature-dangerzone/sha1-test/bin/iotlab-m3/sha1.elf
+ORYX
+   9072	    184	   2752	  12008	   2ee8	/home/oleg/git/miniature-dangerzone/sha1-test/bin/iotlab-m3/sha1.elf
+PD
+  12496	    184	   2752	  15432	   3c48	/home/oleg/git/miniature-dangerzone/sha1-test/bin/iotlab-m3/sha1.elf
+RFC
+   9240	    184	   2752	  12176	   2f90	/home/oleg/git/miniature-dangerzone/sha1-test/bin/iotlab-m3/sha1.elf
+DEFAULT
+
+  12364	    184	   2752	  15300	   3bc4	/home/oleg/git/miniature-dangerzone/sha1-test/bin/iotlab-m3/sha1.elf
+                                                                                              
+GOOGLE
+   7936	     68	   1058	   9062	   2366	/home/oleg/git/miniature-dangerzone/sha1-test/bin/z1/sha1.elf
+ORYX
+   8054	     68	   1058	   9180	   23dc	/home/oleg/git/miniature-dangerzone/sha1-test/bin/z1/sha1.elf
+PD
+  25806	     68	   1058	  26932	   6934	/home/oleg/git/miniature-dangerzone/sha1-test/bin/z1/sha1.elf
+RFC
+   8152	     68	   1058	   9278	   243e	/home/oleg/git/miniature-dangerzone/sha1-test/bin/z1/sha1.elf
+DEFAULT
+  24810	     68	   1058	  25936	   6550	/home/oleg/git/miniature-dangerzone/sha1-test/bin/z1/sha1.elf
+                                                                                                            
+GOOGLE
+   8896	    420	    720	  10036	   2734	/home/oleg/git/miniature-dangerzone/sha1-test/bin/arduino-mega2560/sha1.elf
+ORYX
+   8912	    484	    720	  10116	   2784	/home/oleg/git/miniature-dangerzone/sha1-test/bin/arduino-mega2560/sha1.elf
+PD
+  28692	    424	    720	  29836	   748c	/home/oleg/git/miniature-dangerzone/sha1-test/bin/arduino-mega2560/sha1.elf
+RFC
+   9906	    420	    720	  11046	   2b26	/home/oleg/git/miniature-dangerzone/sha1-test/bin/arduino-mega2560/sha1.elf
+DEFAULT
+  29040	    420	    720	  30180	   75e4	/home/oleg/git/miniature-dangerzone/sha1-test/bin/arduino-mega2560/sha1.elf
+
