@@ -135,12 +135,20 @@ static void _get_content(uint8_t *next_hop)
             unsigned cn = i;
             printf("cn is %u\n", cn);
 
+            gnrc_netreg_entry_t _ne;
+            /* register for content chunks */
+            _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
+            _ne.pid = sched_active_pid;
+            gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
+
             ccnl_send_interest(CCNL_SUITE_NDNTLV, pfx, &cn, _int_buf, CCNLRIOT_BUF_SIZE);
             if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
+                gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
                 LOG_DEBUG("Content received: %s\n", _cont_buf);
                 success++;
                 break;
             }
+            gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
         }
     }
     if (success == CCNLRIOT_CHUNKNUMBERS) {
