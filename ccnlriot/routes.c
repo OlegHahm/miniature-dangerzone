@@ -96,7 +96,7 @@ int ccnlriot_routes_add(char *pfx, uint8_t *relay_addr, size_t addr_len)
     struct ccnl_face_s *fibface = ccnl_get_face_or_create(&ccnl_relay, 0, &sun.sa, sizeof(sun.linklayer));
     fibface->flags |= CCNL_FACE_FLAGS_STATIC;
 
-    if (ccnl_add_fib_entry(&ccnl_relay, prefix, fibface) != 0) {
+    if (ccnl_fib_add_entry(&ccnl_relay, prefix, fibface) != 0) {
         printf("Error adding (%s : %s) to the FIB\n", pfx, gnrc_netif_addr_to_str(addr_str, sizeof(addr_str), relay_addr, addr_len));
         return -1;
     }
