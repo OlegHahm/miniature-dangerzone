@@ -18,6 +18,7 @@ CFLAGS += -DNEEDS_PREFIX_MATCHING
 CFLAGS += -DNEEDS_PACKET_CRAFTING
 CFLAGS += -DUSE_HMAC256
 CFLAGS += -DUSE_STATS
+CFLAGS += -DUSE_RONR
 #CFLAGS += -DUSE_DUP_CHECK
 
 # Change this to 0 show compiler invocation lines by default:
