@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "tlsf-malloc.h"
 #include "msg.h"
@@ -169,8 +170,7 @@ static void _get_content(uint8_t *next_hop)
 
 int ccnlriot_stats(int argc, char **argv) {
     (void) argc; (void) argv;
-    extern uint32_t rx_cnt, tx_cnt;
-    printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", rx_cnt, tx_cnt);
+    printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", ccnl_relay.ifs[0].rx_cnt, ccnl_relay.ifs[0].tx_cnt);
     return 0;
 }
 
