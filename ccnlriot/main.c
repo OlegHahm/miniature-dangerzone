@@ -58,27 +58,33 @@ const shell_command_t shell_commands[] = {
 
 static void _create_content(void)
 {
-    char *body = (char*) CCNLRIOT_CONT;
     int offs = CCNL_MAX_PACKET_SIZE;
     int suite = CCNL_SUITE_NDNTLV;
     struct ccnl_prefix_s *prefix;
 
     int arg_len;
 
-    unsigned chunk_num = 0;
-    for (int i = 0; i < CCNLRIOT_CHUNKNUMBERS; i++) {
-        offs = CCNL_MAX_PACKET_SIZE;
-        arg_len = strlen(CCNLRIOT_CONT) + 1;
-        char pfx[] = CCNLRIOT_PREFIX1;
-        prefix = ccnl_URItoPrefix(pfx, suite, NULL, &chunk_num);
-        if (i == 9) {
-            arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, NULL, &offs, _out);
-        }
-        else {
-            arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body, arg_len, NULL, &chunk_num, &offs, _out);
-        }
+    uint16_t max_frag_size = UINT16_MAX;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_MAX_PACKET_SIZE, 0, &max_frag_size, sizeof(max_frag_size)) < 0) {
+        LOG_ERROR("main: Can not get max packet size from interface %" PRIkernel_pid "\n", CCNLRIOT_NETIF);
+    }
+    max_frag_size = (max_frag_size > CCNL_MAX_PACKET_SIZE) ? CCNL_MAX_PACKET_SIZE : max_frag_size;
 
-        chunk_num++;
+    unsigned chunk_num = CCNLRIOT_CHUNKNUMBERS;
+    for (unsigned i = 0; i < CCNLRIOT_CHUNKNUMBERS; i++) {
+        offs = max_frag_size;
+        char pfx[] = CCNLRIOT_PREFIX1;
+        prefix = ccnl_URItoPrefix(pfx, suite, NULL, &i);
+        arg_len = max_frag_size - ((prefix->compcnt + 1) * 2) - strlen((char*) *prefix->comp) - 8 - 7 - 60;
+        char body[arg_len];
+        for (unsigned j = 0; j < sizeof(body); j++) {
+            body[j] = i;
+        }
+        printf("CNT: %u, strlen: %zu, ARG_LEN: %i\n", prefix->compcnt + 1, strlen((char*) prefix->bytes), arg_len);
+        arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) body,
+                                             arg_len, NULL,
+                                             chunk_num == UINT_MAX ? NULL : &chunk_num,
+                                             &offs, _out);
 
         int len;
         unsigned typ;
@@ -93,7 +99,7 @@ static void _create_content(void)
         }
 
         struct ccnl_content_s *c = 0;
-        printf("Here I should create chunk number %u\n", chunk_num);
+        printf("Here I should create chunk number %u\n", i);
         struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
         c = ccnl_content_new(&ccnl_relay, &pk);
         ccnl_content_add2cache(&ccnl_relay, c);
