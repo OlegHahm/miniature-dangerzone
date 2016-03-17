@@ -23,15 +23,41 @@
 #include "shell.h"
 #include "msg.h"
 
+#include "opendefs.h"
+#include "schedule.h"
+
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
-//extern int udp_cmd(int argc, char **argv);
-
-//static const shell_command_t shell_commands[] = {
-//    { "udp", "send data over UDP and listen on UDP ports", udp_cmd },
-//    { NULL, NULL, NULL }
-//};
+void icn_addToFixedSchedule(open_addr_t *addr, int16_t rx_cell, int16_t tx_cell, int16_t shared) {
+    if (tx_cell >= 0) {
+        schedule_addActiveSlot(tx_cell,
+                CELLTYPE_TX,
+                FALSE,
+                SCHEDULE_MINIMAL_6TISCH_CHANNELOFFSET,
+                addr
+                );
+    }
+    if (rx_cell >= 0) {
+        schedule_addActiveSlot(rx_cell,
+                CELLTYPE_RX,
+                FALSE,
+                SCHEDULE_MINIMAL_6TISCH_CHANNELOFFSET,
+                addr
+                );
+    }
+    if (shared >= 0) {
+        open_addr_t     temp_neighbor;
+        memset(&temp_neighbor,0,sizeof(temp_neighbor));
+        temp_neighbor.type             = ADDR_ANYCAST;
+        schedule_addActiveSlot(shared,
+                CELLTYPE_TXRX,
+                TRUE,
+                SCHEDULE_MINIMAL_6TISCH_CHANNELOFFSET,
+                &temp_neighbor
+                );
+    }
+}
 
 int main(void)
 {
@@ -39,6 +65,8 @@ int main(void)
      * receive potentially fast incoming networking packets */
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
     puts("RIOT network stack example application");
+
+    icn_addToFixedSchedule(NULL, 4, -1, -1);
 
     /* start shell */
     puts("All up, running the shell now");
