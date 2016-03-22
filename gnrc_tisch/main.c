@@ -24,7 +24,7 @@
 #include "msg.h"
 
 #include "opendefs.h"
-#include "schedule.h"
+#include "02b-MAChigh/schedule.h"
 
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
