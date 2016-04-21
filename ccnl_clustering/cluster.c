@@ -17,7 +17,7 @@ cluster_state_t cluster_state;
 
 /* internal variables */
 static xtimer_t _cluster_timer;
-static uint16_t _my_id;
+uint16_t cluster_my_id;
 static kernel_pid_t _pid = KERNEL_PID_UNDEF;
 
 /* prototypes */
@@ -37,6 +37,8 @@ void *_loop(void *arg)
 
     my_position = _get_my_pos();
 
+    ccnl_set_local_producer(ccnlriot_producer);
+
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     printf("Next event in %u seconds\n", (offset / 1000000));
@@ -44,6 +46,7 @@ void *_loop(void *arg)
 
     /* enter correct state and set timer if necessary */
     if (my_position == 0) {
+        puts("I'm the first deputy");
         /* become deputy now */
         cluster_state = CLUSTER_STATE_DEPUTY;
     }
@@ -65,7 +68,21 @@ void *_loop(void *arg)
             case CLUSTER_MSG_NEWDATA:
                 puts("cluster: received newdata msg");
                 /* XXX: implement event */
+                unsigned data = random_uint32();
                 /* XXX: send new data or put it into content store */
+                /* each byte needs 2 characters to be represented as a hex value */
+                if (cluster_state == CLUSTER_STATE_DEPUTY) {
+                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8;
+                    char pfx[prefix_len];
+                    char val[sizeof(data) * 2];
+                    snprintf(pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id);
+                    snprintf(val, sizeof(val), "%08X\n", data);
+                    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+                    ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
+                }
+                else {
+                    ccnl_helper_int(data, (sizeof(data) * 2));
+                }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
                 printf("Next event in %u seconds\n", (offset / 1000000));
@@ -80,7 +97,7 @@ void *_loop(void *arg)
 
 void cluster_init(void)
 {
-    cpuid_get(&_my_id);
+    cpuid_get(&cluster_my_id);
     /* initialize to inactive state */
     cluster_state = CLUSTER_STATE_INACTIVE;
 
@@ -114,7 +131,7 @@ static uint16_t _get_my_pos(void)
 {
     /* XXX: configure this statically for now */
 #ifdef CPU_NATIVE
-    return _my_id;
+    return cluster_my_id;
 #else
     uint8_t hwaddr[CCNLRIOT_ADDRLEN];
 #if USE_LONG && !defined(BOARD_NATIVE)
