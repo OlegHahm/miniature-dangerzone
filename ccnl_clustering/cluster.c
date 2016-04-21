@@ -18,7 +18,7 @@ cluster_state_t cluster_state;
 /* internal variables */
 static xtimer_t _cluster_timer;
 uint16_t cluster_my_id;
-static kernel_pid_t _pid = KERNEL_PID_UNDEF;
+kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 
 /* prototypes */
 static uint16_t _get_my_pos(void);
@@ -41,12 +41,12 @@ void *_loop(void *arg)
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
-    printf("Next event in %u seconds\n", (offset / 1000000));
-    xtimer_set_msg(&data_timer, offset, &data_msg, _pid);
+    printf("cluster: Next event in %u seconds\n", (offset / 1000000));
+    xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
 
     /* enter correct state and set timer if necessary */
     if (my_position == 0) {
-        puts("I'm the first deputy");
+        puts("cluster: I'm the first deputy");
         /* become deputy now */
         cluster_state = CLUSTER_STATE_DEPUTY;
     }
@@ -56,7 +56,6 @@ void *_loop(void *arg)
         cluster_sleep(my_position);
     }
 
-    puts("entering event loop");
     while (1) {
         msg_t m;
         msg_receive(&m);
@@ -81,12 +80,16 @@ void *_loop(void *arg)
                     ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
                 }
                 else {
-                    ccnl_helper_int(data, (sizeof(data) * 2));
+                    ccnl_helper_int(NULL, (unsigned char*) &data, (sizeof(data) * 2));
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
                 printf("Next event in %u seconds\n", (offset / 1000000));
-                xtimer_set_msg(&data_timer, offset, &data_msg, _pid);
+                xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
+                break;
+            case CLUSTER_MSG_ALLDATA:
+                puts("cluster: received alldata request");
+                ccnl_helper_send_all_data();
                 break;
             default:
                 puts("cluster: I don't understand this message");
@@ -101,7 +104,7 @@ void cluster_init(void)
     /* initialize to inactive state */
     cluster_state = CLUSTER_STATE_INACTIVE;
 
-    _pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
+    cluster_pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
                          THREAD_PRIORITY_MAIN-1, THREAD_CREATE_STACKTEST |
                          THREAD_CREATE_WOUT_YIELD, _loop, NULL, "cluster manager");
 }
@@ -147,20 +150,25 @@ static uint16_t _get_my_pos(void)
 #endif
 }
 
+static msg_t _wakeup_msg;
 void cluster_sleep(uint8_t periods)
 {
-    msg_t m;
+    cluster_state = CLUSTER_STATE_INACTIVE;
     netopt_state_t state = NETOPT_STATE_SLEEP;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
         puts("cluster: error going to sleep");
     }
-    m.type = CLUSTER_MSG_TAKEOVER;
-    xtimer_set_msg(&_cluster_timer, periods * CLUSTER_PERIOD, &m, _pid);
+    _wakeup_msg.type = CLUSTER_MSG_TAKEOVER;
+    printf("cluster: wakeup in %u seconds\n", ((periods * CLUSTER_PERIOD) / SEC_IN_USEC));
+    xtimer_set_msg(&_cluster_timer, periods * CLUSTER_PERIOD, &_wakeup_msg, cluster_pid);
 }
 
 void cluster_takeover(void)
 {
+    cluster_state = CLUSTER_STATE_TAKEOVER;
     cluster_wakeup();
+    unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
+    ccnl_helper_int(all_pfx, NULL, 0);
 }
 
 void cluster_handover(void)

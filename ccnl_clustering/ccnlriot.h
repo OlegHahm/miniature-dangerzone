@@ -17,6 +17,7 @@
 
 #define CCNLRIOT_CHUNKNUMBERS   (10)
 
+#define CCNLRIOT_ALL_PREFIX   "/all"
 #define CCNLRIOT_STORE_PREFIX   "/store"
 #define CCNLRIOT_SITE_PREFIX    "/siteA"
 #define CCNLRIOT_TYPE_PREFIX    "/typeX"
@@ -60,11 +61,12 @@ extern uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN];
 
 int ccnlriot_stats(int argc, char **argv);
 
-void ccnl_helper_int(unsigned value, size_t len);
+void ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len);
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache);
+void ccnl_helper_send_all_data(void);
 
 #endif /* CCNLRIOT_H */

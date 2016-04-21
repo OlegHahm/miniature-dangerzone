@@ -4,20 +4,25 @@
 #include "random.h"
 #include "timex.h"
 
-#define CLUSTER_PERIOD          (10 * SEC_IN_USEC)
+#define CLUSTER_PERIOD          (22 * SEC_IN_USEC)
 //#define CLUSTER_EVENT_PERIOD    (random_uint32() & 0x00FFFFFF)
 #define CLUSTER_EVENT_PERIOD     (10 * SEC_IN_USEC)
 
+#define CLUSTER_SIZE            (2)
+
 #define CLUSTER_MSG_TAKEOVER    (0x4444)
 #define CLUSTER_MSG_NEWDATA     (0x4445)
+#define CLUSTER_MSG_ALLDATA     (0x4446)
 
 typedef enum {
     CLUSTER_STATE_DEPUTY,
-    CLUSTER_STATE_INACTIVE
+    CLUSTER_STATE_INACTIVE,
+    CLUSTER_STATE_TAKEOVER
 } cluster_state_t;
 
 extern cluster_state_t cluster_state;
 extern uint16_t cluster_my_id;
+extern kernel_pid_t cluster_pid;
 
 void cluster_init(void);
 void cluster_takeover(void);
