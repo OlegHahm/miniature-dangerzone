@@ -21,14 +21,12 @@
 #include "tlsf-malloc.h"
 #include "msg.h"
 #include "shell.h"
-#include "periph/cpuid.h"
 #include "xtimer.h"
 #include "net/gnrc/netapi.h"
 #include "ccn-lite-riot.h"
 #include "ccnl-pkt-ndntlv.h"
 
 #include "cluster.h"
-#include "data_generator.h"
 #include "ccnlriot.h"
 
 /* main thread's message queue */
@@ -40,8 +38,6 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
 static int _stats(int argc, char **argv);
-
-static unsigned _my_id;
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
@@ -60,9 +56,7 @@ int main(void)
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
-    cpuid_get(&_my_id);
-
-    printf("CCN cluster ID %u\n", _my_id);
+    printf("CCN cluster started\n");
 
     /* initialize and start CCN lite */
     ccnl_core_init();
@@ -76,24 +70,7 @@ int main(void)
         return -1;
     }
 
-    /* initialize to inactive state */
-    cluster_state = CLUSTER_STATE_INACTIVE;
-
-    /* perform cluster ordering and compute my position */
-    uint16_t my_position;
-
-    /* XXX: configure this statically for now */
-    my_position = _my_id;
-
-    /* enter correct state and set timer if necessary */
-    if (my_position == 0) {
-        /* become deputy now */
-    }
-    else {
-        /* go to sleep and set timer */
-    }
-
-    data_generator_init();
+    cluster_init();
 
     /* start the shell */
     char line_buf[SHELL_DEFAULT_BUFSIZE];
