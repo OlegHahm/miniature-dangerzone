@@ -5,7 +5,7 @@
 #include "net/gnrc/netapi.h"
 
 #include "cluster.h"
-#include "routes.h"
+#include "config.h"
 #include "ccnlriot.h"
 
 /* buffers */
@@ -123,7 +123,7 @@ static uint16_t _get_my_pos(void)
     int res = gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));
 #endif
     if (res < 0) {
-        puts("ccnlriot_routes_setup: critical error, aborting");
+        puts("cluster: critical error, aborting");
         return -1;
     }
     return _get_pos(hwaddr, CCNLRIOT_ADDRLEN);
