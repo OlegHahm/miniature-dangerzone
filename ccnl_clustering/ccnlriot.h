@@ -13,7 +13,7 @@
 
 #define CCNLRIOT_CONSUMERS      (1)
 
-#define CCNLRIOT_LOGLEVEL  (LOG_DEBUG)
+#define CCNLRIOT_LOGLEVEL  (LOG_WARNING)
 
 #define CCNLRIOT_CHUNKNUMBERS   (10)
 
@@ -64,6 +64,8 @@ int ccnlriot_stats(int argc, char **argv);
 
 int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len);
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
+                      struct ccnl_pkt_s *pkt);
+int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t

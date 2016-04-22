@@ -27,6 +27,9 @@ void *_loop(void *arg)
 {
     (void) arg;
     xtimer_t data_timer;
+    _cluster_timer.target = _cluster_timer.long_target = data_timer.target =
+        data_timer.long_target = 0;
+
     msg_t data_msg;
     data_msg.type = CLUSTER_MSG_NEWDATA;
 
@@ -38,6 +41,7 @@ void *_loop(void *arg)
     my_position = _get_my_pos();
 
     ccnl_set_local_producer(ccnlriot_producer);
+    ccnl_set_local_consumer(ccnlriot_consumer);
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
@@ -80,6 +84,7 @@ void *_loop(void *arg)
                     snprintf(pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id);
                     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
                     ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
+                    free_prefix(prefix);
                 }
                 else {
                     ccnl_helper_int(NULL, (unsigned char*) val, (sizeof(data) * 2) + 1);
