@@ -67,20 +67,22 @@ void *_loop(void *arg)
             case CLUSTER_MSG_NEWDATA:
                 puts("cluster: received newdata msg");
                 /* XXX: implement event */
-                unsigned data = random_uint32();
-                /* XXX: send new data or put it into content store */
+                unsigned data = xtimer_now();
                 /* each byte needs 2 characters to be represented as a hex value */
-                if (cluster_state == CLUSTER_STATE_DEPUTY) {
-                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8;
+                /* string representation */
+                char val[sizeof(data) * 2];
+                snprintf(val, sizeof(val), "%08X\n", data);
+
+                if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+                    /* for the deputy we put the content directly into the store */
+                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9;
                     char pfx[prefix_len];
-                    char val[sizeof(data) * 2];
                     snprintf(pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id);
-                    snprintf(val, sizeof(val), "%08X\n", data);
                     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
                     ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
                 }
                 else {
-                    ccnl_helper_int(NULL, (unsigned char*) &data, (sizeof(data) * 2));
+                    ccnl_helper_int(NULL, (unsigned char*) val, (sizeof(data) * 2) + 1);
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
@@ -153,6 +155,7 @@ static uint16_t _get_my_pos(void)
 static msg_t _wakeup_msg;
 void cluster_sleep(uint8_t periods)
 {
+    puts("cluster: going to sleep");
     cluster_state = CLUSTER_STATE_INACTIVE;
     netopt_state_t state = NETOPT_STATE_SLEEP;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
