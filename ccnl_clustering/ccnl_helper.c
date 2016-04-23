@@ -40,7 +40,6 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     if (cache) {
         ccnl_content_add2cache(&ccnl_relay, c);
     }
-    c->flags |= CCNL_CONTENT_FLAGS_STATIC;
 
     return c;
 }
