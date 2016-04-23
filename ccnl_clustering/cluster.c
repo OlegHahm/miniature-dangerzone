@@ -16,19 +16,20 @@ msg_t _mq[8];
 cluster_state_t cluster_state;
 
 /* internal variables */
-static xtimer_t _cluster_timer;
+static xtimer_t _cluster_timer, _sleep_timer;
 uint16_t cluster_my_id;
 kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 
 /* prototypes */
 static uint16_t _get_my_pos(void);
+static void _send_int(char *val, size_t len);
 
 void *_loop(void *arg)
 {
     (void) arg;
     xtimer_t data_timer;
     _cluster_timer.target = _cluster_timer.long_target = data_timer.target =
-        data_timer.long_target = 0;
+        data_timer.long_target = _sleep_timer.target = _sleep_timer.long_target = 0;
 
     msg_t data_msg;
     data_msg.type = CLUSTER_MSG_NEWDATA;
@@ -87,7 +88,7 @@ void *_loop(void *arg)
                     free_prefix(prefix);
                 }
                 else {
-                    ccnl_helper_int(NULL, (unsigned char*) val, (sizeof(data) * 2) + 1);
+                    _send_int(val, (sizeof(data) * 2) + 1);
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
@@ -97,6 +98,13 @@ void *_loop(void *arg)
             case CLUSTER_MSG_ALLDATA:
                 LOG_DEBUG("cluster: received alldata request\n");
                 ccnl_helper_send_all_data();
+                break;
+            case CLUSTER_MSG_BACKTOSLEEP:
+                LOG_DEBUG("cluster: received backtosleep request\n");
+                netopt_state_t state = NETOPT_STATE_SLEEP;
+                if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
+                    LOG_WARNING("cluster: error going to sleep\n");
+                }
                 break;
             default:
                 LOG_WARNING("cluster: I don't understand this message\n");
@@ -179,14 +187,23 @@ void cluster_takeover(void)
     ccnl_helper_int(all_pfx, NULL, 0);
 }
 
-void cluster_handover(void)
-{
-}
-
 void cluster_wakeup(void)
 {
     netopt_state_t state = NETOPT_STATE_IDLE;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
         LOG_WARNING("cluster: error waking up\n");
     }
+}
+
+static msg_t _sleep_msg;
+static void _send_int(char *val, size_t len)
+{
+    netopt_state_t state = NETOPT_STATE_IDLE;
+    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
+        LOG_WARNING("cluster: error waking up\n");
+    }
+    ccnl_helper_int(NULL, (unsigned char*) val, len);
+    _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
+    LOG_DEBUG("cluster: going back to sleep in %u microseconds\n", CLUSTER_STAY_AWAKE_PERIOD);
+    xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
 }
