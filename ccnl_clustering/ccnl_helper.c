@@ -103,8 +103,8 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     (void) relay;
     (void) from;
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    printf("%u cluster: local consumer for prefix: %s\n", xtimer_now(),
-           pfx_str);
+    LOG_INFO("%u cluster: local consumer for prefix: %s\n", xtimer_now(),
+             pfx_str);
     ccnl_free(pfx_str);
 
     struct ccnl_prefix_s *prefix;
@@ -122,7 +122,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
         if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
         {
-            puts("cluster: ignoring this content");
+            LOG_INFO("cluster: ignoring this content\n");
             struct ccnl_pkt_s *tmp = pkt;
             struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
             ccnl_content_serve_pending(relay, c);
@@ -139,7 +139,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    printf("%u cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
+    LOG_INFO("%u cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
     ccnl_free(pfx_str);
 
     char store_pfx[] = CCNLRIOT_STORE_PREFIX;
@@ -187,11 +187,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_TAKEOVER) {
             _send_ack(relay, from, pkt->pfx);
-            puts("cluster: I'm the new deputy");
+            LOG_INFO("cluster: I'm the new deputy\n");
             cluster_state = CLUSTER_STATE_DEPUTY;
         }
         else {
-            puts("!!! cluster: received unexpected \"done\"");
+            LOG_WARNING("!!! cluster: received unexpected \"done\"\n");
         }
         free_packet(pkt);
         free_prefix(prefix);
@@ -255,7 +255,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
             prefix = pfx;
         }
 
-        printf("cluster: sending interest for %s\n", prefix);
+        LOG_INFO("cluster: sending interest for %s\n", prefix);
         gnrc_netreg_entry_t _ne;
         /* register for content chunks */
         _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
