@@ -229,6 +229,8 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
 
     unsigned success = 0;
 
+    char *tmp_pfx;
+
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
         size_t prefix_len = len;
         if (prefix == NULL) {
@@ -255,6 +257,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
             prefix = pfx;
         }
 
+        tmp_pfx = strndup((char*) prefix, strlen((char*) prefix));
         LOG_INFO("cluster: sending interest for %s\n", prefix);
         gnrc_netreg_entry_t _ne;
         /* register for content chunks */
@@ -276,10 +279,9 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
         LOG_WARNING("\n +++ SUCCESS +++\n");
     }
     else {
-        LOG_WARNING("\n !!! TIMEOUT !!!\n");
+        LOG_WARNING("\n !!! TIMEOUT while waiting for %s !!!\n", tmp_pfx);
     }
+    free(tmp_pfx);
 
     return success;
 }
-
-
