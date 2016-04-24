@@ -2,12 +2,11 @@
 #include "msg.h"
 #include "xtimer.h"
 #include "net/gnrc/netreg.h"
-#include "ccn-lite-riot.h"
 #include "ccnl-pkt-ndntlv.h"
-#include "log.h"
 
 #include "cluster.h"
 #include "ccnlriot.h"
+#include "log.h"
 
 /* buffers for interests and content */
 static unsigned char _int_buf[CCNLRIOT_BUF_SIZE];
