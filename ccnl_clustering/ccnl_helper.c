@@ -88,7 +88,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             struct ccnl_content_s *c =
                 ccnl_helper_create_cont(pfx, (unsigned char*)
                                         CCNLRIOT_CONT_ACK,
-                                        strlen(CCNLRIOT_CONT_ACK), false);
+                                        strlen(CCNLRIOT_CONT_ACK) + 1, false);
             ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
                                                         c->pkt->buf->datalen));
 

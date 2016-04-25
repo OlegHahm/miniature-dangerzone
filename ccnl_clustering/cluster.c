@@ -76,7 +76,7 @@ void *_loop(void *arg)
                 /* each byte needs 2 characters to be represented as a hex value */
                 /* string representation */
                 char val[sizeof(data) * 2];
-                snprintf(val, sizeof(val), "%08X\n", data);
+                snprintf(val, sizeof(val) + 1, "%08X\n", data);
 
                 if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
                     /* for the deputy we put the content directly into the store */
