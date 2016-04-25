@@ -99,10 +99,9 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
-    (void) relay;
     (void) from;
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_INFO("%u cluster: local consumer for prefix: %s\n", xtimer_now(),
+    LOG_DEBUG("%u cluster: local consumer for prefix: %s\n", xtimer_now(),
              pfx_str);
     ccnl_free(pfx_str);
 
@@ -121,7 +120,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
         if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
         {
-            LOG_INFO("cluster: ignoring this content\n");
+            LOG_DEBUG("cluster: ignoring this content\n");
             struct ccnl_pkt_s *tmp = pkt;
             struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
             ccnl_content_serve_pending(relay, c);
@@ -137,9 +136,10 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
+    int res = 0;
+
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_INFO("%u cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
-    ccnl_free(pfx_str);
+    LOG_DEBUG("%u cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
 
     char store_pfx[] = CCNLRIOT_STORE_PREFIX;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
@@ -151,6 +151,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     {
         /* only deputy sends ACK */
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+            LOG_INFO("cluster: acknowledging store request for %s\n", pfx_str);
             _send_ack(relay, from, pkt->pfx);
         }
         /* strip store prefix and cache it */
@@ -158,10 +159,10 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         ccnl_helper_create_cont(new_p, pkt->pfx->comp[pkt->pfx->compcnt-1],
                                 pkt->pfx->complen[pkt->pfx->compcnt-1], true);
         /* do not do anything else for a store interest */
-        free_prefix(prefix);
         free_prefix(new_p);
         free_packet(pkt);
-        return 1;
+        res = 1;
+        goto out;
     }
     free_prefix(prefix);
 
@@ -169,15 +170,16 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_DEPUTY) {
+            LOG_INFO("cluster: acknowledging interest for handover\n");
             _send_ack(relay, from, pkt->pfx);
             /* schedule transmitting content store */
             msg_t m;
             m.type = CLUSTER_MSG_ALLDATA;
             msg_send(&m, cluster_pid);
         }
-        free_prefix(prefix);
         free_packet(pkt);
-        return 1;
+        res = 1;
+        goto out;
     }
     free_prefix(prefix);
 
@@ -193,12 +195,15 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             LOG_WARNING("!!! cluster: received unexpected \"done\"\n");
         }
         free_packet(pkt);
-        free_prefix(prefix);
-        return 1;
+        res = 1;
+        goto out;
     }
 
+out:
+    /* freeing memory */
+    ccnl_free(pfx_str);
     free_prefix(prefix);
-    return 0;
+    return res;
 }
 
 void ccnl_helper_send_all_data(void)
