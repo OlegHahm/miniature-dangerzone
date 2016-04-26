@@ -233,37 +233,35 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
 
     unsigned success = 0;
 
-    char *tmp_pfx;
+    size_t prefix_len = len;
+    if (prefix == NULL) {
+        prefix_len += sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8 + len;
+    }
+    else {
+        /* add 1 for the \0 terminator */
+        prefix_len += strlen((char*) prefix) + 1;
+    }
+
+    if (len > 0) {
+        prefix_len += sizeof(CCNLRIOT_STORE_PREFIX);
+    }
+    unsigned char pfx[prefix_len];
+    if (len > 0) {
+        if (prefix == NULL) {
+            snprintf((char*) pfx, prefix_len, "%s%s%s/%08X/%s",
+                     CCNLRIOT_STORE_PREFIX, CCNLRIOT_SITE_PREFIX,
+                     CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
+        }
+        else if (len > 0) {
+            snprintf((char*) pfx, prefix_len, "%s%s/%s", CCNLRIOT_STORE_PREFIX, prefix, (char*) value);
+        }
+        prefix = pfx;
+    }
+
+    gnrc_netreg_entry_t _ne;
 
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
-        size_t prefix_len = len;
-        if (prefix == NULL) {
-            prefix_len += sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8 + len;
-        }
-        else {
-            /* add 1 for the \0 terminator */
-            prefix_len += strlen((char*) prefix) + 1;
-        }
-
-        if (len > 0) {
-            prefix_len += sizeof(CCNLRIOT_STORE_PREFIX);
-        }
-        unsigned char pfx[prefix_len];
-        if (len > 0) {
-            if (prefix == NULL) {
-                snprintf((char*) pfx, prefix_len, "%s%s%s/%08X/%s",
-                         CCNLRIOT_STORE_PREFIX, CCNLRIOT_SITE_PREFIX,
-                         CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
-            }
-            else if (len > 0) {
-                snprintf((char*) pfx, prefix_len, "%s%s/%s", CCNLRIOT_STORE_PREFIX, prefix, (char*) value);
-            }
-            prefix = pfx;
-        }
-
-        tmp_pfx = strndup((char*) prefix, strlen((char*) prefix));
         LOG_INFO("cluster: sending interest for %s\n", prefix);
-        gnrc_netreg_entry_t _ne;
         /* register for content chunks */
         _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
         _ne.pid = sched_active_pid;
@@ -283,9 +281,8 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
         LOG_WARNING("\n +++ SUCCESS +++\n");
     }
     else {
-        LOG_WARNING("\n !!! TIMEOUT while waiting for %s !!!\n", tmp_pfx);
+        LOG_WARNING("\n !!! TIMEOUT while waiting for %s !!!\n", prefix);
     }
-    free(tmp_pfx);
 
     return success;
 }
