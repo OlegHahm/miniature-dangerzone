@@ -46,7 +46,7 @@ void *_loop(void *arg)
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
-    LOG_DEBUG("cluster: Next event in %u seconds\n", (offset / 1000000));
+    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds\n", (offset / 1000000));
     xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
 
     /* enter correct state and set timer if necessary */
@@ -92,7 +92,7 @@ void *_loop(void *arg)
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
-                LOG_DEBUG("Next event in %u seconds\n", (offset / 1000000));
+                LOG_DEBUG("Next event in %" PRIu32 " seconds\n", (offset / 1000000));
                 xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
                 break;
             case CLUSTER_MSG_ALLDATA:

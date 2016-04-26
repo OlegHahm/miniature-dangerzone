@@ -101,7 +101,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     (void) from;
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_DEBUG("%u cluster: local consumer for prefix: %s\n", xtimer_now(),
+    LOG_DEBUG("%" PRIu32 " cluster: local consumer for prefix: %s\n", xtimer_now(),
              pfx_str);
     ccnl_free(pfx_str);
 
@@ -139,7 +139,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     int res = 0;
 
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_DEBUG("%u cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
+    LOG_DEBUG("%" PRIu32 " cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
 
     char store_pfx[] = CCNLRIOT_STORE_PREFIX;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
