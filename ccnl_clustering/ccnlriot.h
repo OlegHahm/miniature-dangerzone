@@ -1,20 +1,20 @@
 #ifndef CCNLRIOT_H
 #define CCNLRIOT_H
 
-#define LOG_LEVEL           (LOG_WARNING)
+//#define LOG_LEVEL           (LOG_DEBUG)
 #include "ccn-lite-riot.h"
 
 #define CCNLRIOT_NETIF          (3)
 
 #define CCNLRIOT_CHANNEL        (12)
 
-#define CCNLRIOT_INT_RETRIES    (1)
+#define CCNLRIOT_INT_RETRIES    (3)
 
 #define CCNLRIOT_CSMA_RETRIES   (3)
 
 #define CCNLRIOT_CONSUMERS      (1)
 
-#define CCNLRIOT_LOGLEVEL  (LOG_WARNING)
+#define CCNLRIOT_LOGLEVEL  (LOG_DEBUG)
 
 #define CCNLRIOT_CHUNKNUMBERS   (10)
 

@@ -35,6 +35,10 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
 
     struct ccnl_content_s *c = 0;
     struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
+    if (pk == NULL) {
+        LOG_ERROR("ccnl_helper: something went terribly wrong!\n");
+        return NULL;
+    }
     c = ccnl_content_new(&ccnl_relay, &pk);
     if (cache) {
         ccnl_content_add2cache(&ccnl_relay, c);
@@ -101,7 +105,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     (void) from;
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_DEBUG("%" PRIu32 " cluster: local consumer for prefix: %s\n", xtimer_now(),
+    LOG_DEBUG("%" PRIu32 " ccnl_helper: local consumer for prefix: %s\n", xtimer_now(),
              pfx_str);
     ccnl_free(pfx_str);
 
@@ -120,7 +124,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
         if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
         {
-            LOG_DEBUG("cluster: ignoring this content\n");
+            LOG_DEBUG("ccnl_helper: ignoring this content\n");
             struct ccnl_pkt_s *tmp = pkt;
             struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
             ccnl_content_serve_pending(relay, c);
@@ -139,7 +143,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     int res = 0;
 
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
-    LOG_DEBUG("%" PRIu32 " cluster: local producer for prefix: %s\n", xtimer_now(), pfx_str);
+    LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n", xtimer_now(), pfx_str);
 
     char store_pfx[] = CCNLRIOT_STORE_PREFIX;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
@@ -151,7 +155,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     {
         /* only deputy sends ACK */
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
-            LOG_INFO("cluster: acknowledging store request for %s\n", pfx_str);
+            LOG_INFO("ccnl_helper: acknowledging store request for %s\n", pfx_str);
             _send_ack(relay, from, pkt->pfx);
         }
         /* strip store prefix and cache it */
@@ -170,7 +174,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_DEPUTY) {
-            LOG_INFO("cluster: acknowledging interest for handover\n");
+            LOG_INFO("ccnl_helper: acknowledging interest for handover\n");
             _send_ack(relay, from, pkt->pfx);
             /* schedule transmitting content store */
             msg_t m;
@@ -188,11 +192,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_TAKEOVER) {
             _send_ack(relay, from, pkt->pfx);
-            LOG_INFO("cluster: I'm the new deputy\n");
+            LOG_INFO("ccnl_helper: I'm the new deputy\n");
             cluster_state = CLUSTER_STATE_DEPUTY;
         }
         else {
-            LOG_WARNING("!!! cluster: received unexpected \"done\"\n");
+            LOG_WARNING("!!! ccnl_helper: received unexpected \"done\"\n");
         }
         free_packet(pkt);
         res = 1;
@@ -224,6 +228,7 @@ void ccnl_helper_send_all_data(void)
 
 int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
 {
+    LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
     /* initialize address with 0xFF for broadcast */
     uint8_t relay_addr[CCNLRIOT_ADDRLEN];
     memset(relay_addr, UINT8_MAX, CCNLRIOT_ADDRLEN);
@@ -261,7 +266,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
     gnrc_netreg_entry_t _ne;
 
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
-        LOG_INFO("cluster: sending interest for %s\n", prefix);
+        LOG_INFO("ccnl_helper: sending interest for %s\n", prefix);
         /* register for content chunks */
         _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
         _ne.pid = sched_active_pid;
@@ -270,7 +275,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
         ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, 0, _int_buf, CCNLRIOT_BUF_SIZE);
         if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
-            LOG_DEBUG("Content received: %s\n", _cont_buf);
+            LOG_DEBUG("ccnl_helper: Content received: %s\n", _cont_buf);
             success++;
             break;
         }

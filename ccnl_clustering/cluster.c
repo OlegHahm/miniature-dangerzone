@@ -105,6 +105,7 @@ void *_loop(void *arg)
                 snprintf(val, sizeof(val) + 1, "%08X\n", data);
 
                 if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+                    LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
                     /* for the deputy we put the content directly into the store */
                     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9;
                     char pfx[prefix_len];
@@ -114,6 +115,7 @@ void *_loop(void *arg)
                     free_prefix(prefix);
                 }
                 else {
+                    LOG_DEBUG("cluster: call _send_int\n");
                     _send_int(val, (sizeof(data) * 2) + 1);
                 }
                 /* schedule new data generation */
@@ -144,12 +146,16 @@ void *_loop(void *arg)
 
 void cluster_init(void)
 {
-    uint8_t cpuid[CPUID_LEN];
-    memset(cpuid, 0, CPUID_LEN);
-    cpuid_get(&cpuid);
-    for (int i = 0; i < (CPUID_LEN / 2); i++) {
-        cluster_my_id ^= (cpuid[i] + cpuid[i+1]);
+#ifdef CPU_NATIVE
+    cpuid_get(&cluster_my_id);
+#else
+    /* XXX: limited to addresses of max. 8 chars */
+    uint16_t hwaddr[4];
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, (uint8_t*) hwaddr, sizeof(hwaddr)) <= 0) {
+        LOG_ERROR("cluster: I'm doomed!\n");
     }
+    cluster_my_id = (uint16_t) *((uint16_t*) &hwaddr);
+#endif
     LOG_DEBUG("clustering: my ID  is %u\n", (unsigned) cluster_my_id);
 
     random_init(cluster_my_id);

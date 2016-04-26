@@ -54,8 +54,8 @@ int main(void)
 
     printf("CCN cluster started\n");
 
-    random_init(cluster_my_id);
     cluster_init();
+    thread_yield_higher();
 
     /* start the shell */
     char line_buf[SHELL_DEFAULT_BUFSIZE];
