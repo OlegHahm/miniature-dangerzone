@@ -31,6 +31,8 @@ USEMODULE += auto_init_gnrc_netif
 USEMODULE += timex
 USEMODULE += xtimer
 USEMODULE += random
+USEMODULE += hashes
+USEMODULE += bloom
 
 USEPKG += tlsf
 

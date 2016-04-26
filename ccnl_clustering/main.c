@@ -54,18 +54,7 @@ int main(void)
 
     printf("CCN cluster started\n");
 
-    /* initialize and start CCN lite */
-    ccnl_core_init();
-    extern int debug_level;
-    debug_level = CCNLRIOT_LOGLEVEL;
-    ccnl_relay.max_cache_entries = 20;
-    ccnl_start();
-
-    if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
-        LOG_ERROR("main: critical error, aborting\n");
-        return -1;
-    }
-
+    random_init(cluster_my_id);
     cluster_init();
 
     /* start the shell */

@@ -218,7 +218,7 @@ void ccnl_helper_send_all_data(void)
     /* send done message */
     char done_pfx[] = CCNLRIOT_DONE_PREFIX;
     if (ccnl_helper_int((unsigned char*) done_pfx, NULL, 0)) {
-        cluster_sleep(CLUSTER_SIZE-1);
+        cluster_sleep(cluster_size-1);
     }
 }
 
