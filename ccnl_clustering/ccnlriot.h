@@ -27,7 +27,9 @@
 #define CCNLRIOT_CONT_ACK       "ACK"
 
 /* 10kB buffer for the heap should be enough for everyone - except native */
-#ifndef CPU_NATIVE
+#ifdef CPU_NATIVE
+#define TLSF_BUFFER     (40960 / sizeof(uint32_t))
+#elif defined(CPU_SAMD21)
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 #else
 #define TLSF_BUFFER     (40960 / sizeof(uint32_t))
@@ -40,6 +42,12 @@
 #define USE_AUTOSTART   (1)
 
 #define CCNLRIOT_NUMBER_OF_NODES     (20)
+
+#ifdef CPU_SAMD21
+#define CCNLRIOT_CACHE_SIZE     (5)
+#else
+#define CCNLRIOT_CACHE_SIZE     (25)
+#endif
 
 enum {
     SITE_LILLE,

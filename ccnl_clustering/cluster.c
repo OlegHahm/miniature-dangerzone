@@ -58,7 +58,7 @@ void *_loop(void *arg)
     ccnl_core_init();
     extern int debug_level;
     debug_level = CCNLRIOT_LOGLEVEL;
-    ccnl_relay.max_cache_entries = 20;
+    ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_start();
 
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
