@@ -51,6 +51,13 @@ void *_loop(void *arg)
     msg_init_queue(_mq, (sizeof(_mq) / sizeof(msg_t)));
 
     bloom_init(&cluster_neighbors, BLOOM_BITS, _bf, _hashes, BLOOM_HASHF);
+
+    uint16_t chan = CCNLRIOT_CHANNEL;
+    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_CHANNEL, 0, (uint16_t *)&chan, sizeof(uint16_t)) < 0) {
+        LOG_ERROR("main: error setting channel\n");
+    }
+
+
     /* do some beaconing */
     beaconing_start();
 
