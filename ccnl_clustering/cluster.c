@@ -68,6 +68,8 @@ void *_loop(void *arg)
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_start();
 
+    xtimer_usleep(10000);
+
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
         LOG_ERROR("main: critical error, aborting\n");
         return NULL;
@@ -170,7 +172,7 @@ void cluster_init(void)
     cluster_state = CLUSTER_STATE_INACTIVE;
 
     cluster_pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
-                         THREAD_PRIORITY_MAIN-1, THREAD_CREATE_STACKTEST |
+                         THREAD_PRIORITY_MAIN-2, THREAD_CREATE_STACKTEST |
                          THREAD_CREATE_WOUT_YIELD, _loop, NULL, "cluster manager");
 }
 
