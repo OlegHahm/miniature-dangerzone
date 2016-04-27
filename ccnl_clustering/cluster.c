@@ -37,15 +37,15 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 
 /* prototypes */
 static void _send_int(char *val, size_t len);
+xtimer_t data_timer;
+    msg_t data_msg;
 
 void *_loop(void *arg)
 {
     (void) arg;
-    xtimer_t data_timer;
     _cluster_timer.target = _cluster_timer.long_target = data_timer.target =
         data_timer.long_target = _sleep_timer.target = _sleep_timer.long_target = 0;
 
-    msg_t data_msg;
     data_msg.type = CLUSTER_MSG_NEWDATA;
 
     msg_init_queue(_mq, (sizeof(_mq) / sizeof(msg_t)));
@@ -73,7 +73,7 @@ void *_loop(void *arg)
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds\n", (offset / 1000000));
-    xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
+    xtimer_set_msg(&data_timer, offset, &data_msg, sched_active_pid);
 
     /* enter correct state and set timer if necessary */
     if (cluster_position == 0) {
