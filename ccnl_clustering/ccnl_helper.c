@@ -122,8 +122,12 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     for (unsigned i = 0; i < 3; i++) {
         prefix = ccnl_URItoPrefix(ignore_prefixes[i], CCNL_SUITE_NDNTLV, NULL, 0);
 
-        if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
-        {
+        if (cluster_state == CLUSTER_STATE_HANDOVER) {
+            LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
+            free_prefix(prefix);
+            return 1;
+        }
+        if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
             LOG_DEBUG("ccnl_helper: ignoring this content\n");
             struct ccnl_pkt_s *tmp = pkt;
             struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
@@ -154,7 +158,9 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
     {
         /* only deputy sends ACK */
-        if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+        if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
+            (cluster_state == CLUSTER_STATE_TAKEOVER) ||
+            (cluster_state == CLUSTER_STATE_HANDOVER)) {
             LOG_INFO("ccnl_helper: acknowledging store request for %s\n", pfx_str);
             _send_ack(relay, from, pkt->pfx);
         }
@@ -175,6 +181,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_DEPUTY) {
             LOG_INFO("ccnl_helper: acknowledging interest for handover\n");
+            cluster_state = CLUSTER_STATE_HANDOVER;
             _send_ack(relay, from, pkt->pfx);
             /* schedule transmitting content store */
             msg_t m;

@@ -113,7 +113,9 @@ void *_loop(void *arg)
                 char val[sizeof(data) * 2];
                 snprintf(val, sizeof(val) + 1, "%08X\n", data);
 
-                if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+                if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
+                    (cluster_state == CLUSTER_STATE_TAKEOVER) ||
+                    (cluster_state == CLUSTER_STATE_HANDOVER)) {
                     LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
                     /* for the deputy we put the content directly into the store */
                     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9;

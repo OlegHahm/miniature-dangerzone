@@ -23,6 +23,7 @@
 
 typedef enum {
     CLUSTER_STATE_DEPUTY,
+    CLUSTER_STATE_HANDOVER,
     CLUSTER_STATE_INACTIVE,
     CLUSTER_STATE_TAKEOVER
 } cluster_state_t;
