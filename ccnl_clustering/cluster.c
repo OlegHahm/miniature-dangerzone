@@ -24,6 +24,7 @@ static xtimer_t _cluster_timer, _sleep_timer;
 uint16_t cluster_my_id;
 kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 
+/* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
 #define BLOOM_HASHF (8)
 
@@ -34,29 +35,34 @@ hashfp_t _hashes[BLOOM_HASHF] = {
     (hashfp_t) rotating_hash, (hashfp_t) one_at_a_time_hash,
 };
 
-
 /* prototypes */
 static void _send_int(char *val, size_t len);
-xtimer_t data_timer;
-    msg_t data_msg;
 
+/* data timer variables */
+static xtimer_t _data_timer;
+static msg_t _data_msg;
+
+/* main event loop */
 void *_loop(void *arg)
 {
     (void) arg;
-    _cluster_timer.target = _cluster_timer.long_target = data_timer.target =
-        data_timer.long_target = _sleep_timer.target = _sleep_timer.long_target = 0;
 
-    data_msg.type = CLUSTER_MSG_NEWDATA;
+    /* initialize timer variables */
+    _cluster_timer.target = _cluster_timer.long_target = _data_timer.target =
+        _data_timer.long_target = _sleep_timer.target = _sleep_timer.long_target = 0;
 
+    _data_msg.type = CLUSTER_MSG_NEWDATA;
+
+    /* initialize other stuff */
     msg_init_queue(_mq, (sizeof(_mq) / sizeof(msg_t)));
 
     bloom_init(&cluster_neighbors, BLOOM_BITS, _bf, _hashes, BLOOM_HASHF);
 
+    /* configure the channel */
     uint16_t chan = CCNLRIOT_CHANNEL;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_CHANNEL, 0, (uint16_t *)&chan, sizeof(uint16_t)) < 0) {
         LOG_ERROR("main: error setting channel\n");
     }
-
 
     /* do some beaconing */
     beaconing_start();
@@ -73,14 +79,14 @@ void *_loop(void *arg)
         return NULL;
     }
 
-    /* XXX: perform cluster ordering and compute my position */
+    /* set the CCN callbacks */
     ccnl_set_local_producer(ccnlriot_producer);
     ccnl_set_local_consumer(ccnlriot_consumer);
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
-    xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
+    xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
 
     /* enter correct state and set timer if necessary */
     if (cluster_position == 0) {
@@ -130,7 +136,7 @@ void *_loop(void *arg)
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
                 LOG_DEBUG("Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
-                xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
+                xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
                 break;
             case CLUSTER_MSG_ALLDATA:
                 LOG_DEBUG("cluster: received alldata request\n");

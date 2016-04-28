@@ -5,6 +5,7 @@
 #include "ccnlriot.h"
 #include "cluster.h"
 
+/* data format of beacons */
 #define BEACONING_MK    (0x1701)
 
 typedef struct {
@@ -12,10 +13,12 @@ typedef struct {
     uint16_t id;
 } beacon_t;
 
+/* initialize some global variables */
 uint16_t cluster_position = 0;
 
 uint16_t cluster_size = 1;
 
+/* handle a received beacon */
 static void _handle_beacon(gnrc_pktsnip_t *pkt)
 {
     if (pkt->size != sizeof(beacon_t)) {
@@ -33,6 +36,7 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
     if (bloom_check(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id))) {
         LOG_DEBUG("beaconing: already know this neighbor\n");
     }
+    /* if we don't know the neighbor we analyze its ID */
     else {
         bloom_add(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id));
         cluster_size++;
@@ -43,6 +47,7 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
     gnrc_pktbuf_release(pkt);
 }
 
+/* start sending beacons */
 void beaconing_start(void)
 {
     uint8_t remaining_beacons = CLUSTER_BEACONING_COUNT;
@@ -103,6 +108,7 @@ void beaconing_start(void)
     gnrc_netreg_unregister(GNRC_NETTYPE_UNDEF, &_ne);
 }
 
+/* send a beacon */
 void beaconing_send(void)
 {
     gnrc_pktsnip_t *pkt, *hdr;
