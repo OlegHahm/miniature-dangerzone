@@ -66,7 +66,7 @@ int main(void)
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
     puts("RIOT network stack example application");
 
-    icn_addToFixedSchedule(NULL, 4, -1, -1);
+    //icn_addToFixedSchedule(NULL, 4, -1, -1);
 
     /* start shell */
     puts("All up, running the shell now");

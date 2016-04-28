@@ -6,7 +6,7 @@
 #include "net/gnrc/pktbuf.h"
 #include "net/gnrc/netif/hdr.h"
 
-#define SILENT_INTERVAL     (50000)
+#define SILENT_INTERVAL     (50)
 #define NOISE_NETIF         (3)
 #define NOISE_CHAN          (26)
 #define NOISE_PAN           (44)

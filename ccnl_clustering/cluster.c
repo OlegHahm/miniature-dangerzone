@@ -79,8 +79,8 @@ void *_loop(void *arg)
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
-    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds\n", (offset / 1000000));
-    xtimer_set_msg(&data_timer, offset, &data_msg, sched_active_pid);
+    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
 
     /* enter correct state and set timer if necessary */
     if (cluster_position == 0) {
@@ -129,7 +129,7 @@ void *_loop(void *arg)
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
-                LOG_DEBUG("Next event in %" PRIu32 " seconds\n", (offset / 1000000));
+                LOG_DEBUG("Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
                 xtimer_set_msg(&data_timer, offset, &data_msg, cluster_pid);
                 break;
             case CLUSTER_MSG_ALLDATA:
@@ -186,7 +186,7 @@ void cluster_sleep(uint8_t periods)
         LOG_WARNING("cluster: error going to sleep\n");
     }
     _wakeup_msg.type = CLUSTER_MSG_TAKEOVER;
-    LOG_DEBUG("cluster: wakeup in %u seconds\n", ((periods * CLUSTER_PERIOD) / SEC_IN_USEC));
+    LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD) / SEC_IN_USEC), (int) cluster_pid);
     xtimer_set_msg(&_cluster_timer, periods * CLUSTER_PERIOD, &_wakeup_msg, cluster_pid);
 }
 
@@ -209,12 +209,13 @@ void cluster_wakeup(void)
 static msg_t _sleep_msg;
 static void _send_int(char *val, size_t len)
 {
+    LOG_DEBUG("cluster: entering _send_int\n");
     netopt_state_t state = NETOPT_STATE_IDLE;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
         LOG_WARNING("cluster: error waking up\n");
     }
     ccnl_helper_int(NULL, (unsigned char*) val, len);
     _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
-    LOG_DEBUG("cluster: going back to sleep in %u microseconds\n", CLUSTER_STAY_AWAKE_PERIOD);
+    LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
     xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
 }

@@ -122,11 +122,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     for (unsigned i = 0; i < 3; i++) {
         prefix = ccnl_URItoPrefix(ignore_prefixes[i], CCNL_SUITE_NDNTLV, NULL, 0);
 
-        if (cluster_state == CLUSTER_STATE_HANDOVER) {
-            LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
-            free_prefix(prefix);
-            return 1;
-        }
         if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
             LOG_DEBUG("ccnl_helper: ignoring this content\n");
             struct ccnl_pkt_s *tmp = pkt;
@@ -138,6 +133,10 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             return 1;
         }
         free_prefix(prefix);
+    }
+    if (cluster_state == CLUSTER_STATE_HANDOVER) {
+        LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
+        return 1;
     }
     return 0;
 }
@@ -157,6 +156,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
     {
+        if (cluster_state == CLUSTER_STATE_HANDOVER) {
+            LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
+            res = 1;
+            goto out;
+        }
         /* only deputy sends ACK */
         if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
             (cluster_state == CLUSTER_STATE_TAKEOVER) ||
@@ -221,6 +225,15 @@ void ccnl_helper_send_all_data(void)
 {
     struct ccnl_content_s *cit;
     for (cit = ccnl_relay.contents; cit; cit = cit->next) {
+        printf("###### %p\n", (void*) cit);
+        printf("######### %p\n", (void*) cit->pkt);
+        printf("############ %p\n", (void*) cit->pkt->pfx);
+        if (!cit->pkt) {
+            LOG_ERROR("ccnl_helper: cache entry without content!?\n");
+        }
+        if (!cit->pkt->pfx) {
+            LOG_ERROR("ccnl_helper: cache entry without a name!?\n");
+        }
         /* send store interest for each object in cache */
         char *p_str = ccnl_prefix_to_path_detailed(cit->pkt->pfx, 1, 0, 0);
         ccnl_helper_int((unsigned char*) p_str, cit->pkt->content, cit->pkt->contlen);
