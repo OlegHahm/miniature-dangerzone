@@ -18,11 +18,12 @@ msg_t _mq[8];
 /* public variables */
 cluster_state_t cluster_state;
 bloom_t cluster_neighbors;
+kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
+uint16_t cluster_my_id;
 
 /* internal variables */
 static xtimer_t _cluster_timer, _sleep_timer;
-uint16_t cluster_my_id;
-kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
+static msg_t _sleep_msg;
 
 /* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
@@ -36,7 +37,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
-static void _send_int(char *val, size_t len);
+static void _populate_data(char *val, size_t len);
 
 /* data timer variables */
 static xtimer_t _data_timer;
@@ -130,8 +131,8 @@ void *_loop(void *arg)
                     free_prefix(prefix);
                 }
                 else {
-                    LOG_DEBUG("cluster: call _send_int\n");
-                    _send_int(val, (sizeof(data) * 2) + 1);
+                    LOG_DEBUG("cluster: call _populate_data\n");
+                    _populate_data(val, (sizeof(data) * 2) + 1);
                 }
                 /* schedule new data generation */
                 offset = CLUSTER_EVENT_PERIOD;
@@ -212,10 +213,10 @@ void cluster_wakeup(void)
     }
 }
 
-static msg_t _sleep_msg;
-static void _send_int(char *val, size_t len)
+static void _populate_data(char *val, size_t len)
 {
-    LOG_DEBUG("cluster: entering _send_int\n");
+    /* first wake up radio (if necessary) */
+    LOG_DEBUG("cluster: entering _populate_data\n");
     netopt_state_t state;
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         if (state == NETOPT_STATE_SLEEP) {
@@ -232,7 +233,8 @@ static void _send_int(char *val, size_t len)
     else {
         LOG_WARNING("cluster: error requesting radio state\n");
     }
-    ccnl_helper_int(NULL, (unsigned char*) val, len);
+    /* populate the content now */
+    ccnl_helper_publish(NULL, (unsigned char*) val, len);
     _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
     LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
     xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);

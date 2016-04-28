@@ -260,6 +260,27 @@ void ccnl_helper_send_all_data(void)
     }
 }
 
+void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len)
+{
+    size_t prefix_len = len;
+    if (prefix == NULL) {
+        prefix_len += sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8 + len;
+    }
+    unsigned char pfx[prefix_len];
+    if (prefix == NULL) {
+        snprintf((char*) pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX,
+                 CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
+        prefix = pfx;
+    }
+
+    struct ccnl_prefix_s *p = ccnl_URItoPrefix((char*) prefix, CCNL_SUITE_NDNTLV, NULL, 0);
+    struct ccnl_content_s *c = ccnl_helper_create_cont(p, value, len, false);
+    ccnl_broadcast(&ccnl_relay, c->pkt);
+    free_prefix(p);
+    free_packet(c->pkt);
+    ccnl_free(c);
+}
+
 /* build and send an interest packet
  * if prefix is NULL, the value is used to create a store interest */
 int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
