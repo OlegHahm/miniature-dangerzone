@@ -210,9 +210,21 @@ static msg_t _sleep_msg;
 static void _send_int(char *val, size_t len)
 {
     LOG_DEBUG("cluster: entering _send_int\n");
-    netopt_state_t state = NETOPT_STATE_IDLE;
-    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
-        LOG_WARNING("cluster: error waking up\n");
+    netopt_state_t state;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
+        if (state == NETOPT_STATE_SLEEP) {
+            LOG_DEBUG("cluster: waking up radio\n");
+            state = NETOPT_STATE_IDLE;
+            if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
+                LOG_WARNING("cluster: error waking up\n");
+            }
+        }
+        else {
+            LOG_DEBUG("cluster: radio is already on\n");
+        }
+    }
+    else {
+        LOG_WARNING("cluster: error requesting radio state\n");
     }
     ccnl_helper_int(NULL, (unsigned char*) val, len);
     _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
