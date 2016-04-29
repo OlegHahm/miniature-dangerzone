@@ -72,7 +72,7 @@ extern uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN];
 int ccnlriot_stats(int argc, char **argv);
 
 void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len);
-int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len);
+int ccnl_helper_int(unsigned char *prefix);
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,

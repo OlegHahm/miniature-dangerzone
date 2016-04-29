@@ -49,61 +49,45 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     return c;
 }
 
-/* strips the firsti and last component from a prefix name */
-static struct ccnl_prefix_s *_get_pfx_from_store(struct ccnl_prefix_s *pfx)
+struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
 {
-    int i = 0, len = 0;
+    int nonce = random_uint32();
+    LOG_DEBUG("nonce: %i\n", nonce);
 
-    /* create a new prefixi that is 2 components smaller than the initial one */
-    struct ccnl_prefix_s *p = ccnl_prefix_new(pfx->suite, pfx->compcnt);
-    if (!p) {
+    extern int ndntlv_mkInterest(struct ccnl_prefix_s *name, int *nonce, unsigned char *out, int outlen);
+    int len = ndntlv_mkInterest(prefix, &nonce, _int_buf, CCNLRIOT_BUF_SIZE);
+
+    unsigned char *start = _int_buf;
+    unsigned char *data = _int_buf;
+    struct ccnl_pkt_s *pkt;
+
+    int typ;
+    int int_len;
+
+    /* TODO: support other suites */
+    if (ccnl_ndntlv_dehead(&data, &len, (int*) &typ, &int_len) || (int) int_len > len) {
+        LOG_WARNING("  invalid packet format\n");
         return NULL;
     }
+    pkt = ccnl_ndntlv_bytes2pkt(NDN_TLV_Interest, start, &data, &len);
 
-    p->compcnt = pfx->compcnt - 2;
-    p->chunknum = pfx->chunknum;
-
-    /* compute its size and allocate the required memory */
-    for (i = 1; i < pfx->compcnt - 1; i++) {
-        len += pfx->complen[i];
-    }
-
-    p->bytes = (unsigned char*) ccnl_malloc(len);
-    if (!p->bytes) {
-        free_prefix(p);
-        return NULL;
-    }
-
-    /* copy the remaining components */
-    len = 0;
-    for (i = 1; i < pfx->compcnt - 1; i++) {
-        p->complen[i-1] = pfx->complen[i];
-        p->comp[i-1] = p->bytes + len;
-        memcpy(p->bytes + len, pfx->comp[i], p->complen[i-1]);
-        len += p->complen[i-1];
-    }
-
-    if (pfx->chunknum) {
-        p->chunknum = (int*) ccnl_malloc(sizeof(int));
-        *p->chunknum = *pfx->chunknum;
-    }
-
-    return p;
+    struct ccnl_face_s *loopback_face = ccnl_get_face_or_create(&ccnl_relay, -1, NULL, 0);
+    return ccnl_interest_new(&ccnl_relay, loopback_face, &pkt);
 }
 
 /* send an acknowledgement */
 static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_prefix_s *pfx)
 {
-            struct ccnl_content_s *c =
-                ccnl_helper_create_cont(pfx, (unsigned char*)
-                                        CCNLRIOT_CONT_ACK,
-                                        strlen(CCNLRIOT_CONT_ACK) + 1, false);
-            ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
-                                                        c->pkt->buf->datalen));
+    struct ccnl_content_s *c =
+        ccnl_helper_create_cont(pfx, (unsigned char*)
+                                CCNLRIOT_CONT_ACK,
+                                strlen(CCNLRIOT_CONT_ACK) + 1, false);
+    ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
+                                                c->pkt->buf->datalen));
 
-            free_packet(c->pkt);
-            ccnl_free(c);
+    free_packet(c->pkt);
+    ccnl_free(c);
 }
 
 /* local callback to handle incoming content chunks */
@@ -119,35 +103,41 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     /* a list of prefixes that should be ignored */
     struct ccnl_prefix_s *prefix;
 
-    char store_pfx[] = CCNLRIOT_STORE_PREFIX;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    char done_pfx[] = CCNLRIOT_DONE_PREFIX;
-    char *ignore_prefixes[3];
-    ignore_prefixes[0] = store_pfx;
-    ignore_prefixes[1] = all_pfx;
-    ignore_prefixes[2] = done_pfx;
 
-    for (unsigned i = 0; i < 3; i++) {
-        prefix = ccnl_URItoPrefix(ignore_prefixes[i], CCNL_SUITE_NDNTLV, NULL, 0);
+    prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
 
-        if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
-            LOG_DEBUG("ccnl_helper: ignoring this content\n");
-            struct ccnl_pkt_s *tmp = pkt;
-            struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
-            ccnl_content_serve_pending(relay, c);
-            free_packet(tmp);
-            ccnl_free(c);
-            free_prefix(prefix);
-            return 1;
-        }
+    if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
+        LOG_DEBUG("ccnl_helper: ignoring this content\n");
+        struct ccnl_pkt_s *tmp = pkt;
+        struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
+        ccnl_content_serve_pending(relay, c);
+        free_packet(tmp);
+        ccnl_free(c);
         free_prefix(prefix);
+        return 1;
     }
+    free_prefix(prefix);
+
     /* XXX: might be unnecessary du to mutex now */
     /* if we're currently transferring our cache to the new deputy, we do not touch the content store */
     if (cluster_state == CLUSTER_STATE_HANDOVER) {
         LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
+        free_packet(pkt);
         return 1;
     }
+
+    if (strncmp((char*) pkt->content, CCNLRIOT_CONT_ACK, strlen(CCNLRIOT_CONT_ACK)) == 0) {
+        LOG_DEBUG("ccnl_helper: received ACK, flag the content\n");
+        /* TODO: flag the content */
+        free_packet(pkt);
+        return 1;
+    }
+    /* TODO: implement not being interested in all content */
+    /* create a temporary interest */
+    ccnl_helper_create_int(pkt->pfx);
+    _send_ack(relay, from, pkt->pfx);
+
     return 0;
 }
 
@@ -160,45 +150,13 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n", xtimer_now(), pfx_str);
 
-    char store_pfx[] = CCNLRIOT_STORE_PREFIX;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    char done_pfx[] = CCNLRIOT_DONE_PREFIX;
 
     /* first handle store interests */
-    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(store_pfx, CCNL_SUITE_NDNTLV,
-                                                    NULL, 0);
-    if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH))
-    {
-        if (cluster_state == CLUSTER_STATE_HANDOVER) {
-            LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
-            res = 1;
-            goto out;
-        }
-        /* only deputy sends ACK */
-        if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
-            (cluster_state == CLUSTER_STATE_TAKEOVER) ||
-            (cluster_state == CLUSTER_STATE_HANDOVER)) {
-            LOG_INFO("ccnl_helper: acknowledging store request for %s\n", pfx_str);
-            _send_ack(relay, from, pkt->pfx);
-        }
-        /* strip store prefix and cache it */
-        struct ccnl_prefix_s *new_p = _get_pfx_from_store(pkt->pfx);
-        ccnl_helper_create_cont(new_p, pkt->pfx->comp[pkt->pfx->compcnt-1],
-                                pkt->pfx->complen[pkt->pfx->compcnt-1], true);
-        /* do not do anything else for a store interest */
-        free_prefix(new_p);
-        free_packet(pkt);
-        res = 1;
-        goto out;
-    }
-    free_prefix(prefix);
-
-    /* check for someone requesting all the data */
-    prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_DEPUTY) {
             LOG_INFO("ccnl_helper: acknowledging interest for handover\n");
-            cluster_state = CLUSTER_STATE_HANDOVER;
             _send_ack(relay, from, pkt->pfx);
             /* schedule transmitting content store */
             msg_t m;
@@ -211,22 +169,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
     free_prefix(prefix);
 
-    /* check if handover is done */
-    prefix = ccnl_URItoPrefix(done_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
-    if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
-        if (cluster_state == CLUSTER_STATE_TAKEOVER) {
-            _send_ack(relay, from, pkt->pfx);
-            LOG_INFO("ccnl_helper: I'm the new deputy\n");
-            cluster_state = CLUSTER_STATE_DEPUTY;
-        }
-        else {
-            LOG_WARNING("!!! ccnl_helper: received unexpected \"done\"\n");
-        }
-        free_packet(pkt);
-        res = 1;
-        goto out;
-    }
-
 out:
     /* freeing memory */
     ccnl_free(pfx_str);
@@ -237,6 +179,7 @@ out:
 /* iterating over content store and transmit everything */
 void ccnl_helper_send_all_data(void)
 {
+    cluster_state = CLUSTER_STATE_HANDOVER;
     struct ccnl_content_s *cit;
     for (cit = ccnl_relay.contents; cit; cit = cit->next) {
         printf("###### %p\n", (void*) cit);
@@ -250,14 +193,11 @@ void ccnl_helper_send_all_data(void)
         }
         /* send store interest for each object in cache */
         char *p_str = ccnl_prefix_to_path_detailed(cit->pkt->pfx, 1, 0, 0);
-        ccnl_helper_int((unsigned char*) p_str, cit->pkt->content, cit->pkt->contlen);
+        ccnl_helper_publish((unsigned char*) p_str, cit->pkt->content, cit->pkt->contlen);
         ccnl_free(p_str);
     }
-    /* send done message */
-    char done_pfx[] = CCNLRIOT_DONE_PREFIX;
-    if (ccnl_helper_int((unsigned char*) done_pfx, NULL, 0)) {
-        cluster_sleep(cluster_size-1);
-    }
+    /* TODO: make sure data was received */
+    cluster_sleep(cluster_size-1);
 }
 
 void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len)
@@ -268,8 +208,8 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
     }
     unsigned char pfx[prefix_len];
     if (prefix == NULL) {
-        snprintf((char*) pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX,
-                 CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
+        snprintf((char*) pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX,
+                 CCNLRIOT_TYPE_PREFIX, cluster_my_id);
         prefix = pfx;
     }
 
@@ -283,7 +223,7 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
 
 /* build and send an interest packet
  * if prefix is NULL, the value is used to create a store interest */
-int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
+int ccnl_helper_int(unsigned char *prefix)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
     /* initialize address with 0xFF for broadcast */
@@ -294,31 +234,6 @@ int ccnl_helper_int(unsigned char *prefix, unsigned char *value, size_t len)
     memset(_cont_buf, '\0', CCNLRIOT_BUF_SIZE);
 
     unsigned success = 0;
-
-    size_t prefix_len = len;
-    if (prefix == NULL) {
-        prefix_len += sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8 + len;
-    }
-    else {
-        /* add 1 for the \0 terminator */
-        prefix_len += strlen((char*) prefix) + 1;
-    }
-
-    if (len > 0) {
-        prefix_len += sizeof(CCNLRIOT_STORE_PREFIX);
-    }
-    unsigned char pfx[prefix_len];
-    if (len > 0) {
-        if (prefix == NULL) {
-            snprintf((char*) pfx, prefix_len, "%s%s%s/%08X/%s",
-                     CCNLRIOT_STORE_PREFIX, CCNLRIOT_SITE_PREFIX,
-                     CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
-        }
-        else if (len > 0) {
-            snprintf((char*) pfx, prefix_len, "%s%s/%s", CCNLRIOT_STORE_PREFIX, prefix, (char*) value);
-        }
-        prefix = pfx;
-    }
 
     gnrc_netreg_entry_t _ne;
 

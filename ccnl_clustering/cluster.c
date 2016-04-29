@@ -199,10 +199,10 @@ void cluster_sleep(uint8_t periods)
 
 void cluster_takeover(void)
 {
-    cluster_state = CLUSTER_STATE_TAKEOVER;
+    cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    ccnl_helper_int(all_pfx, NULL, 0);
+    ccnl_helper_int(all_pfx);
 }
 
 void cluster_wakeup(void)
