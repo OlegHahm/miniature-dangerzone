@@ -90,6 +90,20 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     ccnl_free(c);
 }
 
+
+static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
+{
+    for (struct ccnl_content_s *c = ccnl_relay.contents; c; c = c->next) {
+        if ((c->pkt->buf) && (pkt->buf) &&
+            (c->pkt->buf->datalen==pkt->buf->datalen) &&
+            !memcmp(c->pkt->buf->data,pkt->buf->data,c->pkt->buf->datalen)) {
+            return true; // content is dup, do nothing
+        }
+    }
+    return false;
+}
+
+
 /* local callback to handle incoming content chunks */
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
@@ -135,7 +149,12 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
     /* TODO: implement not being interested in all content */
     /* create a temporary interest */
-    ccnl_helper_create_int(pkt->pfx);
+    if (_cont_is_dup(pkt)) {
+        LOG_DEBUG("ccnl_helper: ignoring duplicate content\n");
+    }
+    else {
+        ccnl_helper_create_int(pkt->pfx);
+    }
     _send_ack(relay, from, pkt->pfx);
 
     return 0;
