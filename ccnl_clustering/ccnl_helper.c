@@ -179,6 +179,7 @@ out:
 /* iterating over content store and transmit everything */
 void ccnl_helper_send_all_data(void)
 {
+    LOG_INFO("\n\nccnl_helper: change to state HANDOVER\n\n");
     cluster_state = CLUSTER_STATE_HANDOVER;
     struct ccnl_content_s *cit;
     for (cit = ccnl_relay.contents; cit; cit = cit->next) {

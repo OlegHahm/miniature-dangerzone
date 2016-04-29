@@ -93,10 +93,12 @@ void *_loop(void *arg)
     if (cluster_position == 0) {
         LOG_INFO("cluster: I'm the first deputy\n");
         /* become deputy now */
+        LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
         cluster_state = CLUSTER_STATE_DEPUTY;
     }
     else {
         /* go to sleep and set timer */
+        LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
         cluster_state = CLUSTER_STATE_INACTIVE;
         cluster_sleep(cluster_position);
     }
@@ -176,6 +178,7 @@ void cluster_init(void)
 
     random_init(cluster_my_id);
     /* initialize to inactive state */
+    LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
     cluster_state = CLUSTER_STATE_INACTIVE;
 
     cluster_pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
@@ -187,6 +190,7 @@ static msg_t _wakeup_msg;
 void cluster_sleep(uint8_t periods)
 {
     LOG_INFO("cluster: going to sleep\n");
+    LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
     cluster_state = CLUSTER_STATE_INACTIVE;
     netopt_state_t state = NETOPT_STATE_SLEEP;
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
@@ -199,6 +203,7 @@ void cluster_sleep(uint8_t periods)
 
 void cluster_takeover(void)
 {
+    LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
