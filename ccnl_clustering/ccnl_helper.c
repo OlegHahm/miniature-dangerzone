@@ -103,7 +103,6 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
     return false;
 }
 
-
 /* local callback to handle incoming content chunks */
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
@@ -228,8 +227,8 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
     }
     unsigned char pfx[prefix_len];
     if (prefix == NULL) {
-        snprintf((char*) pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX,
-                 CCNLRIOT_TYPE_PREFIX, cluster_my_id);
+        snprintf((char*) pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX,
+                 CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
         prefix = pfx;
     }
 

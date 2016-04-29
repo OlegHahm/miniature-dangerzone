@@ -118,16 +118,16 @@ void *_loop(void *arg)
                 /* each byte needs 2 characters to be represented as a hex value */
                 /* string representation */
                 char val[sizeof(data) * 2];
-                snprintf(val, sizeof(val) + 1, "%08X\n", data);
+                snprintf(val, sizeof(val) + 1, "%08X", data);
 
                 if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
                     (cluster_state == CLUSTER_STATE_TAKEOVER) ||
                     (cluster_state == CLUSTER_STATE_HANDOVER)) {
                     LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
                     /* for the deputy we put the content directly into the store */
-                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9;
+                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
                     char pfx[prefix_len];
-                    snprintf(pfx, prefix_len, "%s%s/%08X", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id);
+                    snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
                     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
                     ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
                     free_prefix(prefix);
