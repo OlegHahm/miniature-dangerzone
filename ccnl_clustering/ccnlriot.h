@@ -32,7 +32,7 @@
 #elif defined(CPU_SAMD21)
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 #else
-#define TLSF_BUFFER     (40960 / sizeof(uint32_t))
+#define TLSF_BUFFER     (45960 / sizeof(uint32_t))
 #endif
 
 #define CCNLRIOT_BUF_SIZE (128)
@@ -46,7 +46,7 @@
 #ifdef CPU_SAMD21
 #define CCNLRIOT_CACHE_SIZE     (5)
 #else
-#define CCNLRIOT_CACHE_SIZE     (25)
+#define CCNLRIOT_CACHE_SIZE     (30)
 #endif
 
 enum {
