@@ -2,6 +2,7 @@
 #include "msg.h"
 #include "xtimer.h"
 #include "net/gnrc/netreg.h"
+#include "net/gnrc/netapi.h"
 #include "ccnl-pkt-ndntlv.h"
 
 #include "cluster.h"
@@ -43,7 +44,17 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     }
     c = ccnl_content_new(&ccnl_relay, &pk);
     if (cache) {
-        ccnl_content_add2cache(&ccnl_relay, c);
+        /* XXX: always use first (and only IF) */
+        uint8_t hwaddr[CCNLRIOT_ADDRLEN];
+        gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));
+        sockunion dest;
+        dest.sa.sa_family = AF_PACKET;
+        memcpy(&dest.linklayer.sll_addr, hwaddr, CCNLRIOT_ADDRLEN);
+        dest.linklayer.sll_halen = CCNLRIOT_ADDRLEN;
+        extern void ccnl_ll_TX(struct ccnl_relay_s *ccnl, struct ccnl_if_s *ifc, sockunion *dest, struct ccnl_buf_s *buf);
+        ccnl_ll_TX(&ccnl_relay, &ccnl_relay.ifs[0], &dest, c->pkt->buf);
+        free_packet(c->pkt);
+        ccnl_free(c);
     }
 
     return c;
