@@ -83,6 +83,9 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         ccnl_helper_create_cont(pfx, (unsigned char*)
                                 CCNLRIOT_CONT_ACK,
                                 strlen(CCNLRIOT_CONT_ACK) + 1, false);
+    if (c == NULL) {
+        return;
+    }
     ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
                                                 c->pkt->buf->datalen));
 
@@ -247,6 +250,10 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
         return;
     }
     struct ccnl_content_s *c = ccnl_helper_create_cont(p, value, len, false);
+    if (c == NULL) {
+        free_prefix(p);
+        return;
+    }
     ccnl_broadcast(&ccnl_relay, c->pkt);
     free_prefix(p);
     free_packet(c->pkt);
