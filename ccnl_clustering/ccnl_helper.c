@@ -119,6 +119,10 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
     prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 666\n");
+        return 1;
+    }
 
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         LOG_DEBUG("ccnl_helper: ignoring this content\n");
@@ -172,6 +176,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     /* first handle store interests */
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 667\n");
+        ccnl_free(pfx_str);
+        return 1;
+    }
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
         if (cluster_state == CLUSTER_STATE_DEPUTY) {
             LOG_INFO("ccnl_helper: acknowledging interest for handover\n");
@@ -233,6 +242,10 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
     }
 
     struct ccnl_prefix_s *p = ccnl_URItoPrefix((char*) prefix, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 668\n");
+        return;
+    }
     struct ccnl_content_s *c = ccnl_helper_create_cont(p, value, len, false);
     ccnl_broadcast(&ccnl_relay, c->pkt);
     free_prefix(p);
