@@ -39,6 +39,7 @@ void cluster_init(void);
 void cluster_takeover(void);
 void cluster_wakeup(void);
 void cluster_sleep(uint8_t periods);
+void cluster_new_data(void);
 
 void beaconing_start(void);
 void beaconing_send(void);

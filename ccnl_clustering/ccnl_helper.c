@@ -3,6 +3,7 @@
 #include "xtimer.h"
 #include "net/gnrc/netreg.h"
 #include "net/gnrc/netapi.h"
+#include "net/gnrc/pktbuf.h"
 #include "ccnl-pkt-ndntlv.h"
 
 #include "cluster.h"
@@ -271,6 +272,65 @@ void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len
     ccnl_free(c);
 }
 
+static xtimer_t _wait_timer = { .target = 0, .long_target = 0 };
+static msg_t _timeout_msg;
+static int _wait_for_chunk(void *buf, size_t buf_len)
+{
+    int res = (-1);
+
+    int32_t remaining = CCNL_MAX_INTEREST_RETRANSMIT * SEC_IN_USEC;
+    uint32_t now = xtimer_now();
+
+    while (1) { /* wait for a content pkt (ignore interests) */
+        LOG_DEBUG("  waiting for packet\n");
+
+        _timeout_msg.type = CCNL_MSG_TIMEOUT;
+        remaining -= (xtimer_now() - now);
+        if (remaining < 0) {
+            LOG_WARNING("ccnl_helper: timeout waiting for valid message\n");
+            res = -ETIMEDOUT;
+            break;
+        }
+        xtimer_set_msg64(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
+        msg_t m;
+        msg_receive(&m);
+
+        if (m.type == GNRC_NETAPI_MSG_TYPE_RCV) {
+            gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)m.content.ptr;
+            LOG_DEBUG("Type is: %i\n", pkt->type);
+            if (pkt->type == GNRC_NETTYPE_CCN_CHUNK) {
+                char *c = (char*) pkt->data;
+                LOG_INFO("Content is: %s\n", c);
+                size_t len = (pkt->size > buf_len) ? buf_len : pkt->size;
+                memcpy(buf, pkt->data, len);
+                res = (int) len;
+                gnrc_pktbuf_release(pkt);
+            }
+            else {
+                LOG_WARNING("Unkown content\n");
+                gnrc_pktbuf_release(pkt);
+                continue;
+            }
+            xtimer_remove(&_wait_timer);
+            break;
+        }
+        else if (m.type == CCNL_MSG_TIMEOUT) {
+            res = -ETIMEDOUT;
+            break;
+        }
+        else if (m.type == CLUSTER_MSG_NEWDATA) {
+            LOG_DEBUG("cluster: received newdata msg while waiting for content\n");
+            cluster_new_data();
+        }
+        else {
+            /* TODO: reduce timeout value */
+            LOG_DEBUG("Unknow message received, ignore it\n");
+        }
+    }
+
+    return res;
+}
+
 /* build and send an interest packet
  * if prefix is NULL, the value is used to create a store interest */
 int ccnl_helper_int(unsigned char *prefix)
@@ -295,7 +355,7 @@ int ccnl_helper_int(unsigned char *prefix)
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
         ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, 0, _int_buf, CCNLRIOT_BUF_SIZE);
-        if (ccnl_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, 0) > 0) {
+        if (_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE) > 0) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
             LOG_DEBUG("ccnl_helper: Content received: %s\n", _cont_buf);
             success++;

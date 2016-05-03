@@ -113,33 +113,7 @@ void *_loop(void *arg)
                 break;
             case CLUSTER_MSG_NEWDATA:
                 LOG_DEBUG("cluster: received newdata msg\n");
-                /* XXX: implement event */
-                unsigned data = xtimer_now();
-                /* each byte needs 2 characters to be represented as a hex value */
-                /* string representation */
-                char val[sizeof(data) * 2];
-                snprintf(val, sizeof(val) + 1, "%08X", data);
-
-                if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
-                    (cluster_state == CLUSTER_STATE_TAKEOVER) ||
-                    (cluster_state == CLUSTER_STATE_HANDOVER)) {
-                    LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
-                    /* for the deputy we put the content directly into the store */
-                    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
-                    char pfx[prefix_len];
-                    snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
-                    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
-                    ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
-                    free_prefix(prefix);
-                }
-                else {
-                    LOG_DEBUG("cluster: call _populate_data\n");
-                    _populate_data(val, (sizeof(data) * 2) + 1);
-                }
-                /* schedule new data generation */
-                offset = CLUSTER_EVENT_PERIOD;
-                LOG_DEBUG("Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
-                xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
+                cluster_new_data();
                 break;
             case CLUSTER_MSG_ALLDATA:
                 LOG_DEBUG("cluster: received alldata request\n");
@@ -216,6 +190,41 @@ void cluster_wakeup(void)
     if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
         LOG_WARNING("cluster: error waking up\n");
     }
+}
+
+void cluster_new_data(void)
+{
+    /* XXX: implement event */
+    unsigned data = xtimer_now();
+    /* each byte needs 2 characters to be represented as a hex value */
+    /* string representation */
+    char val[sizeof(data) * 2];
+    snprintf(val, sizeof(val) + 1, "%08X", data);
+
+    if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
+        (cluster_state == CLUSTER_STATE_TAKEOVER)) {
+        LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
+        /* for the deputy we put the content directly into the store */
+        size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
+        char pfx[prefix_len];
+        snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
+        struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+        if (prefix == NULL) {
+            LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
+        }
+        else {
+            ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
+            free_prefix(prefix);
+        }
+    }
+    else {
+        LOG_DEBUG("cluster: call _populate_data\n");
+        _populate_data(val, (sizeof(data) * 2) + 1);
+    }
+    /* schedule new data generation */
+    uint32_t offset = CLUSTER_EVENT_PERIOD;
+    LOG_DEBUG("Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
 }
 
 static void _populate_data(char *val, size_t len)
