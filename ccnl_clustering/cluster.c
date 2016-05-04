@@ -115,12 +115,12 @@ void *_loop(void *arg)
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
                 break;
-            case CLUSTER_MSG_ALLDATA:
-                LOG_DEBUG("cluster: received alldata request\n");
-                ccnl_helper_send_all_data();
-                break;
             case CLUSTER_MSG_BACKTOSLEEP:
                 LOG_DEBUG("cluster: received backtosleep request\n");
+                if (cluster_state != CLUSTER_STATE_INACTIVE) {
+                    LOG_WARNING("cluster: currently not in inactive state, sleeping would be bad idea\n");
+                    break;
+                }
                 netopt_state_t state = NETOPT_STATE_SLEEP;
                 if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
                     LOG_WARNING("cluster: error going to sleep\n");
@@ -130,7 +130,7 @@ void *_loop(void *arg)
                 LOG_WARNING("cluster: should receive beaconing message now!\n");
                 break;
             default:
-                LOG_WARNING("cluster: I don't understand this message\n");
+                LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);
         }
     }
     return NULL;
@@ -181,7 +181,13 @@ void cluster_takeover(void)
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    ccnl_helper_int(all_pfx);
+    for (unsigned cn = 0; cn < CCNLRIOT_CACHE_SIZE; cn++) {
+        if (ccnl_helper_int(all_pfx, &cn, true) == CCNLRIOT_LAST_CN) {
+            LOG_DEBUG("cluster: received final chunk\n");
+            break;
+        }
+    }
+    LOG_DEBUG("cluster: takeover completed\n");
 }
 
 void cluster_wakeup(void)
@@ -249,7 +255,9 @@ static void _populate_data(char *val, size_t len)
     }
     /* populate the content now */
     ccnl_helper_publish(NULL, (unsigned char*) val, len);
-    _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
-    LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
-    xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+    if (cluster_state != CLUSTER_STATE_HANDOVER) {
+        _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
+        LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
+        xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+    }
 }
