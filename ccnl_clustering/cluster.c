@@ -80,6 +80,7 @@ void *_loop(void *arg)
         return NULL;
     }
 
+    random_init(cluster_my_id);
     /* set the CCN callbacks */
     ccnl_set_local_producer(ccnlriot_producer);
     ccnl_set_local_consumer(ccnlriot_consumer);
