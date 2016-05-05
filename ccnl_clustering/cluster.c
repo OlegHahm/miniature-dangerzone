@@ -203,6 +203,13 @@ void cluster_wakeup(void)
 
 void cluster_new_data(void)
 {
+    /* XXX: save postponed value */
+    if (cluster_state == CLUSTER_STATE_HANDOVER) {
+        LOG_DEBUG("cluster: currently in handover, let's postpone by a second\n");
+        xtimer_set_msg(&_data_timer, SEC_IN_USEC, &_data_msg, cluster_pid);
+        return;
+    }
+
     /* XXX: implement event */
     unsigned data = xtimer_now();
     /* each byte needs 2 characters to be represented as a hex value */
