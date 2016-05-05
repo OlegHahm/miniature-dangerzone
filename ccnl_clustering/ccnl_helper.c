@@ -236,6 +236,13 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         }
     }
 
+    /* avoid interest flooding */
+    if (cluster_state == CLUSTER_STATE_INACTIVE) {
+        LOG_DEBUG("ccnl_helper: pretent to be sleeping\n");
+        free_packet(pkt);
+        return 1;
+    }
+
     /* check if this is a handover request */
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
@@ -301,6 +308,13 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             res = 0;
             goto out;
         }
+        free_packet(pkt);
+        res = 1;
+        goto out;
+    }
+
+    if (cluster_state == CLUSTER_STATE_HANDOVER) {
+        LOG_DEBUG("ccnl_helper: in handover we handle nothing else\n");
         free_packet(pkt);
         res = 1;
         goto out;
