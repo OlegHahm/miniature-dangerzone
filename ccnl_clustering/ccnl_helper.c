@@ -238,6 +238,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             pkt->pfx = new;
             ccnl_free(pkt->pfx->chunknum);
 
+            char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
+            LOG_DEBUG("%" PRIu32 " ccnl_helper: publish content for prefix: %s\n", xtimer_now(),
+                      pfx_str);
+            ccnl_free(pfx_str);
+
             /* free the old prefix */
             free_prefix(old);
             res = 0;
