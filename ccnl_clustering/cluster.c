@@ -185,8 +185,8 @@ void cluster_takeover(void)
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    for (unsigned cn = 0; cn < CCNLRIOT_CACHE_SIZE; cn++) {
-        if (ccnl_helper_int(all_pfx, &cn, true) == CCNLRIOT_LAST_CN) {
+    for (unsigned cn = 0; cn <= CCNLRIOT_CACHE_SIZE; cn++) {
+        if (ccnl_helper_int(all_pfx, &cn, true, false) == CCNLRIOT_LAST_CN) {
             LOG_DEBUG("cluster: received final chunk\n");
             break;
         }
