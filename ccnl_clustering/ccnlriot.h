@@ -36,6 +36,7 @@
 #endif
 
 #define CCNLRIOT_BUF_SIZE (128)
+#define CCNLRIOT_PFX_LEN   (50)
 
 #define USE_LONG        (1)
 #define USE_BROADCAST   (0)

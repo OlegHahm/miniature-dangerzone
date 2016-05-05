@@ -14,6 +14,7 @@
 static unsigned char _int_buf[CCNLRIOT_BUF_SIZE];
 static unsigned char _cont_buf[CCNLRIOT_BUF_SIZE];
 static unsigned char _out[CCNL_MAX_PACKET_SIZE];
+static char _prefix_str[CCNLRIOT_PFX_LEN];
 
 /* prototypes from CCN-lite */
 void free_packet(struct ccnl_pkt_s *pkt);
@@ -125,10 +126,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     (void) from;
     (void) relay;
-    char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local consumer for prefix: %s\n", xtimer_now(),
-             pfx_str);
-    ccnl_free(pfx_str);
+              ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
+    memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
     /* XXX: might be unnecessary du to mutex now */
     /* if we're currently transferring our cache to the new deputy, we do not touch the content store */
@@ -179,9 +179,9 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     int res = 0;
 
-    char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n",
-              xtimer_now(), pfx_str);
+              xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
+    memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
@@ -189,7 +189,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 667\n");
-        ccnl_free(pfx_str);
         return 1;
     }
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
@@ -238,10 +237,9 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             pkt->pfx = new;
             ccnl_free(pkt->pfx->chunknum);
 
-            char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
             LOG_DEBUG("%" PRIu32 " ccnl_helper: publish content for prefix: %s\n", xtimer_now(),
-                      pfx_str);
-            ccnl_free(pfx_str);
+                      ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
+            memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
             /* free the old prefix */
             free_prefix(old);
@@ -256,7 +254,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
 out:
     /* freeing memory */
-    ccnl_free(pfx_str);
     free_prefix(prefix);
     return res;
 }
