@@ -311,12 +311,14 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
         if (m.type == CLUSTER_MSG_RECEIVED) {
             LOG_DEBUG("ccnl_helper: received something, that's good enough for me\n");
             res = 1;
+            xtimer_remove(&_wait_timer);
             break;
         }
         else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
             LOG_DEBUG("ccnl_helper: received ack\n");
             memcpy(buf, CCNLRIOT_CONT_ACK, sizeof(CCNLRIOT_CONT_ACK));
             res = sizeof(CCNLRIOT_CONT_ACK);
+            xtimer_remove(&_wait_timer);
             break;
         }
         else if (m.type == GNRC_NETAPI_MSG_TYPE_RCV) {
