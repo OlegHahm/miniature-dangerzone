@@ -146,7 +146,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 666\n");
         return 1;
     }
-    if ((ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) &&
+    if ((ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH) >= 1) &&
         (strncmp((char*) pkt->content, CCNLRIOT_CONT_ACK, strlen(CCNLRIOT_CONT_ACK)) == 0)) {
         LOG_DEBUG("ccnl_helper: received ACK, flag the content\n");
         msg_t m = { .type = CLUSTER_MSG_RECEIVED_ACK };
@@ -185,13 +185,12 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
-    /* first handle store interests */
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 667\n");
         return 1;
     }
-    if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH)) {
+    if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH) >= 1) {
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
             /* make sure interest contains a chunknumber */
             if ((pkt->pfx->chunknum == NULL) || (*(pkt->pfx->chunknum) == -1)) {
