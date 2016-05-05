@@ -129,6 +129,9 @@ void *_loop(void *arg)
             case CLUSTER_MSG_BEACON:
                 LOG_WARNING("cluster: should receive beaconing message now!\n");
                 break;
+            case CLUSTER_MSG_RECEIVED:
+                LOG_DEBUG("cluster: received content, no special treatment necessary\n");
+                break;
             default:
                 LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);
         }
