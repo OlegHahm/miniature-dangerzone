@@ -237,7 +237,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             struct ccnl_prefix_s *new = ccnl_prefix_dup(cit->pkt->pfx);
             pkt->pfx = new;
             ccnl_free(pkt->pfx->chunknum);
-            pkt->pfx->compcnt--;
 
             /* free the old prefix */
             free_prefix(old);
