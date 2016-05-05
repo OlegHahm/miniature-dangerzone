@@ -242,6 +242,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 667\n");
+        free_packet(pkt);
         return 1;
     }
     if (ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH) >= 1) {
