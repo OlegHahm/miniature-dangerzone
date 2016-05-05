@@ -66,7 +66,7 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
 struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
 {
     int nonce = random_uint32();
-    LOG_DEBUG("nonce: %i\n", nonce);
+    LOG_DEBUG("nonce: %X\n", nonce);
 
     extern int ndntlv_mkInterest(struct ccnl_prefix_s *name, int *nonce, unsigned char *out, int outlen);
     int len = ndntlv_mkInterest(prefix, &nonce, _int_buf, CCNLRIOT_BUF_SIZE);
