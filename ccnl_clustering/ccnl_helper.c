@@ -249,7 +249,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         res = 1;
         goto out;
     }
-    free_prefix(prefix);
 
 out:
     /* freeing memory */
