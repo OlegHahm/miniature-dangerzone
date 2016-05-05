@@ -124,6 +124,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
     (void) from;
+    (void) relay;
     char *pfx_str = ccnl_prefix_to_path_detailed(pkt->pfx, 1, 0, 0);
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local consumer for prefix: %s\n", xtimer_now(),
              pfx_str);
@@ -164,11 +165,10 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
     else {
         ccnl_helper_create_int(pkt->pfx);
-        /* in case we're waiting for * chunks, try to send a message */
-        msg_t m = { .type = CLUSTER_MSG_RECEIVED };
-        msg_try_send(&m, cluster_pid);
     }
-    _send_ack(relay, from, pkt->pfx);
+    /* in case we're waiting for * chunks, try to send a message */
+    msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+    msg_try_send(&m, cluster_pid);
 
     return 0;
 }
@@ -207,7 +207,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             cluster_state = CLUSTER_STATE_HANDOVER;
 
             /* find corresponding chunk in store */
-            struct ccnl_content_s *cit = ccnl_relay.contents;
+            struct ccnl_content_s *cit = relay->contents;
             LOG_DEBUG("ccnl_helper: received %s request for chunk number %i\n",
                       CCNLRIOT_ALL_PREFIX, *(pkt->pfx->chunknum));
             int i;
