@@ -21,6 +21,10 @@ void free_packet(struct ccnl_pkt_s *pkt);
 struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 struct ccnl_prefix_s* ccnl_prefix_new(int suite, int cnt);
 
+/* internal variables */
+static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
+static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
+
 /* create a content struct */
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
@@ -164,11 +168,27 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         LOG_DEBUG("ccnl_helper: ignoring duplicate content\n");
     }
     else {
-        ccnl_helper_create_int(pkt->pfx);
+        struct ccnl_interest_s *i = relay->pit;
+        while (i) {
+            if (ccnl_prefix_cmp(i->pkt->pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
+                LOG_DEBUG("ccnl_helper: found matching interest, nothing to do\n");
+                if (from->faceid == i->from->faceid) {
+                    LOG_DEBUG("ccnl_helper: not bouncing chunk\n");
+                    struct ccnl_face_s *loopback_face = ccnl_get_face_or_create(&ccnl_relay, -1, NULL, 0);
+                    i->pending->face = loopback_face;
+                }
+                break;
+            }
+            i = i->next;
+        }
+        if (!i) {
+            ccnl_helper_create_int(pkt->pfx);
+        }
     }
     /* in case we're waiting for * chunks, try to send a message */
     msg_t m = { .type = CLUSTER_MSG_RECEIVED };
     msg_try_send(&m, cluster_pid);
+
 
     return 0;
 }
@@ -183,6 +203,40 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
+    /* check if we have a PIT entry for this interest and a corresponding entry
+     * in the content store */
+    struct ccnl_interest_s *i = relay->pit;
+    struct ccnl_content_s *c = relay->contents;
+    while (i) {
+        if (ccnl_prefix_cmp(i->pkt->pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
+            LOG_DEBUG("ccnl_helper: found matching interest, let's check if we "
+                      "have the content, too\n");
+
+            break;
+        }
+        i = i->next;
+    }
+    if (i) {
+        while (c) {
+            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
+                LOG_DEBUG("ccnl_helper: indeed, we have the content, too -> we "
+                          "will serve it, remove PIT entry\n");
+                ccnl_interest_remove(relay, i);
+                /* go to sleep if we're not currently in handover mode */
+                if (cluster_state != CLUSTER_STATE_HANDOVER) {
+                    LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
+                    xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+                }
+                return 0;
+            }
+            c = c->next;
+        }
+        if (!c) {
+            LOG_DEBUG("ccnl_helper: nope, we cannot serve this\n");
+        }
+    }
+
+    /* check if this is a handover request */
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
@@ -201,6 +255,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             }
 
             /* change state (will be done for each requested chunk, we don't care) */
+            /* TODO: implement timeout to prevent that we stay in HANDOVER forever */
             LOG_INFO("\n\nccnl_helper: change to state HANDOVER\n\n");
             cluster_state = CLUSTER_STATE_HANDOVER;
 
@@ -254,35 +309,6 @@ out:
     /* freeing memory */
     free_prefix(prefix);
     return res;
-}
-
-void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len)
-{
-    size_t prefix_len = len;
-    if (prefix == NULL) {
-        prefix_len += sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 8 + len;
-    }
-    unsigned char pfx[prefix_len];
-    if (prefix == NULL) {
-        snprintf((char*) pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX,
-                 CCNLRIOT_TYPE_PREFIX, cluster_my_id, (char*) value);
-        prefix = pfx;
-    }
-
-    struct ccnl_prefix_s *p = ccnl_URItoPrefix((char*) prefix, CCNL_SUITE_NDNTLV, NULL, 0);
-    if (prefix == NULL) {
-        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 668\n");
-        return;
-    }
-    struct ccnl_content_s *c = ccnl_helper_create_cont(p, value, len, false);
-    if (c == NULL) {
-        free_prefix(p);
-        return;
-    }
-    ccnl_broadcast(&ccnl_relay, c->pkt);
-    free_prefix(p);
-    free_packet(c->pkt);
-    ccnl_free(c);
 }
 
 static xtimer_t _wait_timer = { .target = 0, .long_target = 0 };
@@ -359,7 +385,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 
 /* build and send an interest packet
  * if prefix is NULL, the value is used to create a store interest */
-int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit)
+int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool no_wait)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
     /* initialize address with 0xFF for broadcast */
@@ -383,6 +409,10 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit)
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
         i = ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, chunknum, _int_buf, CCNLRIOT_BUF_SIZE);
+        if (no_wait) {
+            gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
+            return CCNLRIOT_NO_WAIT;
+        }
         if (_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE) > 0) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
             LOG_DEBUG("ccnl_helper: Content received: %s\n", _cont_buf);

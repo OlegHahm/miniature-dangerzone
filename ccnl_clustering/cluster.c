@@ -22,8 +22,7 @@ kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 uint16_t cluster_my_id;
 
 /* internal variables */
-static xtimer_t _cluster_timer, _sleep_timer;
-static msg_t _sleep_msg;
+static xtimer_t _cluster_timer;
 
 /* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
@@ -37,7 +36,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
-static void _populate_data(char *val, size_t len);
+static void _populate_data(char *pfx);
 
 /* data timer variables */
 static xtimer_t _data_timer;
@@ -50,7 +49,7 @@ void *_loop(void *arg)
 
     /* initialize timer variables */
     _cluster_timer.target = _cluster_timer.long_target = _data_timer.target =
-        _data_timer.long_target = _sleep_timer.target = _sleep_timer.long_target = 0;
+        _data_timer.long_target =  0;
 
     _data_msg.type = CLUSTER_MSG_NEWDATA;
 
@@ -211,25 +210,27 @@ void cluster_new_data(void)
     char val[sizeof(data) * 2];
     snprintf(val, sizeof(val) + 1, "%08X", data);
 
-    if ((cluster_state == CLUSTER_STATE_DEPUTY) ||
-        (cluster_state == CLUSTER_STATE_TAKEOVER)) {
-        LOG_DEBUG("cluster: I'm deputy (or just becoming it), just put data into cache\n");
-        /* for the deputy we put the content directly into the store */
-        size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
-        char pfx[prefix_len];
-        snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
-        struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
-        if (prefix == NULL) {
-            LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
-        }
-        else {
-            ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
-            free_prefix(prefix);
-        }
+    /* get data into cache by sending to loopback */
+    LOG_DEBUG("cluster: put data into cache via loopback\n");
+    /* for the deputy we put the content directly into the store */
+    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
+    char pfx[prefix_len];
+    snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
+        ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
+        free_prefix(prefix);
+    }
+
+    /* if we're not deputy or becoming one, send an interest for our own data */
+    if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
+        (cluster_state != CLUSTER_STATE_TAKEOVER)) {
         LOG_DEBUG("cluster: call _populate_data\n");
-        _populate_data(val, (sizeof(data) * 2) + 1);
+        snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
+        _populate_data(pfx);
     }
     /* schedule new data generation */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
@@ -237,7 +238,7 @@ void cluster_new_data(void)
     xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
 }
 
-static void _populate_data(char *val, size_t len)
+static void _populate_data(char *pfx)
 {
     /* first wake up radio (if necessary) */
     LOG_DEBUG("cluster: entering _populate_data\n");
@@ -258,10 +259,5 @@ static void _populate_data(char *val, size_t len)
         LOG_WARNING("cluster: error requesting radio state\n");
     }
     /* populate the content now */
-    ccnl_helper_publish(NULL, (unsigned char*) val, len);
-    if (cluster_state != CLUSTER_STATE_HANDOVER) {
-        _sleep_msg.type = CLUSTER_MSG_BACKTOSLEEP;
-        LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
-        xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
-    }
+    ccnl_helper_int((unsigned char*) pfx, NULL, false, true);
 }

@@ -53,6 +53,7 @@
 #define CCNLRIOT_TIMEOUT            (0)
 #define CCNLRIOT_RECEIVED_CHUNK     (1)
 #define CCNLRIOT_LAST_CN            (2)
+#define CCNLRIOT_NO_WAIT            (3)
 
 enum {
     SITE_LILLE,
@@ -76,8 +77,7 @@ extern uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN];
 
 int ccnlriot_stats(int argc, char **argv);
 
-void ccnl_helper_publish(unsigned char *prefix, unsigned char *value, size_t len);
-int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit);
+int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool no_wait);
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
