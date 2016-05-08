@@ -276,7 +276,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     /* avoid interest flooding */
     if (cluster_state == CLUSTER_STATE_INACTIVE) {
-        LOG_DEBUG("ccnl_helper: pretent to be sleeping\n");
+        LOG_DEBUG("ccnl_helper: pretend to be sleeping\n");
         free_packet(pkt);
         return 1;
     }

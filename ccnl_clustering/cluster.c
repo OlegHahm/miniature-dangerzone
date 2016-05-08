@@ -294,7 +294,6 @@ void cluster_new_data(void)
 
     /* get data into cache by sending to loopback */
     LOG_DEBUG("cluster: put data into cache via loopback\n");
-    /* for the deputy we put the content directly into the store */
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
     snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
