@@ -35,6 +35,7 @@ extern kernel_pid_t cluster_pid;
 extern uint16_t cluster_position;
 extern bloom_t cluster_neighbors;
 extern uint16_t cluster_size;
+extern uint8_t cluster_prevent_sleep;
 
 void cluster_init(void);
 void cluster_takeover(void);

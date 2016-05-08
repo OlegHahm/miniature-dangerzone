@@ -20,6 +20,7 @@ cluster_state_t cluster_state;
 bloom_t cluster_neighbors;
 kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 uint16_t cluster_my_id;
+uint8_t cluster_prevent_sleep = 0;
 
 /* internal variables */
 static xtimer_t _cluster_timer;
@@ -37,6 +38,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 
 /* prototypes */
 static void _populate_data(char *pfx);
+static void _radio_sleep(void);
 
 /* data timer variables */
 static xtimer_t _data_timer;
@@ -129,16 +131,30 @@ void *_loop(void *arg)
                     LOG_WARNING("cluster: currently not in inactive state, sleeping would be bad idea\n");
                     break;
                 }
-                netopt_state_t state = NETOPT_STATE_SLEEP;
-                if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
-                    LOG_WARNING("cluster: error going to sleep\n");
-                }
+                _radio_sleep();
                 break;
             case CLUSTER_MSG_BEACON:
                 LOG_WARNING("cluster: should receive beaconing message now!\n");
                 break;
             case CLUSTER_MSG_RECEIVED:
-                LOG_DEBUG("cluster: received content, no special treatment necessary\n");
+                LOG_DEBUG("cluster: received a content chunk ");
+                static char _prefix_str[CCNLRIOT_PFX_LEN];
+                struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
+                ccnl_prefix_to_path_detailed(_prefix_str, pfx, 1, 0, 0);
+                free_prefix(pfx);
+
+                /* if we're not deputy or becoming one, send an interest for our own data */
+                if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
+                    (cluster_state != CLUSTER_STATE_TAKEOVER)) {
+                    LOG_DEBUG("assume that is from us and generate an interest\n");
+                    cluster_prevent_sleep++;
+                    LOG_DEBUG("cluster: call _populate_data, %u pending interests\n",
+                              (unsigned) cluster_prevent_sleep);
+                    _populate_data(_prefix_str);
+                }
+                else {
+                    LOG_DEBUG("- since we're DEPUTY, there's nothing to do\n");
+                }
                 break;
             default:
                 LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);
@@ -167,8 +183,47 @@ void cluster_init(void)
     cluster_state = CLUSTER_STATE_INACTIVE;
 
     cluster_pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
-                         THREAD_PRIORITY_MAIN-1, THREAD_CREATE_STACKTEST |
-                         THREAD_CREATE_WOUT_YIELD, _loop, NULL, "cluster manager");
+                                THREAD_PRIORITY_MAIN-2, THREAD_CREATE_STACKTEST |
+                                THREAD_CREATE_WOUT_YIELD, _loop, NULL, "cluster manager");
+}
+
+static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
+static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
+static void _radio_sleep(void)
+{
+    if (cluster_prevent_sleep > 0) {
+        if (ccnl_relay.pit == NULL) {
+            LOG_DEBUG("cluster: no PIT entries, reset pending counter\n");
+            cluster_prevent_sleep = 0;
+        }
+        else {
+            LOG_DEBUG("cluster: still waiting for an interest from the deputy, wait some time\n");
+            xtimer_remove(&_sleep_timer);
+            xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+            return;
+        }
+    }
+    netopt_state_t state;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
+        if (state == NETOPT_STATE_IDLE) {
+            LOG_DEBUG("cluster: sending radio to sleep\n");
+            state = NETOPT_STATE_SLEEP;
+            if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
+                LOG_WARNING("cluster: error sending radio to sleep\n");
+            }
+        }
+        else if (state == NETOPT_STATE_SLEEP) {
+            LOG_DEBUG("cluster: radio sleeps already\n");
+        }
+        else {
+            LOG_DEBUG("cluster: radio is in wrong state, try again later\n");
+            xtimer_remove(&_sleep_timer);
+            xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+        }
+    }
+    else {
+        LOG_WARNING("cluster: error requesting radio state\n");
+    }
 }
 
 static msg_t _wakeup_msg;
@@ -177,10 +232,9 @@ void cluster_sleep(uint8_t periods)
     LOG_INFO("cluster: going to sleep\n");
     LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
     cluster_state = CLUSTER_STATE_INACTIVE;
-    netopt_state_t state = NETOPT_STATE_SLEEP;
-    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
-        LOG_WARNING("cluster: error going to sleep\n");
-    }
+
+    _radio_sleep();
+
     _wakeup_msg.type = CLUSTER_MSG_TAKEOVER;
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD) / SEC_IN_USEC), (int) cluster_pid);
     xtimer_set_msg(&_cluster_timer, periods * CLUSTER_PERIOD, &_wakeup_msg, cluster_pid);
@@ -193,20 +247,30 @@ void cluster_takeover(void)
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    for (unsigned cn = 0; cn <= CCNLRIOT_CACHE_SIZE; cn++) {
-        if (ccnl_helper_int(all_pfx, &cn, true, false) == CCNLRIOT_LAST_CN) {
-            LOG_DEBUG("cluster: received final chunk\n");
-            break;
-        }
+    unsigned cn = 0;
+    while (ccnl_helper_int(all_pfx, &cn, false) != CCNLRIOT_LAST_CN) {
+        cn++;
     }
     LOG_DEBUG("cluster: takeover completed\n");
 }
 
 void cluster_wakeup(void)
 {
-    netopt_state_t state = NETOPT_STATE_IDLE;
-    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
-        LOG_WARNING("cluster: error waking up\n");
+    netopt_state_t state;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
+        if (state == NETOPT_STATE_SLEEP) {
+            LOG_DEBUG("cluster: waking up radio\n");
+            state = NETOPT_STATE_IDLE;
+            if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
+                LOG_WARNING("cluster: error waking up\n");
+            }
+        }
+        else {
+            LOG_DEBUG("cluster: radio is already on\n");
+        }
+    }
+    else {
+        LOG_WARNING("cluster: error requesting radio state\n");
     }
 }
 
@@ -241,16 +305,13 @@ void cluster_new_data(void)
         free_prefix(prefix);
     }
 
-    /* if we're not deputy or becoming one, send an interest for our own data */
-    if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
-        (cluster_state != CLUSTER_STATE_TAKEOVER)) {
-        LOG_DEBUG("cluster: call _populate_data\n");
-        snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
-        _populate_data(pfx);
-    }
     /* schedule new data generation */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
-    LOG_DEBUG("Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    netopt_state_t state;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
+        LOG_DEBUG("cluster: current radio state is %X\n", state);
+    }
     xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
 }
 

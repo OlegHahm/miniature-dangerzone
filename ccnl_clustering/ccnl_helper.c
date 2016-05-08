@@ -248,11 +248,15 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         while (c) {
             if (ccnl_prefix_cmp(c->pkt->pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
                 LOG_DEBUG("ccnl_helper: indeed, we have the content, too -> we "
-                          "will serve it, remove PIT entry\n");
+                          "will serve it, remove PIT entry. (Pending interests "
+                          "for own data: %u)\n", (unsigned) cluster_prevent_sleep);
+
                 ccnl_interest_remove(relay, i);
+                cluster_prevent_sleep--;
                 /* go to sleep if we're not currently in handover mode */
                 if (cluster_state != CLUSTER_STATE_HANDOVER) {
-                    LOG_DEBUG("cluster: going back to sleep in %u microseconds (%i)\n", CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
+                    LOG_DEBUG("ccnl_helper: going back to sleep in %u microseconds (%i)\n",
+                              CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
                     xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
                 }
                 return 0;
