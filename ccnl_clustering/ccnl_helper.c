@@ -86,7 +86,6 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
     int typ;
     int int_len;
 
-    /* TODO: support other suites */
     if (ccnl_ndntlv_dehead(&data, &len, (int*) &typ, &int_len) || (int) int_len > len) {
         LOG_WARNING("  invalid packet format\n");
         return NULL;
@@ -160,7 +159,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         msg_t m = { .type = CLUSTER_MSG_RECEIVED_ACK };
         msg_try_send(&m, cluster_pid);
         free_prefix(prefix);
-        /* TODO: flag the content */
         free_packet(pkt);
         return 1;
     }
@@ -394,7 +392,6 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             cluster_new_data();
         }
         else {
-            /* TODO: reduce timeout value */
             LOG_DEBUG("Unknow message received, ignore it\n");
         }
     }
