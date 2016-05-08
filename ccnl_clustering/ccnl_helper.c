@@ -189,6 +189,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     /* create a temporary interest */
     if (_cont_is_dup(pkt)) {
         LOG_DEBUG("ccnl_helper: ignoring duplicate content\n");
+        /* in case we're waiting for * chunks, try to send a message */
+        msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+        msg_try_send(&m, cluster_pid);
     }
     else {
         struct ccnl_interest_s *i = relay->pit;
@@ -206,12 +209,14 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         }
         if (!i) {
             ccnl_helper_create_int(pkt->pfx);
+            /* in case we're waiting for * chunks, try to send a message */
+            msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+            /* TODO: make sure that pkt exists when read */
+            struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
+            m.content.ptr = (void*)new;
+            msg_try_send(&m, cluster_pid);
         }
     }
-    /* in case we're waiting for * chunks, try to send a message */
-    msg_t m = { .type = CLUSTER_MSG_RECEIVED };
-    msg_try_send(&m, cluster_pid);
-
 
     return 0;
 }
@@ -376,6 +381,10 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             LOG_DEBUG("ccnl_helper: received something, that's good enough for me\n");
             res = 1;
             xtimer_remove(&_wait_timer);
+            if (m.content.ptr != NULL) {
+                struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
+                free_prefix(pfx);
+            }
             break;
         }
         else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
