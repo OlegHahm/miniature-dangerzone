@@ -67,6 +67,14 @@ void *_loop(void *arg)
     /* do some beaconing */
     beaconing_start();
 
+#ifndef BOARD_NATIVE
+    unsigned int addr_len = CCNLRIOT_ADDRLEN;
+    if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_SRC_LEN, 0, (uint16_t *)&addr_len, sizeof(uint16_t)) < 0) {
+        LOG_ERROR("main: error setting addressing mode\n");
+    }
+#endif
+
+
     /* initialize and start CCN lite */
     ccnl_core_init();
     extern int debug_level;

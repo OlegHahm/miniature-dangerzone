@@ -53,10 +53,14 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     if (cache) {
         /* XXX: always use first (and only IF) */
         uint8_t hwaddr[CCNLRIOT_ADDRLEN];
+#if (CCNLRIOT_ADDRLEN == 8)
+        gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS_LONG, 0, hwaddr, sizeof(hwaddr));
+#else
         gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, hwaddr, sizeof(hwaddr));
+#endif
         sockunion dest;
         dest.sa.sa_family = AF_PACKET;
-        memcpy(&dest.linklayer.sll_addr, hwaddr, CCNLRIOT_ADDRLEN);
+        memcpy(dest.linklayer.sll_addr, hwaddr, CCNLRIOT_ADDRLEN);
         dest.linklayer.sll_halen = CCNLRIOT_ADDRLEN;
         extern void ccnl_ll_TX(struct ccnl_relay_s *ccnl, struct ccnl_if_s *ifc, sockunion *dest, struct ccnl_buf_s *buf);
         ccnl_ll_TX(&ccnl_relay, &ccnl_relay.ifs[0], &dest, c->pkt->buf);
