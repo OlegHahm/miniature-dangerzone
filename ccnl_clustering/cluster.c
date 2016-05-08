@@ -319,22 +319,7 @@ static void _populate_data(char *pfx)
 {
     /* first wake up radio (if necessary) */
     LOG_DEBUG("cluster: entering _populate_data\n");
-    netopt_state_t state;
-    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
-        if (state == NETOPT_STATE_SLEEP) {
-            LOG_DEBUG("cluster: waking up radio\n");
-            state = NETOPT_STATE_IDLE;
-            if (gnrc_netapi_set(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) < 0) {
-                LOG_WARNING("cluster: error waking up\n");
-            }
-        }
-        else {
-            LOG_DEBUG("cluster: radio is already on\n");
-        }
-    }
-    else {
-        LOG_WARNING("cluster: error requesting radio state\n");
-    }
+    cluster_wakeup();
     /* populate the content now */
     ccnl_helper_int((unsigned char*) pfx, NULL, true);
 }
