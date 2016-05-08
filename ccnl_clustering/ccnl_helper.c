@@ -433,9 +433,33 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
     return res;
 }
 
+static void _remove_first_takeover_pit_entry(void)
+{
+    struct ccnl_prefix_s *prefix;
+    char all_pfx[] = CCNLRIOT_ALL_PREFIX;
+    prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 666\n");
+        return;
+    }
+
+    struct ccnl_interest_s *i = ccnl_relay.pit;
+    while (i) {
+        if (ccnl_prefix_cmp(prefix, NULL, i->pkt->pfx, CMP_MATCH) >= 1) {
+            LOG_DEBUG("ccnl_helper: remove PIT entry for /*\n");
+                ccnl_interest_remove(&ccnl_relay, i);
+                free_prefix(prefix);
+                return;
+        }
+        i = i->next;
+    }
+
+    free_prefix(prefix);
+}
+
 /* build and send an interest packet
  * if prefix is NULL, the value is used to create a store interest */
-int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool no_wait)
+int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
     /* initialize address with 0xFF for broadcast */
@@ -449,8 +473,6 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool
 
     gnrc_netreg_entry_t _ne;
 
-    struct ccnl_interest_s *i;
-
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
         LOG_INFO("ccnl_helper: sending interest for %s\n", prefix);
         /* register for content chunks */
@@ -458,7 +480,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool
         _ne.pid = sched_active_pid;
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
-        i = ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, chunknum, _int_buf, CCNLRIOT_BUF_SIZE);
+        ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, chunknum, _int_buf, CCNLRIOT_BUF_SIZE);
         if (no_wait) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
             return CCNLRIOT_NO_WAIT;
@@ -477,9 +499,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_pit, bool
             LOG_DEBUG("ccnl_helper: received ACK, signaling end of takeover\n");
             success = CCNLRIOT_LAST_CN;
         }
-        if (no_pit) {
-            ccnl_interest_remove(&ccnl_relay, i);
-        }
+        _remove_first_takeover_pit_entry();
         LOG_WARNING("\n +++ SUCCESS +++\n");
     }
     else {

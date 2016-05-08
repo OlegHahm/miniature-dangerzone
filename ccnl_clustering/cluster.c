@@ -336,5 +336,5 @@ static void _populate_data(char *pfx)
         LOG_WARNING("cluster: error requesting radio state\n");
     }
     /* populate the content now */
-    ccnl_helper_int((unsigned char*) pfx, NULL, false, true);
+    ccnl_helper_int((unsigned char*) pfx, NULL, true);
 }
