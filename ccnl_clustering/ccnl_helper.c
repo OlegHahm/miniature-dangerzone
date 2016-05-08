@@ -127,6 +127,27 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
     return false;
 }
 
+void ccnl_helper_clear_pit_for_own(void)
+{
+    /* check if we have a PIT entry for our own content and remove it */
+    LOG_DEBUG("ccnl_helper: clear PIT entries for own content\n");
+    struct ccnl_interest_s *i = ccnl_relay.pit;
+    while (i) {
+        struct ccnl_content_s *c = ccnl_relay.contents;
+        while (c) {
+            LOG_DEBUG("ccnl_helper: compare %p (%p) to %p (%p)\n", (void*) c, (void*) c->pkt, (void*) i, (void*) i->pkt);
+            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, i->pkt->pfx, CMP_EXACT) == 0) {
+                LOG_DEBUG("ccnl_helper: found entry, remove it\n");
+                ccnl_interest_remove(&ccnl_relay, i);
+                break;
+            }
+            c = c->next;
+        }
+        LOG_DEBUG("ccnl_helper: next PIT is :%p\n", (void*) i->next);
+        i = i->next;
+    }
+}
+
 /* local callback to handle incoming content chunks */
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)

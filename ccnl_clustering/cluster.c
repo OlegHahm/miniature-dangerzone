@@ -189,6 +189,7 @@ void cluster_sleep(uint8_t periods)
 void cluster_takeover(void)
 {
     LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+    ccnl_helper_clear_pit_for_own();
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;

@@ -86,5 +86,6 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache);
 void ccnl_helper_send_all_data(void);
+void ccnl_helper_clear_pit_for_own(void);
 
 #endif /* CCNLRIOT_H */
