@@ -7,8 +7,8 @@
 
 #define CLUSTER_PERIOD          (22 * SEC_IN_USEC)
 //#define CLUSTER_EVENT_PERIOD    (random_uint32() & 0x00FFFFFF)
-#define CLUSTER_EVENT_PERIOD     (10 * SEC_IN_USEC)
 #define CLUSTER_STAY_AWAKE_PERIOD   (10 * MS_IN_USEC)
+#define CLUSTER_EVENT_PERIOD   (3 * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 /* random interval between 50ms and ~1s */
 #define CLUSTER_BEACONING_PERIOD    ((random_uint32() & 0x000FFFFF) + 50000)
 #define CLUSTER_BEACONING_COUNT     (5)
