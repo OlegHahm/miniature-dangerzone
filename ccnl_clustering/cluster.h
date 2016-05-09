@@ -5,7 +5,7 @@
 #include "timex.h"
 #include "bloom.h"
 
-#define CLUSTER_PERIOD          (22 * SEC_IN_USEC)
+#define CLUSTER_PERIOD          (22)
 //#define CLUSTER_EVENT_PERIOD    (random_uint32() & 0x00FFFFFF)
 #define CLUSTER_STAY_AWAKE_PERIOD   (10 * MS_IN_USEC)
 #define CLUSTER_EVENT_PERIOD   (3 * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
@@ -14,6 +14,7 @@
 #define CLUSTER_BEACONING_COUNT     (5)
 #define CLUSTER_BEACONING_WAIT      ((CLUSTER_BEACONING_COUNT + 1) * SEC_IN_USEC)
 
+#define CLUSTER_MSG_SECOND          (0x4443)
 #define CLUSTER_MSG_TAKEOVER        (0x4444)
 #define CLUSTER_MSG_NEWDATA         (0x4445)
 #define CLUSTER_MSG_INACTIVE        (0x4446)

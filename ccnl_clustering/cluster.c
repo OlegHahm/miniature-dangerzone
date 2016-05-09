@@ -25,6 +25,8 @@ uint8_t cluster_prevent_sleep = 0;
 
 /* internal variables */
 static xtimer_t _cluster_timer;
+static uint32_t _period_counter;
+static msg_t _wakeup_msg = { .type = CLUSTER_MSG_SECOND };
 
 /* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
@@ -120,6 +122,16 @@ void *_loop(void *arg)
         msg_t m;
         msg_receive(&m);
         switch (m.type) {
+            case CLUSTER_MSG_SECOND:
+                xtimer_remove(&_cluster_timer);
+                if (--_period_counter == 0) {
+                    LOG_DEBUG("cluster: time to get active\n");
+                    cluster_takeover();
+                }
+                else {
+                    xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                }
+                break;
             case CLUSTER_MSG_TAKEOVER:
                 LOG_DEBUG("cluster: received takeover msg\n");
                 cluster_takeover();
@@ -233,7 +245,6 @@ static void _radio_sleep(void)
     }
 }
 
-static msg_t _wakeup_msg;
 void cluster_sleep(uint8_t periods)
 {
     LOG_INFO("cluster: going to sleep\n");
@@ -243,9 +254,10 @@ void cluster_sleep(uint8_t periods)
 
     _radio_sleep();
 
-    _wakeup_msg.type = CLUSTER_MSG_TAKEOVER;
-    LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD) / SEC_IN_USEC), (int) cluster_pid);
-    xtimer_set_msg(&_cluster_timer, periods * CLUSTER_PERIOD, &_wakeup_msg, cluster_pid);
+    LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD)), (int) cluster_pid);
+    _period_counter = periods * CLUSTER_PERIOD;
+    xtimer_remove(&_cluster_timer);
+    xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
 }
 
 void cluster_takeover(void)
