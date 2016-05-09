@@ -19,6 +19,7 @@ msg_t _mq[8];
 cluster_state_t cluster_state;
 bloom_t cluster_neighbors;
 kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
+kernel_pid_t ccnl_pid = KERNEL_PID_UNDEF;
 uint16_t cluster_my_id;
 uint8_t cluster_prevent_sleep = 0;
 
@@ -82,7 +83,7 @@ void *_loop(void *arg)
     extern int debug_level;
     debug_level = CCNLRIOT_LOGLEVEL;
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
-    ccnl_start();
+    ccnl_pid = ccnl_start();
     /* let CCN start */
     xtimer_usleep(1000);
 
@@ -232,6 +233,7 @@ static msg_t _wakeup_msg;
 void cluster_sleep(uint8_t periods)
 {
     LOG_INFO("cluster: going to sleep\n");
+    gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_BUT_OWN, &ccnl_relay, sizeof(ccnl_relay));
     LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
     cluster_state = CLUSTER_STATE_INACTIVE;
 

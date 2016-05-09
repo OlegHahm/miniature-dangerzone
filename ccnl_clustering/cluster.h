@@ -31,6 +31,7 @@ typedef enum {
 
 extern cluster_state_t cluster_state;
 extern uint16_t cluster_my_id;
+extern kernel_pid_t ccnl_pid;
 extern kernel_pid_t cluster_pid;
 extern uint16_t cluster_position;
 extern bloom_t cluster_neighbors;

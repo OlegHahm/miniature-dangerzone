@@ -131,27 +131,7 @@ void ccnl_helper_clear_pit_for_own(void)
 {
     /* check if we have a PIT entry for our own content and remove it */
     LOG_DEBUG("ccnl_helper: clear PIT entries for own content\n");
-    struct ccnl_interest_s *i = ccnl_relay.pit;
-    struct ccnl_interest_s *old = NULL;
-    while (i) {
-        struct ccnl_content_s *c = ccnl_relay.contents;
-        while (c) {
-            LOG_DEBUG("ccnl_helper: compare %p (%p) to %p (%p)\n", (void*) c, (void*) c->pkt, (void*) i, (void*) i->pkt);
-            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, i->pkt->pfx, CMP_EXACT) == 0) {
-                LOG_DEBUG("ccnl_helper: found entry, remove it\n");
-                ccnl_interest_remove(&ccnl_relay, i);
-                if (old == NULL) {
-                    old = ccnl_relay.pit;
-                }
-                i = old;
-                break;
-            }
-            c = c->next;
-        }
-        LOG_DEBUG("ccnl_helper: next PIT is :%p\n", (void*) i->next);
-        old = i;
-        i = i->next;
-    }
+    gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_OWN, &ccnl_relay, sizeof(ccnl_relay));
 }
 
 /* local callback to handle incoming content chunks */
@@ -441,26 +421,8 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 
 static void _remove_first_takeover_pit_entry(void)
 {
-    struct ccnl_prefix_s *prefix;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
-    if (prefix == NULL) {
-        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 666\n");
-        return;
-    }
-
-    struct ccnl_interest_s *i = ccnl_relay.pit;
-    while (i) {
-        if (ccnl_prefix_cmp(prefix, NULL, i->pkt->pfx, CMP_MATCH) >= 1) {
-            LOG_DEBUG("ccnl_helper: remove PIT entry for /*\n");
-                ccnl_interest_remove(&ccnl_relay, i);
-                free_prefix(prefix);
-                return;
-        }
-        i = i->next;
-    }
-
-    free_prefix(prefix);
+    gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_REMOVE_FIRST_PIT_ENTRY, all_pfx, sizeof(all_pfx));
 }
 
 /* build and send an interest packet
