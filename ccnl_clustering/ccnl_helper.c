@@ -301,7 +301,8 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
                 /* we can go back to sleep now */
                 /* TODO: delay this */
-                cluster_sleep(cluster_size-1);
+                msg_t m = { .type = CLUSTER_MSG_INACTIVE };
+                msg_send(&m, cluster_pid);
                 free_packet(pkt);
                 res = 1;
                 goto out;

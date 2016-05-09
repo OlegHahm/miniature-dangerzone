@@ -136,6 +136,10 @@ void *_loop(void *arg)
                 }
                 _radio_sleep();
                 break;
+            case CLUSTER_MSG_INACTIVE:
+                LOG_DEBUG("cluster: received request to go inactive\n");
+                cluster_sleep(cluster_size-1);
+                break;
             case CLUSTER_MSG_BEACON:
                 LOG_WARNING("cluster: should receive beaconing message now!\n");
                 break;

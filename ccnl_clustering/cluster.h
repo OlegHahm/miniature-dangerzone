@@ -16,6 +16,7 @@
 
 #define CLUSTER_MSG_TAKEOVER        (0x4444)
 #define CLUSTER_MSG_NEWDATA         (0x4445)
+#define CLUSTER_MSG_INACTIVE        (0x4446)
 #define CLUSTER_MSG_BACKTOSLEEP     (0x4447)
 #define CLUSTER_MSG_BEACON          (0x4448)
 #define CLUSTER_MSG_BEACON_END      (0x4449)
