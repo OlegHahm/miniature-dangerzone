@@ -33,6 +33,8 @@ USEMODULE += xtimer
 USEMODULE += random
 USEMODULE += hashes
 USEMODULE += bloom
+USEMODULE += netdev_retrans
+USEMODULE += netstats_l2
 
 USEPKG += tlsf
 
