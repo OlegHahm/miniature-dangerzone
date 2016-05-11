@@ -84,7 +84,7 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
 struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
 {
     int nonce = random_uint32();
-    LOG_DEBUG("nonce: %X\n", nonce);
+    LOG_DEBUG("ccnl_helper: nonce: %X\n", nonce);
 
     extern int ndntlv_mkInterest(struct ccnl_prefix_s *name, int *nonce, unsigned char *out, int outlen);
     int len = ndntlv_mkInterest(prefix, &nonce, _int_buf, CCNLRIOT_BUF_SIZE);
@@ -97,7 +97,7 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
     int int_len;
 
     if (ccnl_ndntlv_dehead(&data, &len, (int*) &typ, &int_len) || (int) int_len > len) {
-        LOG_WARNING("  invalid packet format\n");
+        LOG_WARNING("ccnl_helper: invalid packet format\n");
         return NULL;
     }
     pkt = ccnl_ndntlv_bytes2pkt(NDN_TLV_Interest, start, &data, &len);
@@ -449,8 +449,9 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
     uint32_t now = xtimer_now();
 
     while (1) { /* wait for a content pkt (ignore interests) */
-        LOG_DEBUG("  waiting for packet\n");
+        LOG_DEBUG("ccnl_helper:  waiting for packet\n");
 
+        /* check if there's time left to wait for the content */
         _timeout_msg.type = CCNL_MSG_TIMEOUT;
         remaining -= (xtimer_now() - now);
         if (remaining < 0) {
@@ -459,9 +460,11 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             break;
         }
         xtimer_set_msg64(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
+
         msg_t m;
         msg_receive(&m);
 
+        /* we received something from local_consumer */
         if (m.type == CLUSTER_MSG_RECEIVED) {
             LOG_DEBUG("ccnl_helper: received something, that's good enough for me\n");
             res = 1;
@@ -481,19 +484,20 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             xtimer_remove(&_wait_timer);
             break;
         }
+        /* we received a chunk from CCN-Lite */
         else if (m.type == GNRC_NETAPI_MSG_TYPE_RCV) {
             gnrc_pktsnip_t *pkt = (gnrc_pktsnip_t *)m.content.ptr;
-            LOG_DEBUG("Type is: %i\n", pkt->type);
+            LOG_DEBUG("ccnl_helper: Type is: %i\n", pkt->type);
             if (pkt->type == GNRC_NETTYPE_CCN_CHUNK) {
                 char *c = (char*) pkt->data;
-                LOG_INFO("Content is: %s\n", c);
+                LOG_INFO("ccnl_helper: Content is: %s\n", c);
                 size_t len = (pkt->size > buf_len) ? buf_len : pkt->size;
                 memcpy(buf, pkt->data, len);
                 res = (int) len;
                 gnrc_pktbuf_release(pkt);
             }
             else {
-                LOG_WARNING("Unkown content\n");
+                LOG_WARNING("ccnl_helper: Unkown content\n");
                 gnrc_pktbuf_release(pkt);
                 continue;
             }
@@ -505,11 +509,11 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             break;
         }
         else if (m.type == CLUSTER_MSG_NEWDATA) {
-            LOG_DEBUG("cluster: received newdata msg while waiting for content, postpone it\n");
+            LOG_DEBUG("ccnl_helper: received newdata msg while waiting for content, postpone it\n");
             xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
         }
         else {
-            LOG_DEBUG("Unknow message received, ignore it\n");
+            LOG_DEBUG("ccnl_helper: Unknown message received, ignore it\n");
         }
     }
 
@@ -557,10 +561,10 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
             LOG_DEBUG("ccnl_helper: received ACK, signaling end of takeover\n");
             success = CCNLRIOT_LAST_CN;
         }
-        LOG_WARNING("\n +++ SUCCESS +++\n");
+        LOG_WARNING("\nccnl_helper: +++ SUCCESS +++\n");
     }
     else {
-        LOG_WARNING("\n !!! TIMEOUT while waiting for %s !!!\n", prefix);
+        LOG_WARNING("\nccnl_helper: !!! TIMEOUT while waiting for %s !!!\n", prefix);
     }
 
     return success;
