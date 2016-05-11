@@ -129,13 +129,26 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
+    /* save old value */
+    cluster_content_t *cc = (cluster_content_t*) pkt->content;
+    int old = cc->num;
+    /* set to -1 for comparison */
+    cc->num = -1;
+
     for (struct ccnl_content_s *c = ccnl_relay.contents; c; c = c->next) {
+        cluster_content_t *ccc = (cluster_content_t*) c->pkt->content;
+        int cold = ccc->num;
+        ccc->num = -1;
         if ((c->pkt->buf) && (pkt->buf) &&
             (c->pkt->buf->datalen==pkt->buf->datalen) &&
             !memcmp(c->pkt->buf->data,pkt->buf->data,c->pkt->buf->datalen)) {
+            cc->num = old;
+            ccc->num = cold;
             return true; // content is dup, do nothing
         }
+        ccc->num = cold;
     }
+    cc->num = old;
     return false;
 }
 
