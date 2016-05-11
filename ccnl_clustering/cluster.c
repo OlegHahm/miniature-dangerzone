@@ -159,7 +159,6 @@ void *_loop(void *arg)
                 static char _prefix_str[CCNLRIOT_PFX_LEN];
                 struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
                 ccnl_prefix_to_path_detailed(_prefix_str, pfx, 1, 0, 0);
-                free_prefix(pfx);
 
                 /* if we're not deputy or becoming one, send an interest for our own data */
                 if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
@@ -172,7 +171,9 @@ void *_loop(void *arg)
                 }
                 else {
                     LOG_DEBUG("- since we're DEPUTY, there's nothing to do\n");
+                    ccnl_helper_create_int(pfx);
                 }
+                free_prefix(pfx);
                 break;
             default:
                 LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);

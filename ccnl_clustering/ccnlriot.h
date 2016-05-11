@@ -82,6 +82,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
+struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache);
