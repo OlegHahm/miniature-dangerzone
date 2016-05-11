@@ -30,9 +30,18 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache)
 {
+    if (len > CLUSTER_CONT_LEN) {
+        LOG_ERROR("ccnl_helper: Too long content. This is not acceptable!!!\n");
+        return NULL;
+    }
     int offs = CCNL_MAX_PACKET_SIZE;
 
-    ssize_t arg_len = ccnl_ndntlv_prependContent(prefix, value, len, NULL, NULL, &offs, _out);
+    cluster_content_t my_cont;
+    memcpy(my_cont.value, value, len);
+    my_cont.num = -1;
+    len = sizeof(cluster_content_t);
+
+    ssize_t arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) &my_cont, len, NULL, NULL, &offs, _out);
 
     unsigned char *olddata;
     unsigned char *data = olddata = _out + offs;
@@ -62,6 +71,7 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
         dest.sa.sa_family = AF_PACKET;
         memcpy(dest.linklayer.sll_addr, hwaddr, CCNLRIOT_ADDRLEN);
         dest.linklayer.sll_halen = CCNLRIOT_ADDRLEN;
+        dest.linklayer.sll_protocol = htons(ETHERTYPE_NDN);
         extern void ccnl_ll_TX(struct ccnl_relay_s *ccnl, struct ccnl_if_s *ifc, sockunion *dest, struct ccnl_buf_s *buf);
         ccnl_ll_TX(&ccnl_relay, &ccnl_relay.ifs[0], &dest, c->pkt->buf);
         free_packet(c->pkt);
@@ -98,7 +108,7 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
 
 /* send an acknowledgement */
 static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
-                      struct ccnl_prefix_s *pfx)
+                      struct ccnl_prefix_s *pfx, int num)
 {
     struct ccnl_content_s *c =
         ccnl_helper_create_cont(pfx, (unsigned char*)
@@ -107,6 +117,8 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (c == NULL) {
         return;
     }
+    cluster_content_t *cc = (cluster_content_t*) c->pkt->content;
+    cc->num = num;
     ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
                                                 c->pkt->buf->datalen));
 
@@ -132,6 +144,31 @@ void ccnl_helper_clear_pit_for_own(void)
     /* check if we have a PIT entry for our own content and remove it */
     LOG_DEBUG("ccnl_helper: clear PIT entries for own content\n");
     gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_OWN, &ccnl_relay, sizeof(ccnl_relay));
+}
+
+static void _remove_pit(struct ccnl_relay_s *relay, int num)
+{
+    /* check if this is a handover request */
+    char all_pfx[] = CCNLRIOT_ALL_PREFIX;
+
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("ccnl_helper: We're doomed, WE ARE ALL DOOMED! 667\n");
+        return;
+    }
+
+    struct ccnl_interest_s *i = relay->pit;
+    while (i) {
+        if ((ccnl_prefix_cmp(prefix, NULL, i->pkt->pfx, CMP_MATCH) >= 1) &&
+            (*(i->pkt->pfx->chunknum) == num)) {
+            LOG_DEBUG("ccnl_helper: remove matching PIT entry\n");
+            ccnl_interest_remove(relay, i);
+            free_prefix(prefix);
+            return;
+        }
+        i = i->next;
+    }
+    free_prefix(prefix);
 }
 
 /* local callback to handle incoming content chunks */
@@ -162,6 +199,12 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
     if ((ccnl_prefix_cmp(prefix, NULL, pkt->pfx, CMP_MATCH) >= 1) &&
         (strncmp((char*) pkt->content, CCNLRIOT_CONT_ACK, strlen(CCNLRIOT_CONT_ACK)) == 0)) {
+        cluster_content_t *cc = (cluster_content_t*) pkt->content;
+        LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
+        if (cc->num >= 0) {
+            _remove_pit(relay, cc->num);
+        }
+
         LOG_DEBUG("ccnl_helper: received ACK, flag the content\n");
         msg_t m = { .type = CLUSTER_MSG_RECEIVED_ACK };
         msg_try_send(&m, cluster_pid);
@@ -178,6 +221,11 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         /* in case we're waiting for * chunks, try to send a message */
         msg_t m = { .type = CLUSTER_MSG_RECEIVED };
         msg_try_send(&m, cluster_pid);
+        if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
+                             (cluster_state != CLUSTER_STATE_TAKEOVER)) {
+            free_packet(pkt);
+            return 1;
+        }
     }
     else {
         struct ccnl_interest_s *i = relay->pit;
@@ -194,13 +242,49 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             i = i->next;
         }
         if (!i) {
-            ccnl_helper_create_int(pkt->pfx);
-            /* in case we're waiting for * chunks, try to send a message */
-            msg_t m = { .type = CLUSTER_MSG_RECEIVED };
-            /* TODO: make sure that pkt exists when read */
-            struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
-            m.content.ptr = (void*)new;
-            msg_try_send(&m, cluster_pid);
+            /* if we're not deputy (or becoming it), we assume that this is our
+             * own content */
+            if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
+                (cluster_state != CLUSTER_STATE_TAKEOVER)) {
+                if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
+                    LOG_DEBUG("ccnl_helper: adding content to cache\n");
+                    struct ccnl_content_s *c = ccnl_content_new(&ccnl_relay, &pkt);
+                    if (!c) {
+                        LOG_ERROR("ccnl_helper: we're doomed, WE'RE ALL DOOMED\n");
+                        return 0;
+                    }
+                    if (ccnl_content_add2cache(relay, c) == NULL) {
+                        LOG_WARNING("  adding to cache failed, discard packet\n");
+                        ccnl_free(c);
+                    }
+                }
+                free_packet(pkt);
+                return 1;
+            }
+            else {
+                /* create an interest if we're waiting for *, because otherwise
+                 * our PIT entry won't match */
+                if (pkt->contlen == sizeof(cluster_content_t)) {
+                    LOG_DEBUG("ccnl_helper: seems to be the right content\n");
+                    cluster_content_t *cc = (cluster_content_t*) pkt->content;
+                    LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
+                    if (cc->num >= 0) {
+                        _remove_pit(relay, cc->num);
+                    }
+                    cc->num = -1;
+
+                    /* in case we're waiting for * chunks, try to send a message */
+                    LOG_DEBUG("ccnl_helper: inform waiters\n");
+                    msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+                    struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
+                    m.content.ptr = (void*)new;
+                    msg_try_send(&m, cluster_pid);
+                }
+                else {
+                    LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
+                }
+                ccnl_helper_create_int(pkt->pfx);
+            }
         }
     }
 
@@ -297,7 +381,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* if we reached the end of the store, we send an ACK */
             if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
                 LOG_DEBUG("ccnl_helper: reached end of content store, send ack\n");
-                _send_ack(relay, from, prefix);
+                _send_ack(relay, from, prefix, i);
 
                 /* we can go back to sleep now */
                 /* TODO: delay this */
@@ -321,6 +405,16 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             LOG_DEBUG("%" PRIu32 " ccnl_helper: publish content for prefix: %s\n", xtimer_now(),
                       ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
             memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
+
+            /* set content number */
+            if (cit == NULL) {
+                LOG_ERROR("ccnl_helper: The world is a bad place, this should have never happened\n");
+                res = 1;
+                goto out;
+            }
+            LOG_DEBUG("ccnl_helper: setting content num to %i\n", i);
+            cluster_content_t *cc = (cluster_content_t*) cit->pkt->content;
+            cc->num = i;
 
             /* free the old prefix */
             free_prefix(old);
@@ -376,6 +470,8 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
                 struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
                 free_prefix(pfx);
             }
+            msg_t reply = { .content.value = 0 };
+            msg_reply(&m, &reply);
             break;
         }
         else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
@@ -409,8 +505,8 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             break;
         }
         else if (m.type == CLUSTER_MSG_NEWDATA) {
-            LOG_DEBUG("cluster: received newdata msg while waiting for content\n");
-            cluster_new_data();
+            LOG_DEBUG("cluster: received newdata msg while waiting for content, postpone it\n");
+            xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
         }
         else {
             LOG_DEBUG("Unknow message received, ignore it\n");
@@ -420,14 +516,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
     return res;
 }
 
-static void _remove_first_takeover_pit_entry(void)
-{
-    char all_pfx[] = CCNLRIOT_ALL_PREFIX;
-    gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_REMOVE_FIRST_PIT_ENTRY, all_pfx, sizeof(all_pfx));
-}
-
-/* build and send an interest packet
- * if prefix is NULL, the value is used to create a store interest */
+/* build and send an interest packet */
 int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
@@ -468,7 +557,6 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
             LOG_DEBUG("ccnl_helper: received ACK, signaling end of takeover\n");
             success = CCNLRIOT_LAST_CN;
         }
-        _remove_first_takeover_pit_entry();
         LOG_WARNING("\n +++ SUCCESS +++\n");
     }
     else {

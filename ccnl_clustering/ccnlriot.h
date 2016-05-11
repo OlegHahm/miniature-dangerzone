@@ -6,7 +6,7 @@
 
 #define CCNLRIOT_NETIF          (3)
 
-#define CCNLRIOT_CHANNEL        (12)
+#define CCNLRIOT_CHANNEL        (26)
 
 #define CCNLRIOT_INT_RETRIES    (3)
 

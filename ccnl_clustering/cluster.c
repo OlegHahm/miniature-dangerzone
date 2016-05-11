@@ -44,8 +44,8 @@ static void _populate_data(char *pfx);
 static void _radio_sleep(void);
 
 /* data timer variables */
-static xtimer_t _data_timer;
-static msg_t _data_msg;
+xtimer_t cluster_data_timer = { .target = 0, .long_target = 0 };
+msg_t cluster_data_msg;
 
 /* main event loop */
 void *_loop(void *arg)
@@ -53,10 +53,9 @@ void *_loop(void *arg)
     (void) arg;
 
     /* initialize timer variables */
-    _cluster_timer.target = _cluster_timer.long_target = _data_timer.target =
-        _data_timer.long_target =  0;
+    _cluster_timer.target = _cluster_timer.long_target =  0;
 
-    _data_msg.type = CLUSTER_MSG_NEWDATA;
+    cluster_data_msg.type = CLUSTER_MSG_NEWDATA;
 
     /* initialize other stuff */
     msg_init_queue(_mq, (sizeof(_mq) / sizeof(msg_t)));
@@ -87,7 +86,7 @@ void *_loop(void *arg)
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_pid = ccnl_start();
     /* let CCN start */
-    xtimer_usleep(1000);
+    xtimer_usleep(10000);
 
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
         LOG_ERROR("main: critical error, aborting\n");
@@ -102,7 +101,7 @@ void *_loop(void *arg)
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
-    xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
+    xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
 
     /* enter correct state and set timer if necessary */
     if (cluster_position == 0) {
@@ -299,7 +298,7 @@ void cluster_new_data(void)
     /* XXX: save postponed value */
     if (cluster_state == CLUSTER_STATE_HANDOVER) {
         LOG_DEBUG("cluster: currently in handover, let's postpone by a second\n");
-        xtimer_set_msg(&_data_timer, SEC_IN_USEC, &_data_msg, cluster_pid);
+        xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
         return;
     }
 
@@ -331,7 +330,7 @@ void cluster_new_data(void)
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         LOG_DEBUG("cluster: current radio state is %X\n", state);
     }
-    xtimer_set_msg(&_data_timer, offset, &_data_msg, cluster_pid);
+    xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
 }
 
 static void _populate_data(char *pfx)
