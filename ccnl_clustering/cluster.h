@@ -5,10 +5,20 @@
 #include "timex.h"
 #include "bloom.h"
 
-#define CLUSTER_PERIOD          (22)
-//#define CLUSTER_EVENT_PERIOD    (random_uint32() & 0x00FFFFFF)
-#define CLUSTER_EVENT_PERIOD   (3 * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
-//#define CLUSTER_EVENT_PERIOD     (4 * SEC_IN_USEC)
+#define CLUSTER_DEPUTY              (1)
+
+#define CLUSTER_D                   (13)
+#define CLUSTER_X                   (2)
+#define CLUSTER_Y                   (2)
+#define CLUSTER_P                   (0.6)
+
+#define CLUSTER_PERIOD              (23)
+//#define CLUSTER_EVENT_PERIOD      (random_uint32() & 0x00FFFFFF)
+#define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
+//#define CLUSTER_EVENT_PERIOD      (4 * SEC_IN_USEC)
+
+#define CLUSTER_GO_SLEEP            (random_uint32() > (UINT32_MAX * CLUSTER_P))
+
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 /* random interval between 50ms and ~1s */
 #define CLUSTER_BEACONING_PERIOD    ((random_uint32() & 0x000FFFFF) + 50000)

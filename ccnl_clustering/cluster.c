@@ -103,6 +103,7 @@ void *_loop(void *arg)
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
     xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
 
+#if CLUSTER_DEPUTY
     /* enter correct state and set timer if necessary */
     if (cluster_position == 0) {
         LOG_INFO("cluster: I'm the first deputy\n");
@@ -116,6 +117,17 @@ void *_loop(void *arg)
         cluster_state = CLUSTER_STATE_INACTIVE;
         cluster_sleep(cluster_position);
     }
+#else
+    if (CLUSTER_GO_SLEEP) {
+        LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
+        cluster_state = CLUSTER_STATE_INACTIVE;
+        cluster_sleep(cluster_position);
+    }
+    else {
+        LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+        cluster_state = CLUSTER_STATE_DEPUTY;
+    }
+#endif
 
     while (1) {
         msg_t m;
@@ -315,6 +327,7 @@ void cluster_new_data(void)
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
     snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
+    LOG_INFO("cluster: NEW DATA: %s\n", pfx);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
