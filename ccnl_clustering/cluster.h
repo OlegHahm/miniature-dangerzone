@@ -5,9 +5,9 @@
 #include "timex.h"
 #include "bloom.h"
 
-#define CLUSTER_DEPUTY              (1)
+#define CLUSTER_DEPUTY              (0)
 
-#define CLUSTER_D                   (13)
+#define CLUSTER_D                   (3)
 #define CLUSTER_X                   (2)
 #define CLUSTER_Y                   (2)
 #define CLUSTER_P                   (0.6)
