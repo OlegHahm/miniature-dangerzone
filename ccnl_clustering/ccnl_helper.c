@@ -597,9 +597,6 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
-    /* initialize address with 0xFF for broadcast */
-    uint8_t relay_addr[CCNLRIOT_ADDRLEN];
-    memset(relay_addr, UINT8_MAX, CCNLRIOT_ADDRLEN);
 
     /* clear interest and content buffer */
     memset(_int_buf, '\0', CCNLRIOT_BUF_SIZE);
