@@ -60,7 +60,9 @@ void *_loop(void *arg)
     /* initialize other stuff */
     msg_init_queue(_mq, (sizeof(_mq) / sizeof(msg_t)));
 
+#if CLUSTER_DEPUTY
     bloom_init(&cluster_neighbors, BLOOM_BITS, _bf, _hashes, BLOOM_HASHF);
+#endif
 
     /* configure the channel */
     uint16_t chan = CCNLRIOT_CHANNEL;
@@ -68,8 +70,10 @@ void *_loop(void *arg)
         LOG_ERROR("main: error setting channel\n");
     }
 
+#if CLUSTER_DEPUTY
     /* do some beaconing */
     beaconing_start();
+#endif
 
 #ifndef BOARD_NATIVE
     unsigned int addr_len = CCNLRIOT_ADDRLEN;
@@ -121,11 +125,13 @@ void *_loop(void *arg)
     if (CLUSTER_GO_SLEEP) {
         LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
         cluster_state = CLUSTER_STATE_INACTIVE;
-        cluster_sleep(cluster_position);
+        cluster_sleep(CLUSTER_X * CLUSTER_D);
     }
     else {
         LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
         cluster_state = CLUSTER_STATE_DEPUTY;
+        _period_counter = CLUSTER_X * CLUSTER_D;
+        xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
     }
 #endif
 
@@ -137,16 +143,32 @@ void *_loop(void *arg)
                 xtimer_remove(&_cluster_timer);
                 if (--_period_counter == 0) {
                     LOG_DEBUG("cluster: time to get active\n");
+#if CLUSTER_DEPUTY
                     cluster_takeover();
+#else
+                    if (cluster_state == CLUSTER_STATE_INACTIVE) {
+                        LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+                        cluster_state = CLUSTER_STATE_DEPUTY;
+                        cluster_wakeup();
+                        _period_counter = CLUSTER_X * CLUSTER_D;
+                        xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                    }
+                    else {
+                        cluster_state = CLUSTER_STATE_INACTIVE;
+                        cluster_sleep(CLUSTER_X * CLUSTER_D);
+                    }
+#endif
                 }
                 else {
                     xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
                 }
                 break;
+#if CLUSTER_DEPUTY
             case CLUSTER_MSG_TAKEOVER:
                 LOG_DEBUG("cluster: received takeover msg\n");
                 cluster_takeover();
                 break;
+#endif
             case CLUSTER_MSG_NEWDATA:
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
@@ -222,6 +244,7 @@ static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
 static void _radio_sleep(void)
 {
+#if CLUSTER_DEPUTY
     if (cluster_prevent_sleep > 0) {
         if (ccnl_relay.pit == NULL) {
             LOG_DEBUG("cluster: no PIT entries, reset pending counter\n");
@@ -234,6 +257,7 @@ static void _radio_sleep(void)
             return;
         }
     }
+#endif
     netopt_state_t state;
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         if (state == NETOPT_STATE_IDLE) {
@@ -266,12 +290,18 @@ void cluster_sleep(uint8_t periods)
 
     _radio_sleep();
 
+#if CLUSTER_DEPUTY
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD)), (int) cluster_pid);
     _period_counter = periods * CLUSTER_PERIOD;
+#else
+    LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods)), (int) cluster_pid);
+    _period_counter = periods;
+#endif
     xtimer_remove(&_cluster_timer);
     xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
 }
 
+#if CLUSTER_DEPUTY
 void cluster_takeover(void)
 {
     LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
@@ -285,6 +315,7 @@ void cluster_takeover(void)
     }
     LOG_DEBUG("cluster: takeover completed\n");
 }
+#endif
 
 void cluster_wakeup(void)
 {

@@ -118,6 +118,7 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
     return ccnl_interest_new(&ccnl_relay, loopback_face, &pkt);
 }
 
+#if CLUSTER_DEPUTY
 /**
  * @brief send an acknowledgement
  **/
@@ -139,7 +140,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     free_packet(c->pkt);
     ccnl_free(c);
 }
-
+#endif
 
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
@@ -166,6 +167,7 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
     return false;
 }
 
+#if CLUSTER_DEPUTY
 void ccnl_helper_clear_pit_for_own(void)
 {
     /* check if we have a PIT entry for our own content and remove it */
@@ -216,6 +218,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
+#if CLUSTER_DEPUTY
     /* XXX: might be unnecessary du to mutex now */
     /* if we're currently transferring our cache to the new deputy, we do not touch the content store */
     if (cluster_state == CLUSTER_STATE_HANDOVER) {
@@ -248,6 +251,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         return 1;
     }
     free_prefix(prefix);
+#endif
 
     /* TODO: implement not being interested in all content */
     struct ccnl_interest_s *i = NULL;
@@ -297,6 +301,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             return 1;
         }
         else {
+#if CLUSTER_DEPUTY
             /* create an interest if we're waiting for *, because otherwise
              * our PIT entry won't match */
             if (pkt->contlen == sizeof(cluster_content_t)) {
@@ -329,7 +334,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             else {
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
             }
-
+#else
+            ccnl_helper_create_int(pkt->pfx);
+#endif
         }
     }
     return 0;
@@ -346,6 +353,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
+    (void) from;
     int res = 0;
 
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n",
@@ -396,6 +404,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         return 1;
     }
 
+#if CLUSTER_DEPUTY
     /* check if this is a handover request */
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
@@ -488,6 +497,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 out:
     /* freeing memory */
     free_prefix(prefix);
+#endif /* CLUSTER_DEPUTY */
     return res;
 }
 
