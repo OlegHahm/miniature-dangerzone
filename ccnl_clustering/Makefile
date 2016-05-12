@@ -33,7 +33,9 @@ USEMODULE += xtimer
 USEMODULE += random
 USEMODULE += hashes
 USEMODULE += bloom
-USEMODULE += netdev_retrans
+ifeq (,$(filter native,$(BOARD)))
+	USEMODULE += netdev_retrans
+endif
 USEMODULE += netstats_l2
 
 USEPKG += tlsf
