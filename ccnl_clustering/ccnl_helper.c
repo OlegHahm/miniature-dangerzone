@@ -25,7 +25,16 @@ struct ccnl_prefix_s* ccnl_prefix_new(int suite, int cnt);
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
 
-/* create a content struct */
+/**
+ * @brief create a content struct
+ *
+ * @param[in] prefix    name of the content
+ * @param[in] value     content itself (will get filled into a
+ *                      @ref cluster_content_t struct
+ * @param[in] cache     if true, sends data via loopback to self for caching
+ *
+ * @returns pointer to new content chunk
+ * */
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache)
@@ -81,6 +90,9 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     return c;
 }
 
+/**
+ * @brief creates an interestest for a given name
+ */
 struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
 {
     int nonce = random_uint32();
@@ -106,7 +118,9 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
     return ccnl_interest_new(&ccnl_relay, loopback_face, &pkt);
 }
 
-/* send an acknowledgement */
+/**
+ * @brief send an acknowledgement
+ **/
 static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_prefix_s *pfx, int num)
 {
@@ -183,8 +197,16 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
     }
     free_prefix(prefix);
 }
+#endif
 
-/* local callback to handle incoming content chunks */
+/**
+ * @brief local callback to handle incoming content chunks
+ *
+ * @note  Gets called from CCNL thread context
+ *
+ * @returns 1   if chunk is handled and no further processing should happen
+ * @returns 0   otherwise
+ **/
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
@@ -313,7 +335,14 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     return 0;
 }
 
-/* local callback to handle incoming interests */
+/**
+ * @brief local callback to handle incoming interests
+ *
+ * @note  Gets called from CCNL thread context
+ *
+ * @returns 1   if interest is handled and no further processing should happen
+ * @returns 0   otherwise
+ **/
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt)
 {
@@ -543,7 +572,17 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
     return res;
 }
 
-/* build and send an interest packet */
+/**
+ * @brief build and send an interest packet
+ *
+ * @param[in] no_wait   if true, waits for the response
+ *
+ * @returns CCNLRIOT_NO_WAIT            if @p no_wait is set
+ * @returns CCNLRIOT_RECEIVED_CHUNK     if a chunk was received
+ * @returns CCNLRIOT_LAST_CN            if an ACK was received
+ * @returns CCNLRIOT_TIMEOUT            if nothing was received within the
+ *                                      given timeframe
+ **/
 int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
@@ -551,6 +590,7 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
     uint8_t relay_addr[CCNLRIOT_ADDRLEN];
     memset(relay_addr, UINT8_MAX, CCNLRIOT_ADDRLEN);
 
+    /* clear interest and content buffer */
     memset(_int_buf, '\0', CCNLRIOT_BUF_SIZE);
     memset(_cont_buf, '\0', CCNLRIOT_BUF_SIZE);
 
@@ -558,6 +598,8 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 
     gnrc_netreg_entry_t _ne;
 
+    /* actual sending of the content
+     * if @p no_wait is true, waiting for a reply (in _wait_for_chunk) */
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
         LOG_INFO("ccnl_helper: sending interest for %s\n", prefix);
         /* register for content chunks */
