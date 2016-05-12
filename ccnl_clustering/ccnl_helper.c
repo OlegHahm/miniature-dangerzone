@@ -46,6 +46,7 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     int offs = CCNL_MAX_PACKET_SIZE;
 
     cluster_content_t my_cont;
+    memset(&my_cont.value, 0, CLUSTER_CONT_LEN + 1);
     memcpy(my_cont.value, value, len);
     my_cont.num = -1;
     len = sizeof(cluster_content_t);
