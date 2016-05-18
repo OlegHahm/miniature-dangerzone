@@ -123,12 +123,12 @@ void *_loop(void *arg)
     }
 #else
     if (CLUSTER_GO_SLEEP) {
-        LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
+        LOG_INFO("\n\ncluster: starting INACTIVE\n\n");
         cluster_state = CLUSTER_STATE_INACTIVE;
         cluster_sleep(CLUSTER_X * CLUSTER_D);
     }
     else {
-        LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+        LOG_INFO("\n\ncluster: starting as DEPUTY\n\n");
         cluster_state = CLUSTER_STATE_DEPUTY;
         _period_counter = CLUSTER_X * CLUSTER_D;
         xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
