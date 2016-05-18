@@ -236,7 +236,7 @@ void cluster_init(void)
     cluster_state = CLUSTER_STATE_INACTIVE;
 
     cluster_pid = thread_create(_cluster_stack, sizeof(_cluster_stack),
-                                THREAD_PRIORITY_MAIN-2, THREAD_CREATE_STACKTEST |
+                                THREAD_PRIORITY_MAIN-1, THREAD_CREATE_STACKTEST |
                                 THREAD_CREATE_WOUT_YIELD, _loop, NULL, "cluster manager");
 }
 
