@@ -17,7 +17,7 @@
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 //#define CLUSTER_EVENT_PERIOD      (4 * SEC_IN_USEC)
 
-#define CLUSTER_GO_SLEEP            (random_uint32() > (UINT32_MAX * CLUSTER_P))
+#define CLUSTER_GO_SLEEP            (random_uint32() < (UINT32_MAX * CLUSTER_P))
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 /* random interval between 50ms and ~1s */
