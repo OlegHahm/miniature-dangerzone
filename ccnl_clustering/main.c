@@ -34,16 +34,24 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 
 static int _stats(int argc, char **argv);
+static int _cs(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
     {"stats", "Print CCNL statistics", _stats},
+    {"ccnl_cs", "Print CCNL content store", _cs},
     {NULL, NULL, NULL}
 };
 
 int _stats(int argc, char **argv) {
     (void) argc; (void) argv;
     printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", ccnl_relay.ifs[0].rx_cnt, ccnl_relay.ifs[0].tx_cnt);
+    return 0;
+}
+
+int _cs(int argc, char **argv) {
+    (void) argc; (void) argv;
+    gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
     return 0;
 }
 
