@@ -18,7 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef MODULE_TLSF
 #include "tlsf-malloc.h"
+#endif
 #include "msg.h"
 #include "shell.h"
 #include "xtimer.h"
@@ -31,7 +33,9 @@
 #define MAIN_QUEUE_SIZE     (8)
 static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 
+#ifdef MODULE_TLSF
 static uint32_t _tlsf_heap[TLSF_BUFFER];
+#endif
 
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
@@ -57,7 +61,9 @@ int _cs(int argc, char **argv) {
 
 int main(void)
 {
+#ifdef MODULE_TLSF
     tlsf_create_with_pool(_tlsf_heap, sizeof(_tlsf_heap));
+#endif
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
     printf("CCN cluster started\n");
