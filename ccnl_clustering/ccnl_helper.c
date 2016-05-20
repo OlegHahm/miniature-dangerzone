@@ -536,8 +536,6 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
                 struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
                 free_prefix(pfx);
             }
-            msg_t reply = { .content.value = 0 };
-            msg_reply(&m, &reply);
             break;
         }
         else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
