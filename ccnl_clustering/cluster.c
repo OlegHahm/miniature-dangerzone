@@ -142,20 +142,33 @@ void *_loop(void *arg)
             case CLUSTER_MSG_SECOND:
                 xtimer_remove(&_cluster_timer);
                 if (--_period_counter == 0) {
-                    LOG_DEBUG("cluster: time to get active\n");
+                    LOG_DEBUG("cluster: time to reconsider my state\n");
 #if CLUSTER_DEPUTY
                     cluster_takeover();
 #else
                     if (cluster_state == CLUSTER_STATE_INACTIVE) {
-                        LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
-                        cluster_state = CLUSTER_STATE_DEPUTY;
-                        cluster_wakeup();
+                        if (CLUSTER_GO_SLEEP) {
+                            LOG_INFO("cluster: stay sleeping\n");
+                        }
+                        else {
+                            LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+                            cluster_state = CLUSTER_STATE_DEPUTY;
+                            cluster_wakeup();
+                        }
                         _period_counter = CLUSTER_X * CLUSTER_D;
                         xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
                     }
                     else {
-                        cluster_state = CLUSTER_STATE_INACTIVE;
-                        cluster_sleep(CLUSTER_X * CLUSTER_D);
+                        if (CLUSTER_GO_SLEEP) {
+                            LOG_INFO("cluster: go sleeping\n");
+                            cluster_state = CLUSTER_STATE_INACTIVE;
+                            cluster_sleep(CLUSTER_X * CLUSTER_D);
+                        }
+                        else {
+                            LOG_INFO("cluster: stay active\n");
+                            _period_counter = CLUSTER_X * CLUSTER_D;
+                            xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                        }
                     }
 #endif
                 }
