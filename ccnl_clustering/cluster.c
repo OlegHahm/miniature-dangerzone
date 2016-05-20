@@ -13,7 +13,7 @@
 
 /* buffers */
 char _cluster_stack[THREAD_STACKSIZE_MAIN];
-msg_t _mq[8];
+msg_t _mq[64];
 
 /* public variables */
 cluster_state_t cluster_state;
