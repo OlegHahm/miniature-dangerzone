@@ -39,11 +39,14 @@ static uint32_t _tlsf_heap[TLSF_BUFFER];
 
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
+static int _debug_cache_date(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
     {"stats", "Print CCNL statistics", _stats},
     {"ccnl_cs", "Print CCNL content store", _cs},
+    {"dc", "Create a content chunk and put it into cache for debug purposes",
+        _debug_cache_date},
     {NULL, NULL, NULL}
 };
 
@@ -63,6 +66,30 @@ int _cs(int argc, char **argv) {
     }
     else {
         puts("NOP");
+    }
+    return 0;
+}
+
+static int _debug_cache_date(int argc, char **argv)
+{
+    if ((argc < 3) || (strlen(argv[1]) > 8) || (strlen(argv[2]) > 8)) {
+        puts("Usage: dc <ID> <timestamp>");
+        return 1;
+    }
+
+    /* get data into cache by sending to loopback */
+    LOG_DEBUG("main: put data into cache via loopback\n");
+    size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
+    char pfx[prefix_len];
+    snprintf(pfx, prefix_len, "%s%s/%s/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, argv[1], argv[2]);
+    LOG_INFO("main: DEBUG DATA: %s\n", pfx);
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
+    }
+    else {
+        ccnl_helper_create_cont(prefix, (unsigned char*) argv[2], strlen(argv[2]) + 1, true);
+        free_prefix(prefix);
     }
     return 0;
 }
