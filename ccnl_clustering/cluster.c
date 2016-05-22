@@ -218,7 +218,6 @@ void *_loop(void *arg)
                 }
                 else {
                     LOG_DEBUG("- since we're DEPUTY, there's nothing to do\n");
-                    ccnl_helper_create_int(pfx);
                 }
                 free_prefix(pfx);
                 break;
