@@ -397,5 +397,5 @@ static void _populate_data(char *pfx)
     LOG_DEBUG("cluster: entering _populate_data\n");
     cluster_wakeup();
     /* populate the content now */
-    ccnl_helper_int((unsigned char*) pfx, NULL, true);
+    ccnl_helper_int((unsigned char*) pfx, NULL, false);
 }
