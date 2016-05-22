@@ -507,6 +507,42 @@ out:
     return res;
 }
 
+/**
+ * @brief Caching strategy: oldest representative
+ * Always cache at least one value per name and replace always the oldest value
+ * for this name if cache is full. If no older value for this name exist,
+ * replace the oldest value for any name that has different version in the
+ * cache. If no such entry exists in the cache, replace the oldest value for
+ * any name.
+ */
+int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c)
+{
+    struct ccnl_content_s *c2, *oldest = NULL;
+    long age = 0;
+    for (c2 = relay->contents; c2; c2 = c2->next) {
+        if (!(c2->flags & CCNL_CONTENT_FLAGS_STATIC)) {
+            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, c->pkt->pfx, CMP_MATCH) >= 3) {
+                if (c->pkt->pfx->compcnt < 4) {
+                    LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
+                    continue;
+                }
+                long c2_age = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
+                if ((age == 0) || (c2_age < age)) {
+                    age = c2_age;
+                    oldest = c2;
+                }
+            }
+        }
+    }
+    if (oldest) {
+        LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
+        ccnl_content_remove(relay, oldest);
+        return 1;
+    }
+    return 0;
+}
+
+
 static xtimer_t _wait_timer = { .target = 0, .long_target = 0 };
 static msg_t _timeout_msg;
 static int _wait_for_chunk(void *buf, size_t buf_len)

@@ -101,6 +101,7 @@ void *_loop(void *arg)
     /* set the CCN callbacks */
     ccnl_set_local_producer(ccnlriot_producer);
     ccnl_set_local_consumer(ccnlriot_consumer);
+    ccnl_set_cache_strategy_remove(cs_oldest_representative);
 
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
