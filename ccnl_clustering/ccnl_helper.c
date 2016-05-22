@@ -176,9 +176,11 @@ void ccnl_helper_clear_pit_for_own(void)
     gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_OWN, &ccnl_relay, sizeof(ccnl_relay));
 }
 
+/**
+ * @brief remove the PIT entry for the given chunk number for *
+ */
 static void _remove_pit(struct ccnl_relay_s *relay, int num)
 {
-    /* check if this is a handover request */
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
 
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, 0);
