@@ -383,7 +383,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                           "will serve it, remove PIT entry. (Pending interests "
                           "for own data: %u)\n", (unsigned) cluster_prevent_sleep);
                 /* inform ourselves that the interest was bounced back */
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED_ACK };
+                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
                 msg_try_send(&m, cluster_pid);
 
                 ccnl_interest_remove(relay, i);
