@@ -513,7 +513,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 {
     int res = (-1);
 
-    int32_t remaining = CCNL_MAX_INTEREST_RETRANSMIT * SEC_IN_USEC;
+    int32_t remaining = (CCNL_MAX_INTEREST_RETRANSMIT ? CCNL_MAX_INTEREST_RETRANSMIT : 1) * SEC_IN_USEC;
     uint32_t now = xtimer_now();
 
     while (1) { /* wait for a content pkt (ignore interests) */
