@@ -160,7 +160,7 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
             !memcmp(c->pkt->buf->data,pkt->buf->data,c->pkt->buf->datalen)) {
             cc->num = old;
             ccc->num = cold;
-            return true; // content is dup, do nothing
+            return true; /* content is dup, do nothing */
         }
         ccc->num = cold;
     }
@@ -316,12 +316,12 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                  */
                 if (cc->num >= 0) {
                     _remove_pit(relay, cc->num);
-                    if (is_dup) {
-                        LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
-                    }
-                    else {
-                        ccnl_helper_create_int(pkt->pfx);
-                    }
+                }
+                if (is_dup) {
+                    LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
+                }
+                else {
+                    ccnl_helper_create_int(pkt->pfx);
                 }
                 cc->num = -1;
 
