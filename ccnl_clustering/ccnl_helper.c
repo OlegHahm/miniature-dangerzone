@@ -383,7 +383,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                           "will serve it, remove PIT entry. (Pending interests "
                           "for own data: %u)\n", (unsigned) cluster_prevent_sleep);
                 /* inform ourselves that the interest was bounced back */
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+                msg_t m = { .type = CLUSTER_MSG_RECEIVED_INT };
                 msg_try_send(&m, cluster_pid);
 
                 ccnl_interest_remove(relay, i);
@@ -551,7 +551,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
 
 static xtimer_t _wait_timer = { .target = 0, .long_target = 0 };
 static msg_t _timeout_msg;
-static int _wait_for_chunk(void *buf, size_t buf_len)
+static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
 {
     int res = (-1);
 
@@ -576,6 +576,10 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 
         /* we received something from local_consumer */
         if (m.type == CLUSTER_MSG_RECEIVED) {
+            if (wait_for_int) {
+                LOG_DEBUG("ccnl_helper: that was an chunk - we're currently not interested in\n");
+                continue;
+            }
             LOG_DEBUG("ccnl_helper: received something, that's good enough for me\n");
             res = 1;
             xtimer_remove(&_wait_timer);
@@ -586,11 +590,27 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
             break;
         }
         else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
+            if (wait_for_int) {
+                LOG_DEBUG("ccnl_helper: that was an chunk - we're currently not interested in\n");
+                continue;
+            }
             LOG_DEBUG("ccnl_helper: received ack\n");
             memcpy(buf, CCNLRIOT_CONT_ACK, sizeof(CCNLRIOT_CONT_ACK));
             res = sizeof(CCNLRIOT_CONT_ACK);
             xtimer_remove(&_wait_timer);
             break;
+        }
+        else if (m.type == CLUSTER_MSG_RECEIVED_INT) {
+            if (wait_for_int) {
+                LOG_DEBUG("ccnl_helper: received an interest - we're waiting for that\n");
+                res = 1;
+                xtimer_remove(&_wait_timer);
+                break;
+            }
+            else {
+                LOG_DEBUG("ccnl_helper: we were not waiting for an interest\n");
+                continue;
+            }
         }
         /* we received a chunk from CCN-Lite */
         else if (m.type == GNRC_NETAPI_MSG_TYPE_RCV) {
@@ -631,15 +651,14 @@ static int _wait_for_chunk(void *buf, size_t buf_len)
 /**
  * @brief build and send an interest packet
  *
- * @param[in] no_wait   if true, waits for the response
+ * @param[in] wait_for_int if true, waits for interest instead of chunk
  *
- * @returns CCNLRIOT_NO_WAIT            if @p no_wait is set
  * @returns CCNLRIOT_RECEIVED_CHUNK     if a chunk was received
  * @returns CCNLRIOT_LAST_CN            if an ACK was received
  * @returns CCNLRIOT_TIMEOUT            if nothing was received within the
  *                                      given timeframe
  **/
-int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
+int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool wait_for_int)
 {
     LOG_DEBUG("ccnl_helper: ccnl_helper_int\n");
 
@@ -651,21 +670,16 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool no_wait)
 
     gnrc_netreg_entry_t _ne;
 
-    /* actual sending of the content
-     * if @p no_wait is true, waiting for a reply (in _wait_for_chunk) */
+    /* actual sending of the content */
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
-        LOG_INFO("ccnl_helper: sending interest for %s\n", prefix);
+        LOG_INFO("ccnl_helper: sending interest #%u for %s\n", (unsigned) cnt, prefix);
         /* register for content chunks */
         _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
         _ne.pid = sched_active_pid;
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
         ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, chunknum, _int_buf, CCNLRIOT_BUF_SIZE);
-        if (no_wait) {
-            gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
-            return CCNLRIOT_NO_WAIT;
-        }
-        if (_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE) > 0) {
+        if (_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, wait_for_int) > 0) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
             LOG_DEBUG("ccnl_helper: Content received: %s\n", _cont_buf);
             success = CCNLRIOT_RECEIVED_CHUNK;

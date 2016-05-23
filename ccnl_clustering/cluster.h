@@ -36,6 +36,7 @@
 #define CLUSTER_MSG_BEACON_END      (0x4449)
 #define CLUSTER_MSG_RECEIVED        (0x4450)
 #define CLUSTER_MSG_RECEIVED_ACK    (0x4451)
+#define CLUSTER_MSG_RECEIVED_INT    (0x4452)
 
 typedef enum {
     CLUSTER_STATE_DEPUTY,

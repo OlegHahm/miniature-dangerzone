@@ -202,6 +202,9 @@ void *_loop(void *arg)
             case CLUSTER_MSG_BEACON:
                 LOG_WARNING("cluster: should receive beaconing message now!\n");
                 break;
+            case CLUSTER_MSG_RECEIVED_INT:
+                LOG_DEBUG("cluster: we're not interested in interests right now\n");
+                break;
             case CLUSTER_MSG_RECEIVED:
                 LOG_DEBUG("cluster: received a content chunk ");
                 static char _prefix_str[CCNLRIOT_PFX_LEN];
@@ -397,5 +400,5 @@ static void _populate_data(char *pfx)
     LOG_DEBUG("cluster: entering _populate_data\n");
     cluster_wakeup();
     /* populate the content now */
-    ccnl_helper_int((unsigned char*) pfx, NULL, false);
+    ccnl_helper_int((unsigned char*) pfx, NULL, true);
 }
