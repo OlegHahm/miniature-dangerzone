@@ -555,7 +555,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
 {
     int res = (-1);
 
-    int32_t remaining = (CCNL_MAX_INTEREST_RETRANSMIT ? CCNL_MAX_INTEREST_RETRANSMIT : 1) * SEC_IN_USEC;
+    int32_t remaining = (CCNL_MAX_INTEREST_RETRANSMIT ? CCNL_MAX_INTEREST_RETRANSMIT : 1) * (SEC_IN_USEC / 2);
     uint32_t now = xtimer_now();
 
     while (1) { /* wait for a content pkt (ignore interests) */
@@ -569,6 +569,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             res = -ETIMEDOUT;
             break;
         }
+        LOG_DEBUG("remaining time: %u\n", (unsigned) remaining);
         xtimer_set_msg64(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
 
         msg_t m;
@@ -639,6 +640,17 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
         else if (m.type == CLUSTER_MSG_NEWDATA) {
             LOG_DEBUG("ccnl_helper: received newdata msg while waiting for content, postpone it\n");
             xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
+        }
+        else if (m.type == CLUSTER_MSG_SECOND) {
+            //LOG_DEBUG("ccnl_helper: SECOND: %u\n", (unsigned) cluster_period_counter);
+            xtimer_remove(&cluster_timer);
+            if (cluster_period_counter == 1) {
+                LOG_WARNING("ccnl_helper: we're late!\n");
+            }
+            else {
+                cluster_period_counter--;
+            }
+            xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
         }
         else {
             LOG_DEBUG("ccnl_helper: Unknown message received, ignore it\n");

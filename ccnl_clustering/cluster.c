@@ -24,9 +24,9 @@ uint16_t cluster_my_id;
 uint8_t cluster_prevent_sleep = 0;
 
 /* internal variables */
-static xtimer_t _cluster_timer;
-static uint32_t _period_counter;
-static msg_t _wakeup_msg = { .type = CLUSTER_MSG_SECOND };
+xtimer_t cluster_timer;
+uint32_t cluster_period_counter;
+msg_t cluster_wakeup_msg = { .type = CLUSTER_MSG_SECOND };
 
 /* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
@@ -53,7 +53,7 @@ void *_loop(void *arg)
     (void) arg;
 
     /* initialize timer variables */
-    _cluster_timer.target = _cluster_timer.long_target =  0;
+    cluster_timer.target = cluster_timer.long_target =  0;
 
     cluster_data_msg.type = CLUSTER_MSG_NEWDATA;
 
@@ -131,8 +131,8 @@ void *_loop(void *arg)
     else {
         LOG_INFO("\n\ncluster: starting as DEPUTY\n\n");
         cluster_state = CLUSTER_STATE_DEPUTY;
-        _period_counter = CLUSTER_X * CLUSTER_D;
-        xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+        cluster_period_counter = CLUSTER_X * CLUSTER_D;
+        xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
     }
 #endif
 
@@ -141,8 +141,9 @@ void *_loop(void *arg)
         msg_receive(&m);
         switch (m.type) {
             case CLUSTER_MSG_SECOND:
-                xtimer_remove(&_cluster_timer);
-                if (--_period_counter == 0) {
+                //LOG_DEBUG("cluster: SECOND: %u\n", (unsigned) cluster_period_counter);
+                xtimer_remove(&cluster_timer);
+                if (--cluster_period_counter == 0) {
                     LOG_DEBUG("cluster: time to reconsider my state\n");
 #if CLUSTER_DEPUTY
                     cluster_takeover();
@@ -156,8 +157,8 @@ void *_loop(void *arg)
                             cluster_state = CLUSTER_STATE_DEPUTY;
                             cluster_wakeup();
                         }
-                        _period_counter = CLUSTER_X * CLUSTER_D;
-                        xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                        cluster_period_counter = CLUSTER_X * CLUSTER_D;
+                        xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
                     }
                     else {
                         if (CLUSTER_GO_SLEEP) {
@@ -167,14 +168,14 @@ void *_loop(void *arg)
                         }
                         else {
                             LOG_INFO("cluster: stay active\n");
-                            _period_counter = CLUSTER_X * CLUSTER_D;
-                            xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                            cluster_period_counter = CLUSTER_X * CLUSTER_D;
+                            xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
                         }
                     }
 #endif
                 }
                 else {
-                    xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+                    xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
                 }
                 break;
 #if CLUSTER_DEPUTY
@@ -308,13 +309,13 @@ void cluster_sleep(uint8_t periods)
 
 #if CLUSTER_DEPUTY
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD)), (int) cluster_pid);
-    _period_counter = periods * CLUSTER_PERIOD;
+    cluster_period_counter = periods * CLUSTER_PERIOD;
 #else
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods)), (int) cluster_pid);
-    _period_counter = periods;
+    cluster_period_counter = periods;
 #endif
-    xtimer_remove(&_cluster_timer);
-    xtimer_set_msg(&_cluster_timer, SEC_IN_USEC, &_wakeup_msg, cluster_pid);
+    xtimer_remove(&cluster_timer);
+    xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
 }
 
 #if CLUSTER_DEPUTY
