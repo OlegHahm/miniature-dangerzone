@@ -69,6 +69,9 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
         return NULL;
     }
     c = ccnl_content_new(&ccnl_relay, &pk);
+#if (!CLUSTER_DEPUTY)
+    ccnl_broadcast(&ccnl_relay, c->pkt);
+#endif
     if (cache) {
         /* XXX: always use first (and only IF) */
         uint8_t hwaddr[CCNLRIOT_ADDRLEN];
@@ -285,7 +288,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
+#if CLUSTER_DEPUTY
                 struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
+#endif
                 struct ccnl_content_s *c = ccnl_content_new(&ccnl_relay, &pkt);
                 if (!c) {
                     LOG_ERROR("ccnl_helper: we're doomed, WE'RE ALL DOOMED\n");
@@ -297,7 +302,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 }
                 /* inform potential waiters */
                 msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+#if CLUSTER_DEPUTY
                 m.content.ptr = (void*)new;
+#endif
                 msg_try_send(&m, cluster_pid);
             }
             free_packet(pkt);
