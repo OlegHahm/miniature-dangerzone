@@ -294,7 +294,7 @@ static void _radio_sleep(void)
             LOG_DEBUG("cluster: radio sleeps already\n");
         }
         else {
-            LOG_DEBUG("cluster: radio is in wrong state, try again later\n");
+            LOG_DEBUG("cluster: radio is in wrong state (%x), try again later\n", state);
             xtimer_remove(&_sleep_timer);
             xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
         }
