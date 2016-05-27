@@ -40,6 +40,7 @@ static uint32_t _tlsf_heap[TLSF_BUFFER];
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
 static int _debug_cache_date(int argc, char **argv);
+static int _start_dow(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
@@ -47,6 +48,7 @@ const shell_command_t shell_commands[] = {
     {"ccnl_cs", "Print CCNL content store", _cs},
     {"dc", "Create a content chunk and put it into cache for debug purposes",
         _debug_cache_date},
+    {"start", "Start the application", _start_dow},
     {NULL, NULL, NULL}
 };
 
@@ -94,6 +96,14 @@ static int _debug_cache_date(int argc, char **argv)
     return 0;
 }
 
+static int _start_dow(int argc, char **argv)
+{
+    (void) argc; (void) argv;
+    cluster_init();
+    thread_yield_higher();
+    return 0;
+}
+
 int main(void)
 {
 #ifdef MODULE_TLSF
@@ -102,9 +112,6 @@ int main(void)
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
     printf("CCN cluster started\n");
-
-    cluster_init();
-    thread_yield_higher();
 
     /* start the shell */
     char line_buf[SHELL_DEFAULT_BUFSIZE];
