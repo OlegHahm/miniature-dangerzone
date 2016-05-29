@@ -20,7 +20,7 @@ cluster_state_t cluster_state;
 bloom_t cluster_neighbors;
 kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 kernel_pid_t ccnl_pid = KERNEL_PID_UNDEF;
-uint16_t cluster_my_id;
+uint32_t cluster_my_id;
 uint8_t cluster_prevent_sleep = 0;
 
 /* internal variables */
@@ -244,14 +244,11 @@ void cluster_init(void)
 #ifdef CPU_NATIVE
     cpuid_get(&cluster_my_id);
 #else
-    /* XXX: limited to addresses of max. 8 chars */
-    uint16_t hwaddr[4];
-    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_ADDRESS, 0, (uint8_t*) hwaddr, sizeof(hwaddr)) <= 0) {
-        LOG_ERROR("cluster: I'm doomed!\n");
-    }
-    cluster_my_id = (uint16_t) *((uint16_t*) &hwaddr);
+    uint8_t cpuid[CPUID_LEN];
+    cpuid_get(cpuid);
+    cluster_my_id = djb2_hash(cpuid, CPUID_LEN);
 #endif
-    LOG_DEBUG("clustering: my ID  is %u\n", (unsigned) cluster_my_id);
+    LOG_INFO("clustering: my ID  is %u\n", (unsigned) cluster_my_id);
 
     random_init(cluster_my_id);
     /* initialize to inactive state */
@@ -380,7 +377,7 @@ void cluster_new_data(void)
     LOG_DEBUG("cluster: put data into cache via loopback\n");
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
-    snprintf(pfx, prefix_len, "%s%s/%08X/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, cluster_my_id, val);
+    snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
     LOG_INFO("cluster: NEW DATA: %s\n", pfx);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {

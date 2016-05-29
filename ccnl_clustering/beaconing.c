@@ -10,7 +10,7 @@
 
 typedef struct {
     uint16_t magic_key;
-    uint16_t id;
+    uint32_t id;
 } beacon_t;
 
 /* initialize some global variables */
@@ -32,7 +32,7 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
         gnrc_pktbuf_release(pkt);
         return;
     }
-    LOG_INFO("beaconing: received a beacon, id is %" PRIu16 "\n", b.id);
+    LOG_INFO("beaconing: received a beacon, id is %" PRIu32 "\n", b.id);
     if (bloom_check(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id))) {
         LOG_DEBUG("beaconing: already know this neighbor\n");
     }

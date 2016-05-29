@@ -51,7 +51,7 @@ typedef struct __attribute__((packed)) {
 } cluster_content_t;
 
 extern cluster_state_t cluster_state;
-extern uint16_t cluster_my_id;
+extern uint32_t cluster_my_id;
 extern kernel_pid_t ccnl_pid;
 extern kernel_pid_t cluster_pid;
 extern uint16_t cluster_position;
