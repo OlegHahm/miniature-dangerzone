@@ -148,6 +148,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
+    assert(pkt->content != NULL);
     /* save old value */
     cluster_content_t *cc = (cluster_content_t*) pkt->content;
     int old = cc->num;
