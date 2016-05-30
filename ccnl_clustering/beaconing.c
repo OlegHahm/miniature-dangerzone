@@ -8,7 +8,7 @@
 /* data format of beacons */
 #define BEACONING_MK    (0x1701)
 
-typedef struct {
+typedef struct __attribute__((packed))  {
     uint16_t magic_key;
     uint32_t id;
 } beacon_t;
