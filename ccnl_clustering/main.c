@@ -113,6 +113,10 @@ int main(void)
 
     printf("CCN cluster started\n");
 
+#if CLUSTER_AUTOSTART
+    cluster_init();
+    thread_yield_higher();
+#endif
     /* start the shell */
     char line_buf[SHELL_DEFAULT_BUFSIZE];
     shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);

@@ -6,6 +6,7 @@
 #include "bloom.h"
 
 #define CLUSTER_DEPUTY              (0)
+#define CLUSTER_AUTOSTART           (1)
 
 #define CLUSTER_D                   (3)
 #define CLUSTER_X                   (2)
