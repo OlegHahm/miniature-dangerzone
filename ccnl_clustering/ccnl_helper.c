@@ -697,7 +697,9 @@ int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool wait_for_int
         _ne.pid = sched_active_pid;
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
-        ccnl_send_interest(CCNL_SUITE_NDNTLV, (char*) prefix, chunknum, _int_buf, CCNLRIOT_BUF_SIZE);
+        ccnl_interest_t i = { .name = (char*)prefix, .chunknum = chunknum, .buf = _int_buf, .buflen = CCNLRIOT_BUF_SIZE };
+        gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, &i, sizeof(i), GNRC_NETTYPE_CCN);
+        gnrc_netapi_send(ccnl_pid, pkt);
         if (_wait_for_chunk(_cont_buf, CCNLRIOT_BUF_SIZE, wait_for_int) > 0) {
             gnrc_netreg_unregister(GNRC_NETTYPE_CCN_CHUNK, &_ne);
             LOG_DEBUG("ccnl_helper: Content received: %s\n", _cont_buf);
