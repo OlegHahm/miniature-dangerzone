@@ -40,9 +40,6 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
-#if CLUSTER_DEPUTY
-static void _populate_data(char *pfx);
-#endif
 static void _radio_sleep(void);
 
 /* data timer variables */
@@ -210,27 +207,7 @@ void *_loop(void *arg)
                 break;
             case CLUSTER_MSG_RECEIVED:
                 LOG_DEBUG("cluster: received a content chunk ");
-#if CLUSTER_DEPUTY
-                static char _prefix_str[CCNLRIOT_PFX_LEN];
-                struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
-                ccnl_prefix_to_path_detailed(_prefix_str, pfx, 1, 0, 0);
-
-                /* if we're not deputy or becoming one, send an interest for our own data */
-                if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
-                    (cluster_state != CLUSTER_STATE_TAKEOVER)) {
-                    LOG_DEBUG("assume that is from us and generate an interest\n");
-                    cluster_prevent_sleep++;
-                    LOG_DEBUG("cluster: call _populate_data, %u pending interests\n",
-                              (unsigned) cluster_prevent_sleep);
-                    _populate_data(_prefix_str);
-                }
-                else {
-                    LOG_DEBUG("- since we're DEPUTY, there's nothing to do\n");
-                }
-                free_prefix(pfx);
-#else
                 LOG_DEBUG("cluster: nothing to do\n");
-#endif
                 break;
             default:
                 LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);
@@ -397,14 +374,3 @@ void cluster_new_data(void)
     }
     xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
 }
-
-#if CLUSTER_DEPUTY
-static void _populate_data(char *pfx)
-{
-    /* first wake up radio (if necessary) */
-    LOG_DEBUG("cluster: entering _populate_data\n");
-    cluster_wakeup();
-    /* populate the content now */
-    ccnl_helper_int((unsigned char*) pfx, NULL, true);
-}
-#endif
