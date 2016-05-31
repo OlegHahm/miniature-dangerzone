@@ -570,7 +570,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             break;
         }
         LOG_DEBUG("remaining time: %u\n", (unsigned) remaining);
-        xtimer_set_msg64(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
+        xtimer_set_msg(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
 
         msg_t m;
         msg_receive(&m);
