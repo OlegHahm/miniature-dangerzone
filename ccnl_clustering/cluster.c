@@ -84,8 +84,6 @@ void *_loop(void *arg)
 
     /* initialize and start CCN lite */
     ccnl_core_init();
-    extern int debug_level;
-    debug_level = CCNLRIOT_LOGLEVEL;
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_pid = ccnl_start();
     /* let CCN start */
@@ -355,7 +353,7 @@ void cluster_new_data(void)
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
     snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
-    LOG_INFO("cluster: NEW DATA: %s\n", pfx);
+    printf("cluster: NEW DATA: %s\n", pfx);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");

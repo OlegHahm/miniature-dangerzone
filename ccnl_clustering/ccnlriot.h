@@ -14,15 +14,11 @@
 
 #define CCNLRIOT_CONSUMERS      (1)
 
-#define CCNLRIOT_LOGLEVEL  (LOG_DEBUG)
-
 #define CCNLRIOT_CHUNKNUMBERS   (10)
 
 #define CCNLRIOT_ALL_PREFIX     "/*"
-#define CCNLRIOT_STORE_PREFIX   "/store"
-#define CCNLRIOT_SITE_PREFIX    "/siteA"
-#define CCNLRIOT_TYPE_PREFIX    "/typeX"
-#define CCNLRIOT_DONE_PREFIX    "/done"
+#define CCNLRIOT_SITE_PREFIX    "/s"
+#define CCNLRIOT_TYPE_PREFIX    "/t"
 
 #define CCNLRIOT_CONT_ACK       "ACK"
 
