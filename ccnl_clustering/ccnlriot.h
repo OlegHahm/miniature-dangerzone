@@ -69,11 +69,15 @@ enum {
 #  endif
 #endif
 
+extern struct ccnl_prefix_s *ccnl_helper_all_pfx;
+
 extern uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN];
+
+void ccnl_helper_init(void);
 
 int ccnlriot_stats(int argc, char **argv);
 
-int ccnl_helper_int(unsigned char *prefix, unsigned *chunknum, bool wait_for_int);
+int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_for_int);
 int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,

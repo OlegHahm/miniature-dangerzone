@@ -96,6 +96,10 @@ void *_loop(void *arg)
 
     /* initialize and start CCN lite */
     ccnl_core_init();
+    ccnl_helper_init();
+    extern int debug_level;
+    debug_level = LOG_DEBUG;
+
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_pid = ccnl_start();
     /* let CCN start */
@@ -315,9 +319,8 @@ void cluster_takeover(void)
     ccnl_helper_clear_pit_for_own();
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
-    unsigned char all_pfx[] = CCNLRIOT_ALL_PREFIX;
     unsigned cn = 0;
-    while (ccnl_helper_int(all_pfx, &cn, false) != CCNLRIOT_LAST_CN) {
+    while (ccnl_helper_int(ccnl_helper_all_pfx, &cn, false) != CCNLRIOT_LAST_CN) {
         cn++;
     }
     LOG_DEBUG("cluster: takeover completed\n");
