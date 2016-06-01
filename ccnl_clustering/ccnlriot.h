@@ -1,7 +1,7 @@
 #ifndef CCNLRIOT_H
 #define CCNLRIOT_H
 
-#define LOG_LEVEL           (LOG_DEBUG)
+#define LOG_LEVEL           (LOG_INFO)
 #include "ccn-lite-riot.h"
 
 #define CCNLRIOT_NETIF          (3)

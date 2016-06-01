@@ -302,7 +302,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             if (pkt->contlen == sizeof(cluster_content_t)) {
                 LOG_DEBUG("ccnl_helper: seems to be the right content\n");
                 cluster_content_t *cc = (cluster_content_t*) pkt->content;
-                LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
+                LOG_INFO("ccnl_helper: content number is %i\n", cc->num);
                 /* if we receive content, it's either because
                  *  - we asked for * -> num >= 0
                  *  - through loopback for content we generated ourselves
@@ -431,7 +431,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
             /* if we reached the end of the store, we send an ACK */
             if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
-                LOG_DEBUG("ccnl_helper: reached end of content store, send ack\n");
+                LOG_INFO("ccnl_helper: reached end of content store, send ack\n");
                 _send_ack(relay, from, ccnl_helper_all_pfx, i);
 
                 /* we can go back to sleep now */
@@ -573,7 +573,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
                 LOG_DEBUG("ccnl_helper: that was an chunk - we're currently not interested in\n");
                 continue;
             }
-            LOG_DEBUG("ccnl_helper: received ack\n");
+            LOG_INFO("ccnl_helper: received ack\n");
             memcpy(buf, CCNLRIOT_CONT_ACK, sizeof(CCNLRIOT_CONT_ACK));
             res = sizeof(CCNLRIOT_CONT_ACK);
             xtimer_remove(&_wait_timer);
