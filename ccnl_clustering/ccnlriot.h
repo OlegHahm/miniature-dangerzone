@@ -9,6 +9,7 @@
 #define CCNLRIOT_CHANNEL        (26)
 
 #define CCNLRIOT_INT_RETRIES    (3)
+#define CCNLRIOT_INT_TIMEOUT    (100000)
 
 #define CCNLRIOT_CSMA_RETRIES   (3)
 
