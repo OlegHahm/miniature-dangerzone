@@ -62,8 +62,8 @@ int _cs(int argc, char **argv) {
     (void) argc; (void) argv;
     printf("%u CS command\n", (unsigned) xtimer_now());
     if ((cluster_state != CLUSTER_STATE_INACTIVE) && (cluster_state != CLUSTER_STATE_HANDOVER)) {
-        //gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
-        ccnl_cs_dump(&ccnl_relay);
+        gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
+        //ccnl_cs_dump(&ccnl_relay);
         printf("%u DONE\n", (unsigned) xtimer_now());
     }
     else {
