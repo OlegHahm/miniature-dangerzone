@@ -11,12 +11,6 @@
 #define CCNLRIOT_INT_RETRIES    (3)
 #define CCNLRIOT_INT_TIMEOUT    (100000)
 
-#define CCNLRIOT_CSMA_RETRIES   (3)
-
-#define CCNLRIOT_CONSUMERS      (1)
-
-#define CCNLRIOT_CHUNKNUMBERS   (10)
-
 #define CCNLRIOT_ALL_PREFIX     "/*"
 #define CCNLRIOT_SITE_PREFIX    "/s"
 #define CCNLRIOT_TYPE_PREFIX    "/t"
@@ -36,10 +30,6 @@
 #define CCNLRIOT_PFX_LEN   (50)
 
 #define USE_LONG        (1)
-#define USE_BROADCAST   (0)
-#define USE_AUTOSTART   (1)
-
-#define CCNLRIOT_NUMBER_OF_NODES     (20)
 
 #ifdef CPU_SAMD21
 #define CCNLRIOT_CACHE_SIZE     (5)
@@ -52,14 +42,6 @@
 #define CCNLRIOT_LAST_CN            (2)
 #define CCNLRIOT_NO_WAIT            (3)
 
-enum {
-    SITE_LILLE,
-    SITE_GRENOBLE,
-    SITE_PARIS
-};
-
-#define CCNLRIOT_SITE  (SITE_PARIS)
-
 #ifdef BOARD_NATIVE
 #   define CCNLRIOT_ADDRLEN     (6)
 #else
@@ -71,8 +53,6 @@ enum {
 #endif
 
 extern struct ccnl_prefix_s *ccnl_helper_all_pfx;
-
-extern uint8_t ccnlriot_id[CCNLRIOT_NUMBER_OF_NODES][CCNLRIOT_ADDRLEN];
 
 void ccnl_helper_init(void);
 
@@ -88,7 +68,6 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache, bool send);
-void ccnl_helper_send_all_data(void);
 void ccnl_helper_clear_pit_for_own(void);
 
 #endif /* CCNLRIOT_H */
