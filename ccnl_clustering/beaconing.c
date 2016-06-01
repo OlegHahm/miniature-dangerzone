@@ -32,7 +32,7 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
         gnrc_pktbuf_release(pkt);
         return;
     }
-    LOG_INFO("beaconing: received a beacon, id is %" PRIu32 "\n", b.id);
+    LOG_DEBUG("beaconing: received a beacon, id is %" PRIu32 "\n", b.id);
     if (bloom_check(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id))) {
         LOG_DEBUG("beaconing: already know this neighbor\n");
     }
@@ -83,14 +83,14 @@ void beaconing_start(void)
                 else {
                     beacon_msg.type = CLUSTER_MSG_BEACON_END;
                     tmp = 2 * CLUSTER_BEACONING_WAIT - (xtimer_now() - start);
-                    LOG_DEBUG("beaconing: end beaconing period in %" PRIu32 \
+                    LOG_INFO("beaconing: end beaconing period in %" PRIu32 \
                               " seconds\n", (tmp / SEC_IN_USEC));
 
                     xtimer_set_msg(&beacon_timer, tmp, &beacon_msg, sched_active_pid);
                 }
                 break;
             case CLUSTER_MSG_BEACON_END:
-                LOG_DEBUG("beaconing: end beaconing\n");
+                LOG_INFO("beaconing: end beaconing\n");
                 end_beaconing = true;
                 break;
             case GNRC_NETAPI_MSG_TYPE_RCV:
