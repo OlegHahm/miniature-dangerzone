@@ -122,8 +122,6 @@ void *_loop(void *arg)
 
     ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
     ccnl_pid = ccnl_start();
-    /* let CCN start */
-    xtimer_usleep(100000);
 
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {
         LOG_ERROR("main: critical error, aborting\n");
