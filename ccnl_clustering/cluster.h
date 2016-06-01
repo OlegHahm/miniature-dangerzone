@@ -10,17 +10,14 @@
 
 #define CLUSTER_D                   (3)
 #define CLUSTER_X                   (2)
-#define CLUSTER_Y                   (2)
 #define CLUSTER_P                   (0.99)
-
 #define CLUSTER_PERIOD              (17)
-//#define CLUSTER_EVENT_PERIOD      (random_uint32() & 0x00FFFFFF)
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
-//#define CLUSTER_EVENT_PERIOD      (4 * SEC_IN_USEC)
 
 #define CLUSTER_GO_SLEEP            (random_uint32() < (UINT32_MAX * CLUSTER_P))
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
+
 /* random interval between 50ms and ~1s */
 #define CLUSTER_BEACONING_PERIOD    ((random_uint32() & 0x000FFFFF) + 50000)
 #define CLUSTER_BEACONING_COUNT     (3)
@@ -51,19 +48,28 @@ typedef struct __attribute__((packed)) {
     int num;
 } cluster_content_t;
 
+/* state */
 extern cluster_state_t cluster_state;
+
+/* id and PIDs */
 extern uint32_t cluster_my_id;
 extern kernel_pid_t ccnl_pid;
 extern kernel_pid_t cluster_pid;
+
+/* beaconing information */
 extern uint16_t cluster_position;
 extern bloom_t cluster_neighbors;
 extern uint16_t cluster_size;
+
+/* state control */
 extern uint8_t cluster_prevent_sleep;
 extern xtimer_t cluster_data_timer;
 extern msg_t cluster_data_msg;
 extern uint32_t cluster_period_counter;
 extern xtimer_t cluster_timer;
 extern msg_t cluster_wakeup_msg;
+
+/* time measurement */
 extern uint32_t cluster_time_sleeping;
 extern uint32_t cluster_time_active;
 extern bool cluster_sleeping;
