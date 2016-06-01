@@ -37,7 +37,7 @@ static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
  * */
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
-                                               len, bool cache)
+                                               len, bool cache, bool send)
 {
     if (len > CLUSTER_CONT_LEN) {
         LOG_ERROR("ccnl_helper: Too long content. This is not acceptable!!!\n");
@@ -69,7 +69,9 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
         return NULL;
     }
     c = ccnl_content_new(&ccnl_relay, &pk);
-    ccnl_broadcast(&ccnl_relay, c->pkt);
+    if (send) {
+        ccnl_broadcast(&ccnl_relay, c->pkt);
+    }
     if (cache) {
         /* XXX: always use first (and only IF) */
         uint8_t hwaddr[CCNLRIOT_ADDRLEN];
@@ -130,7 +132,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     struct ccnl_content_s *c =
         ccnl_helper_create_cont(pfx, (unsigned char*)
                                 CCNLRIOT_CONT_ACK,
-                                strlen(CCNLRIOT_CONT_ACK) + 1, false);
+                                strlen(CCNLRIOT_CONT_ACK) + 1, false, false);
     if (c == NULL) {
         return;
     }

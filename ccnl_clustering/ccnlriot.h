@@ -82,7 +82,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
 struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
-                                               len, bool cache);
+                                               len, bool cache, bool send);
 void ccnl_helper_send_all_data(void);
 void ccnl_helper_clear_pit_for_own(void);
 

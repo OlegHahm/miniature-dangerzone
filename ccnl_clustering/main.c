@@ -90,7 +90,7 @@ static int _debug_cache_date(int argc, char **argv)
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
-        ccnl_helper_create_cont(prefix, (unsigned char*) argv[2], strlen(argv[2]) + 1, true);
+        ccnl_helper_create_cont(prefix, (unsigned char*) argv[2], strlen(argv[2]) + 1, true, false);
         free_prefix(prefix);
     }
     return 0;

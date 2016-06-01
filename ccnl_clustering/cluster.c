@@ -371,7 +371,7 @@ void cluster_new_data(void)
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
-        ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true);
+        ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, true);
         free_prefix(prefix);
     }
 
