@@ -317,14 +317,15 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 else {
                     ccnl_helper_create_int(pkt->pfx);
                 }
-                cc->num = -1;
 
-                /* in case we're waiting for * chunks, try to send a message */
-                LOG_DEBUG("ccnl_helper: inform waiters\n");
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
-                struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
-                m.content.ptr = (void*)new;
-                msg_try_send(&m, cluster_pid);
+                if (cc->num >= 0) {
+                    /* in case we're waiting for * chunks, try to send a message */
+                    LOG_DEBUG("ccnl_helper: inform waiters\n");
+                    msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+                    msg_try_send(&m, cluster_pid);
+                }
+
+                cc->num = -1;
             }
             else {
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
