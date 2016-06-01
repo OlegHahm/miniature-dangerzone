@@ -48,12 +48,14 @@ msg_t cluster_data_msg;
 
 static inline void cluster_second_timer(void)
 {
+#ifndef BOARD_NATIVE
     if (irq_is_in()) {
         LOG_WARNING("\n\nALAAAAAAAAAAARM\n\n");
     }
     if (__get_PRIMASK()) {
         LOG_WARNING("\n\nALAAAAAAAAAAARM2\n\n");
     }
+#endif
     LOG_DEBUG("%" PRIu32 " cluster: SET SECOND TIMER\n", xtimer_now());
     xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
 }
