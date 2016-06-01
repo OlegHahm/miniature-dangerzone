@@ -5,6 +5,7 @@
 #include "hashes.h"
 #include "periph/cpuid.h"
 #include "net/netopt.h"
+#include "net/netstats.h"
 #include "net/gnrc/netapi.h"
 
 #include "cluster.h"
@@ -60,6 +61,17 @@ static inline void cluster_second_timer(void)
     xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
 }
 
+static void _reset_netstats(void)
+{
+    netstats_t *stats;
+    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATS, 0, &stats, sizeof(&stats)) <= 0) {
+        LOG_ERROR("cluster: could not reset netstats\n");
+        return;
+    }
+    memset(stats, 0, sizeof(netstats_t));
+    LOG_INFO("cluster: reset netstats\n");
+}
+
 /* main event loop */
 void *_loop(void *arg)
 {
@@ -95,7 +107,7 @@ void *_loop(void *arg)
     }
 #endif
 
-
+    _reset_netstats();
     /* initialize and start CCN lite */
     ccnl_core_init();
     ccnl_helper_init();
