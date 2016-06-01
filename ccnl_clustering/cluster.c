@@ -23,6 +23,11 @@ kernel_pid_t cluster_pid = KERNEL_PID_UNDEF;
 kernel_pid_t ccnl_pid = KERNEL_PID_UNDEF;
 uint32_t cluster_my_id;
 uint8_t cluster_prevent_sleep = 0;
+uint32_t cluster_time_sleeping = 0;
+uint32_t cluster_time_active = 0;
+bool cluster_sleeping = false;
+uint32_t cluster_ts_wakeup = 0;
+uint32_t cluster_ts_sleep = 0;
 
 /* internal variables */
 xtimer_t cluster_timer;
@@ -108,6 +113,7 @@ void *_loop(void *arg)
 #endif
 
     _reset_netstats();
+    cluster_ts_wakeup = xtimer_now();
     /* initialize and start CCN lite */
     ccnl_core_init();
     ccnl_helper_init();
@@ -283,6 +289,12 @@ static void _radio_sleep(void)
         }
     }
 #endif
+    if (!cluster_sleeping) {
+        cluster_ts_sleep = xtimer_now();
+        cluster_time_active += (cluster_ts_sleep - cluster_ts_wakeup);
+        LOG_DEBUG("cluster: add to active time: %u\n", (unsigned) (cluster_ts_sleep - cluster_ts_wakeup));
+        cluster_sleeping = true;
+    }
     netopt_state_t state;
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         if (state == NETOPT_STATE_IDLE) {
@@ -343,6 +355,12 @@ void cluster_takeover(void)
 
 void cluster_wakeup(void)
 {
+    if (cluster_sleeping) {
+        cluster_ts_wakeup = xtimer_now();
+        cluster_time_sleeping += (cluster_ts_wakeup - cluster_ts_sleep);
+        LOG_DEBUG("cluster: add to sleeping time: %u\n", (unsigned) (cluster_ts_wakeup - cluster_ts_sleep));
+        cluster_sleeping = false;
+    }
     netopt_state_t state;
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         if (state == NETOPT_STATE_SLEEP) {

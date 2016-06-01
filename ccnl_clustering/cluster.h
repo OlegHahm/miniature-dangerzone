@@ -64,6 +64,11 @@ extern msg_t cluster_data_msg;
 extern uint32_t cluster_period_counter;
 extern xtimer_t cluster_timer;
 extern msg_t cluster_wakeup_msg;
+extern uint32_t cluster_time_sleeping;
+extern uint32_t cluster_time_active;
+extern bool cluster_sleeping;
+extern uint32_t cluster_ts_wakeup;
+extern uint32_t cluster_ts_sleep;
 
 void cluster_init(void);
 void cluster_takeover(void);

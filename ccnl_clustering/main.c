@@ -55,6 +55,12 @@ const shell_command_t shell_commands[] = {
 int _stats(int argc, char **argv) {
     (void) argc; (void) argv;
     printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", ccnl_relay.ifs[0].rx_cnt, ccnl_relay.ifs[0].tx_cnt);
+    if (cluster_sleeping) {
+        printf("active: %u, sleeping: %u\n", (unsigned) cluster_time_active, (unsigned) (cluster_time_sleeping + (xtimer_now() - cluster_ts_wakeup)));
+    }
+    else {
+        printf("active: %u, sleeping: %u\n", (unsigned) (cluster_time_active + (xtimer_now() - cluster_ts_sleep)), (unsigned) cluster_time_sleeping);
+    }
     return 0;
 }
 
