@@ -306,10 +306,10 @@ static void _radio_sleep(void)
             }
         }
         else if (state == NETOPT_STATE_SLEEP) {
-            LOG_DEBUG("cluster: radio sleeps already\n");
+            LOG_INFO("cluster: radio sleeps already\n");
         }
         else {
-            LOG_DEBUG("cluster: radio is in wrong state (%x), try again later\n", state);
+            LOG_WARNING("cluster: radio is in wrong state (%x), try again later\n", state);
             xtimer_remove(&_sleep_timer);
             xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
         }

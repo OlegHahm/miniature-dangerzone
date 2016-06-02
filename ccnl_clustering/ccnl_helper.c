@@ -519,7 +519,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
 #ifdef CCNL_RIOT
         mutex_unlock(&(relay->cache_write_lock));
 #endif
-        LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
+        LOG_INFO("ccnl_helper: remove oldest entry for this prefix from cache\n");
         ccnl_content_remove(relay, oldest);
 #ifdef CCNL_RIOT
         mutex_lock(&(relay->cache_write_lock));
