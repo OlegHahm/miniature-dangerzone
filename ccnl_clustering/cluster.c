@@ -260,7 +260,7 @@ void cluster_init(void)
     cpuid_get(cpuid);
     cluster_my_id = djb2_hash(cpuid, CPUID_LEN);
 #endif
-    LOG_INFO("clustering: my ID  is %u\n", (unsigned) cluster_my_id);
+    LOG_INFO("clustering: my ID  is %08lX\n", (unsigned long) cluster_my_id);
 
     random_init(cluster_my_id);
     /* initialize to inactive state */
