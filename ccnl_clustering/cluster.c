@@ -218,6 +218,9 @@ void *_loop(void *arg)
             case CLUSTER_MSG_NEWDATA:
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
+                if (cluster_state == CLUSTER_STATE_INACTIVE) {
+                    _radio_sleep();
+                }
                 break;
             case CLUSTER_MSG_BACKTOSLEEP:
                 LOG_DEBUG("cluster: received backtosleep request\n");
