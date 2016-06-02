@@ -274,8 +274,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (!i) {
         /* if we're not deputy (or becoming it), we assume that this is our
          * own content */
-        if ((cluster_state != CLUSTER_STATE_DEPUTY) &&
-            (cluster_state != CLUSTER_STATE_TAKEOVER)) {
+        if (cluster_state != CLUSTER_STATE_DEPUTY) {
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
