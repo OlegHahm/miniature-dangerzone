@@ -278,7 +278,8 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
-                struct ccnl_content_s *c = ccnl_content_new(&ccnl_relay, &pkt);
+                struct ccnl_pkt_s *tmp = pkt;
+                struct ccnl_content_s *c = ccnl_content_new(&ccnl_relay, &tmp);
                 if (!c) {
                     LOG_ERROR("ccnl_helper: we're doomed, WE'RE ALL DOOMED\n");
                     return 0;
@@ -286,12 +287,12 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 if (ccnl_content_add2cache(relay, c) == NULL) {
                     LOG_WARNING("ccnl_helper:  adding to cache failed, discard packet\n");
                     ccnl_free(c);
+                    free_packet(pkt);
                 }
                 /* inform potential waiters */
                 msg_t m = { .type = CLUSTER_MSG_RECEIVED };
                 msg_try_send(&m, cluster_pid);
             }
-            free_packet(pkt);
             return 1;
         }
         else {
