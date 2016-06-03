@@ -499,7 +499,7 @@ out:
 int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c)
 {
     struct ccnl_content_s *c2, *oldest = NULL;
-    long age = 0;
+    long oldest_ts = 0;
     for (c2 = relay->contents; c2; c2 = c2->next) {
         if (!(c2->flags & CCNL_CONTENT_FLAGS_STATIC)) {
             if (ccnl_prefix_cmp(c->pkt->pfx, NULL, c->pkt->pfx, CMP_MATCH) >= 3) {
@@ -507,13 +507,18 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
                     LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
                     continue;
                 }
-                long c2_age = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
-                if ((age == 0) || (c2_age < age)) {
-                    age = c2_age;
+                long c2_ts = strtol((char*) c2->pkt->pfx->comp[3], NULL, 16);
+                if ((oldest_ts == 0) || (c2_ts < oldest_ts)) {
+                    oldest_ts = c2_ts;
                     oldest = c2;
                 }
             }
         }
+    }
+    long c_ts = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
+    if (oldest_ts > c_ts) {
+        LOG_INFO("New value is older than oldest value for this ID, skipping\n");
+        return 1;
     }
     if (oldest) {
 #ifdef CCNL_RIOT
