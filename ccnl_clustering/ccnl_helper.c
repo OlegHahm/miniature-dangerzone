@@ -48,7 +48,7 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache, bool send)
 {
-    if (len > CLUSTER_CONT_LEN) {
+    if (len > (CLUSTER_CONT_LEN + 1)) {
         LOG_ERROR("ccnl_helper: Too long content. This is not acceptable!!!\n");
         return NULL;
     }

@@ -393,7 +393,7 @@ void cluster_new_data(void)
     unsigned data = xtimer_now();
     /* each byte needs 2 characters to be represented as a hex value */
     /* string representation */
-    char val[sizeof(data) * 2];
+    char val[(sizeof(data) * 2) + 1];
     snprintf(val, sizeof(val) + 1, "%08X", data);
 
     /* get data into cache by sending to loopback */
