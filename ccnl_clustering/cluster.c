@@ -134,6 +134,7 @@ void *_loop(void *arg)
     ccnl_set_local_consumer(ccnlriot_consumer);
     ccnl_set_cache_strategy_remove(cs_oldest_representative);
 
+#if !CLUSTER_DEBUG
     /* start data generation timer */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
@@ -165,6 +166,7 @@ void *_loop(void *arg)
         cluster_period_counter = CLUSTER_X * CLUSTER_D;
         cluster_second_timer();
     }
+#endif
 #endif
 
     while (1) {
