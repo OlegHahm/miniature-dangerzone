@@ -32,6 +32,8 @@ uint32_t cluster_ts_sleep = 0;
 /* internal variables */
 xtimer_t cluster_timer;
 uint32_t cluster_period_counter;
+uint32_t _sleep_period;
+uint32_t _last_deputy_ts;
 msg_t cluster_wakeup_msg = { .type = CLUSTER_MSG_SECOND };
 
 /* bloom filter for beaconing */
@@ -151,6 +153,7 @@ void *_loop(void *arg)
     else {
         /* go to sleep and set timer */
         LOG_INFO("\n\ncluster: change to state INACTIVE (%u)\n\n", (unsigned) cluster_position);
+        _last_deputy_ts = xtimer_now();
         cluster_state = CLUSTER_STATE_INACTIVE;
         cluster_sleep(cluster_position);
     }
@@ -176,7 +179,14 @@ void *_loop(void *arg)
             case CLUSTER_MSG_SECOND:
                 LOG_DEBUG("cluster: SECOND: %u\n", (unsigned) cluster_period_counter);
                 xtimer_remove(&cluster_timer);
-                if (--cluster_period_counter == 0) {
+                cluster_period_counter--;
+                if (xtimer_now() >= (_last_deputy_ts + (_sleep_period * SEC_IN_USEC))) {
+                    if (cluster_period_counter > 0) {
+                        LOG_WARNING("cluster: we are late - apparently missed a second timer\n");
+                        cluster_period_counter = 0;
+                    }
+                }
+                if (cluster_period_counter == 0) {
                     LOG_DEBUG("cluster: time to reconsider my state\n");
 #if CLUSTER_DEPUTY
                     cluster_takeover();
@@ -333,6 +343,7 @@ void cluster_sleep(uint8_t periods)
 #if CLUSTER_DEPUTY
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods * CLUSTER_PERIOD)), (int) cluster_pid);
     cluster_period_counter = periods * CLUSTER_PERIOD;
+    _sleep_period = cluster_period_counter;
 #else
     LOG_DEBUG("cluster: wakeup in %u seconds (%i)\n", ((periods)), (int) cluster_pid);
     cluster_period_counter = periods;
@@ -344,6 +355,7 @@ void cluster_sleep(uint8_t periods)
 #if CLUSTER_DEPUTY
 void cluster_takeover(void)
 {
+    _last_deputy_ts = xtimer_now();
     LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
     ccnl_helper_clear_pit_for_own();
     cluster_state = CLUSTER_STATE_DEPUTY;
