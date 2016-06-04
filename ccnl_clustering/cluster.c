@@ -231,6 +231,7 @@ void *_loop(void *arg)
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
                 if (cluster_state == CLUSTER_STATE_INACTIVE) {
+                    xtimer_usleep(5000);
                     _radio_sleep();
                 }
                 break;
