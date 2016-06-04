@@ -138,7 +138,7 @@ void *_loop(void *arg)
 
 #if !CLUSTER_DEBUG
     /* start data generation timer */
-    uint32_t offset = CLUSTER_EVENT_PERIOD;
+    uint32_t offset = CLUSTER_EVENT_PERIOD_JITTER;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
     xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
 

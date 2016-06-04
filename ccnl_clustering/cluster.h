@@ -13,7 +13,8 @@
 #define CLUSTER_X                   (2)
 #define CLUSTER_P                   (0.99)
 #define CLUSTER_PERIOD              (17)
-#define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
+#define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)
+#define CLUSTER_EVENT_PERIOD_JITTER (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 
 #define CLUSTER_GO_SLEEP            (random_uint32() < (UINT32_MAX * CLUSTER_P))
 
