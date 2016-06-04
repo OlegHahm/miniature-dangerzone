@@ -417,7 +417,11 @@ void cluster_new_data(void)
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
     snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
-    printf("cluster: NEW DATA: %s\n", pfx);
+    printf("cluster: %u NEW DATA: %s\n", (unsigned) xtimer_now(), pfx);
+    /* schedule new data generation */
+    uint32_t offset = CLUSTER_EVENT_PERIOD;
+    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
@@ -427,12 +431,10 @@ void cluster_new_data(void)
         free_prefix(prefix);
     }
 
-    /* schedule new data generation */
-    uint32_t offset = CLUSTER_EVENT_PERIOD;
-    LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
+    /*
     netopt_state_t state;
     if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
         LOG_DEBUG("cluster: current radio state is %X\n", state);
     }
-    xtimer_set_msg(&cluster_data_timer, offset, &cluster_data_msg, cluster_pid);
+    */
 }
