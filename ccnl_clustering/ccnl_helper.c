@@ -198,7 +198,7 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
     while (i) {
         if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, i->pkt->pfx, CMP_MATCH) >= 1) &&
             (*(i->pkt->pfx->chunknum) == num)) {
-            LOG_INFO("ccnl_helper: remove matching PIT entry\n");
+            LOG_DEBUG("ccnl_helper: remove matching PIT entry\n");
             ccnl_interest_remove(relay, i);
             return;
         }
@@ -302,7 +302,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             if (pkt->contlen == sizeof(cluster_content_t)) {
                 LOG_DEBUG("ccnl_helper: seems to be the right content\n");
                 cluster_content_t *cc = (cluster_content_t*) pkt->content;
-                LOG_INFO("ccnl_helper: content number is %i\n", cc->num);
+                LOG_INFO("%" PRIu32 " ccnl_helper: rcvd prefix: %s\n", xtimer_now(),
+                          ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
+                LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
                 /* if we receive content, it's either because
                  *  - we asked for * -> num >= 0
                  *  - through loopback for content we generated ourselves
@@ -525,7 +527,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
 #ifdef CCNL_RIOT
         mutex_unlock(&(relay->cache_write_lock));
 #endif
-        LOG_INFO("ccnl_helper: remove oldest entry for this prefix from cache\n");
+        LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
         ccnl_content_remove(relay, oldest);
 #ifdef CCNL_RIOT
         mutex_lock(&(relay->cache_write_lock));
@@ -621,7 +623,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             break;
         }
         else if (m.type == CLUSTER_MSG_NEWDATA) {
-            LOG_DEBUG("ccnl_helper: received newdata msg while waiting for content, postpone it\n");
+            LOG_INFO("ccnl_helper: received newdata msg while waiting for content, postpone it\n");
             xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
         }
         else if (m.type == CLUSTER_MSG_SECOND) {

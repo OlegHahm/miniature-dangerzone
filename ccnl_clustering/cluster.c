@@ -150,7 +150,7 @@ void *_loop(void *arg)
     }
     else {
         /* go to sleep and set timer */
-        LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
+        LOG_INFO("\n\ncluster: change to state INACTIVE (%u)\n\n", (unsigned) cluster_position);
         cluster_state = CLUSTER_STATE_INACTIVE;
         cluster_sleep(cluster_position);
     }
@@ -285,7 +285,7 @@ static void _radio_sleep(void)
             cluster_prevent_sleep = 0;
         }
         else {
-            LOG_DEBUG("cluster: still waiting for an interest from the deputy, wait some time\n");
+            LOG_INFO("cluster: still waiting for an interest from the deputy, wait some time\n");
             xtimer_remove(&_sleep_timer);
             xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
             return;
@@ -386,7 +386,7 @@ void cluster_new_data(void)
 {
     /* XXX: save postponed value */
     if (cluster_state == CLUSTER_STATE_HANDOVER) {
-        LOG_DEBUG("cluster: currently in handover, let's postpone by a second\n");
+        LOG_INFO("cluster: currently in handover, let's postpone by a second\n");
         xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
         return;
     }
