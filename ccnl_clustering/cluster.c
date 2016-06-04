@@ -362,7 +362,8 @@ void cluster_takeover(void)
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned cn = 0;
-    while (ccnl_helper_int(ccnl_helper_all_pfx, &cn, false) != CCNLRIOT_LAST_CN) {
+    while ((ccnl_helper_int(ccnl_helper_all_pfx, &cn, false) != CCNLRIOT_LAST_CN)
+           && (cn <= CCNLRIOT_CACHE_SIZE)) {
         cn++;
     }
     LOG_DEBUG("cluster: takeover completed\n");
