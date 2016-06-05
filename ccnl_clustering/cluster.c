@@ -48,6 +48,9 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
+#if CLUSTER_DEPUTY
+static void _populate_data(struct ccnl_prefix_s *pfx);
+#endif
 static void _radio_sleep(void);
 
 /* data timer variables */
@@ -230,10 +233,12 @@ void *_loop(void *arg)
             case CLUSTER_MSG_NEWDATA:
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
+#if !CLUSTER_DEPUTY
                 if (cluster_state == CLUSTER_STATE_INACTIVE) {
                     xtimer_usleep(5000);
                     _radio_sleep();
                 }
+#endif
                 break;
             case CLUSTER_MSG_BACKTOSLEEP:
                 LOG_DEBUG("cluster: received backtosleep request\n");
@@ -255,7 +260,26 @@ void *_loop(void *arg)
                 break;
             case CLUSTER_MSG_RECEIVED:
                 LOG_DEBUG("cluster: received a content chunk ");
+#if CLUSTER_DEPUTY
+                static char _prefix_str[CCNLRIOT_PFX_LEN];
+                struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
+                ccnl_prefix_to_path_detailed(_prefix_str, pfx, 1, 0, 0);
+
+                /* if we're not deputy or becoming one, send an interest for our own data */
+                if (cluster_state != CLUSTER_STATE_DEPUTY) {
+                    LOG_DEBUG("assume that is from us and generate an interest\n");
+                    cluster_prevent_sleep++;
+                    LOG_DEBUG("cluster: call _populate_data, %u pending interests\n",
+                              (unsigned) cluster_prevent_sleep);
+                    _populate_data(pfx);
+                }
+                else {
+                    LOG_DEBUG("- since we're DEPUTY, there's nothing to do\n");
+                }
+                free_prefix(pfx);
+#else
                 LOG_DEBUG("cluster: nothing to do\n");
+#endif
                 break;
             default:
                 LOG_WARNING("cluster: I don't understand this message: %X\n", m.type);
@@ -427,7 +451,11 @@ void cluster_new_data(void)
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
+#if CLUSTER_DEPUTY
+        ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, false);
+#else
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, true);
+#endif
         free_prefix(prefix);
     }
 
@@ -438,3 +466,14 @@ void cluster_new_data(void)
     }
     */
 }
+
+#if CLUSTER_DEPUTY
+static void _populate_data(struct ccnl_prefix_s *pfx)
+{
+    /* first wake up radio (if necessary) */
+    LOG_DEBUG("cluster: entering _populate_data\n");
+    cluster_wakeup();
+    /* populate the content now */
+    ccnl_helper_int(pfx, NULL, true);
+}
+#endif

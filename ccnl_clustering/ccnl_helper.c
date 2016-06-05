@@ -278,6 +278,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
+#if CLUSTER_DEPUTY
+                struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
+#endif
                 struct ccnl_pkt_s *tmp = pkt;
                 struct ccnl_content_s *c = ccnl_content_new(&ccnl_relay, &tmp);
                 if (!c) {
@@ -291,6 +294,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 }
                 /* inform potential waiters */
                 msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+#if CLUSTER_DEPUTY
+                m.content.ptr = (void*)new;
+#endif
                 msg_try_send(&m, cluster_pid);
             }
             return 1;
@@ -670,13 +676,16 @@ int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_
     /* actual sending of the content */
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
         LOG_INFO("ccnl_helper: sending interest #%u for %s (%i)\n", (unsigned) cnt,
-                 ccnl_prefix_to_path_detailed(_prefix_str, prefix, 1, 0, 0), (int) *chunknum);
+                 ccnl_prefix_to_path_detailed(_prefix_str, prefix, 1, 0, 0),
+                 ((chunknum != NULL) ? (int) *chunknum : -1));
         /* register for content chunks */
         _ne.demux_ctx =  GNRC_NETREG_DEMUX_CTX_ALL;
         _ne.pid = sched_active_pid;
         gnrc_netreg_register(GNRC_NETTYPE_CCN_CHUNK, &_ne);
 
-        *(prefix->chunknum) = *chunknum;
+        if (chunknum != NULL) {
+            *(prefix->chunknum) = *chunknum;
+        }
         ccnl_interest_t i = { .prefix = prefix, .buf = _int_buf, .buflen = CCNLRIOT_BUF_SIZE };
         gnrc_pktsnip_t *pkt = gnrc_pktbuf_add(NULL, &i, sizeof(i), GNRC_NETTYPE_CCN);
         gnrc_netapi_send(ccnl_pid, pkt);
@@ -698,7 +707,7 @@ int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_
     }
     else {
         LOG_WARNING("\nccnl_helper: !!! TIMEOUT while waiting for chunk number %i!!!\n",
-                    (int) *chunknum);
+                    ((chunknum != NULL) ? (int) *chunknum : -1));
     }
 
     return success;
