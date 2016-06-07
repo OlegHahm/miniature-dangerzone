@@ -32,8 +32,10 @@ uint32_t cluster_ts_sleep = 0;
 /* internal variables */
 xtimer_t cluster_timer;
 uint32_t cluster_period_counter;
+#if CLUSTER_DEPUTY
 uint32_t _sleep_period;
 uint32_t _last_deputy_ts;
+#endif
 msg_t cluster_wakeup_msg = { .type = CLUSTER_MSG_SECOND };
 
 /* bloom filter for beaconing */
@@ -183,12 +185,14 @@ void *_loop(void *arg)
                 LOG_DEBUG("cluster: SECOND: %u\n", (unsigned) cluster_period_counter);
                 xtimer_remove(&cluster_timer);
                 cluster_period_counter--;
+#if CLUSTER_DEPUTY
                 if (xtimer_now() >= (_last_deputy_ts + (_sleep_period * SEC_IN_USEC))) {
                     if (cluster_period_counter > 0) {
                         LOG_WARNING("cluster: we are late - apparently missed a second timer\n");
                         cluster_period_counter = 0;
                     }
                 }
+#endif
                 if (cluster_period_counter == 0) {
                     LOG_DEBUG("cluster: time to reconsider my state\n");
 #if CLUSTER_DEPUTY
