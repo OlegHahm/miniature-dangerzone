@@ -75,6 +75,8 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
     if (pk == NULL) {
         LOG_ERROR("ccnl_helper: something went terribly wrong!\n");
+        extern void ccnl_pit_size(struct ccnl_relay_s *ccnl);
+        ccnl_pit_size(&ccnl_relay);
         return NULL;
     }
     c = ccnl_content_new(&ccnl_relay, &pk);

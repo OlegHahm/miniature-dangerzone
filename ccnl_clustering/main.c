@@ -115,8 +115,8 @@ static int _debug_cache_date(int argc, char **argv)
 static int _start_dow(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    printf("Settings: %s D:%u X:%u p:%u %u\n", (CLUSTER_DEPUTY ? "Deputy" : ""),
-           CLUSTER_D, CLUSTER_X, (unsigned) (100U * CLUSTER_P), CLUSTER_PERIOD);
+    printf("Settings: %s D:%u X:%u p:%u P:%u CS:%u\n", (CLUSTER_DEPUTY ? "Deputy" : ""),
+           CLUSTER_D, CLUSTER_X, (unsigned) (100U * CLUSTER_P), CLUSTER_PERIOD, CCNLRIOT_CACHE_SIZE);
 
     cluster_init();
     thread_yield_higher();
