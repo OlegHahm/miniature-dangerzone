@@ -250,7 +250,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 #endif
 
-    /* TODO: implement not being interested in all content */
     struct ccnl_interest_s *i = NULL;
     /* if we don't have this content, we check if we have a matching PIT entry */
     bool is_dup = _cont_is_dup(pkt);
@@ -339,7 +338,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
             }
 #else
-            ccnl_helper_create_int(pkt->pfx);
+            if (!cluster_is_registered || (pkt->pfx->comp[0][0] == cluster_registered_prefix[1])) {
+                ccnl_helper_create_int(pkt->pfx);
+            }
 #endif
         }
     }

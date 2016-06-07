@@ -37,10 +37,14 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 #endif
 
+char cluster_registered_prefix[3];
+bool cluster_is_registered = false;
+
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
 static int _debug_cache_date(int argc, char **argv);
 static int _start_dow(int argc, char **argv);
+static int _sub_prefix(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
@@ -49,6 +53,7 @@ const shell_command_t shell_commands[] = {
     {"dc", "Create a content chunk and put it into cache for debug purposes",
         _debug_cache_date},
     {"start", "Start the application", _start_dow},
+    {"prefix", "Subscribe a certain prefix", _sub_prefix},
     {NULL, NULL, NULL}
 };
 
@@ -115,6 +120,21 @@ static int _start_dow(int argc, char **argv)
 
     cluster_init();
     thread_yield_higher();
+    return 0;
+}
+
+static int _sub_prefix(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: %s <prefix>\n", argv[0]);
+        return 1;
+    }
+
+    cluster_registered_prefix[0] = '/';
+    cluster_registered_prefix[1] = argv[1][0];
+    cluster_registered_prefix[2] = '\0';
+    cluster_is_registered = true;
+
     return 0;
 }
 

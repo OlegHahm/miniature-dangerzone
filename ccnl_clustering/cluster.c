@@ -444,7 +444,14 @@ void cluster_new_data(void)
     LOG_DEBUG("cluster: put data into cache via loopback\n");
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
-    snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX, CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
+    if (cluster_is_registered) {
+        snprintf(pfx, prefix_len, "%s%s/%08lX/%s", cluster_registered_prefix,
+                 CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
+    }
+    else {
+        snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX,
+                 CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
+    }
     printf("cluster: %u NEW DATA: %s\n", (unsigned) xtimer_now(), pfx);
     /* schedule new data generation */
     uint32_t offset = CLUSTER_EVENT_PERIOD;

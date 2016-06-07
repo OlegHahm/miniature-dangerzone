@@ -49,6 +49,11 @@ typedef struct __attribute__((packed)) {
     int num;
 } cluster_content_t;
 
+/* set if registered for a certain prefix
+ * 3 bytes = / + PREFIX + \0 */
+extern char cluster_registered_prefix[3];
+extern bool cluster_is_registered;
+
 /* state */
 extern cluster_state_t cluster_state;
 
