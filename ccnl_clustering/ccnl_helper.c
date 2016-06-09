@@ -316,7 +316,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             if (pkt->contlen == sizeof(cluster_content_t)) {
                 LOG_DEBUG("ccnl_helper: seems to be the right content\n");
                 cluster_content_t *cc = (cluster_content_t*) pkt->content;
-                LOG_INFO("%" PRIu32 " ccnl_helper: rcvd prefix: %s\n", xtimer_now(),
+                LOG_DEBUG("%" PRIu32 " ccnl_helper: rcvd prefix: %s\n", xtimer_now(),
                           ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
                 LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
                 /* if we receive content, it's either because
@@ -685,7 +685,7 @@ int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_
 
     /* actual sending of the content */
     for (int cnt = 0; cnt < CCNLRIOT_INT_RETRIES; cnt++) {
-        LOG_INFO("ccnl_helper: sending interest #%u for %s (%i)\n", (unsigned) cnt,
+        LOG_DEBUG("ccnl_helper: sending interest #%u for %s (%i)\n", (unsigned) cnt,
                  ccnl_prefix_to_path_detailed(_prefix_str, prefix, 1, 0, 0),
                  ((chunknum != NULL) ? (int) *chunknum : -1));
         /* register for content chunks */

@@ -324,7 +324,7 @@ static void _radio_sleep(void)
             cluster_prevent_sleep = 0;
         }
         else {
-            LOG_INFO("cluster: still waiting for an interest from the deputy, wait some time\n");
+            LOG_DEBUG("cluster: still waiting for an interest from the deputy, wait some time\n");
             xtimer_remove(&_sleep_timer);
             xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
             return;
@@ -347,7 +347,7 @@ static void _radio_sleep(void)
             }
         }
         else if (state == NETOPT_STATE_SLEEP) {
-            LOG_INFO("cluster: radio sleeps already\n");
+            LOG_DEBUG("cluster: radio sleeps already\n");
         }
         else {
             LOG_WARNING("cluster: radio is in wrong state (%x), try again later\n", state);
