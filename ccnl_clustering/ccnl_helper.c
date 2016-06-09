@@ -277,7 +277,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
          * own content */
         if (cluster_state != CLUSTER_STATE_DEPUTY) {
             char my_id[9];
-            snprintf(my_id, sizeof(my_id), "%08lX", cluster_my_id);
+            snprintf(my_id, sizeof(my_id), "%08lX", (unsigned long) cluster_my_id);
             if (memcmp(my_id, pkt->pfx->comp[2], 8) != 0) {
                 LOG_DEBUG("ccnl_helper: not my content, ignore it\n");
                 free_packet(pkt);

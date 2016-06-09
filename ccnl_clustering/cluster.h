@@ -7,7 +7,9 @@
 
 #define CLUSTER_DEPUTY              (1)
 #define CLUSTER_AUTOSTART           (0)
-#define CLUSTER_DEBUG               (0)
+#ifndef CLUSTER_DEBUG
+#   define CLUSTER_DEBUG               (0)
+#endif
 
 #define CLUSTER_D                   (3)
 #define CLUSTER_X                   (2)
