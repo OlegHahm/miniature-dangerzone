@@ -49,7 +49,7 @@ static int _sub_prefix(int argc, char **argv);
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
     {"stats", "Print CCNL statistics", _stats},
-    {"ccnl_cs", "Print CCNL content store", _cs},
+    {"c", "Print CCNL content store", _cs},
     {"dc", "Create a content chunk and put it into cache for debug purposes",
         _debug_cache_date},
     {"start", "Start the application", _start_dow},
