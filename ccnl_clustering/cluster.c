@@ -200,7 +200,7 @@ void *_loop(void *arg)
 #else
                     if (cluster_state == CLUSTER_STATE_INACTIVE) {
                         if (CLUSTER_GO_SLEEP) {
-                            LOG_INFO("cluster: stay sleeping\n");
+                            LOG_DEBUG("cluster: stay sleeping\n");
                         }
                         else {
                             LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
@@ -212,12 +212,12 @@ void *_loop(void *arg)
                     }
                     else {
                         if (CLUSTER_GO_SLEEP) {
-                            LOG_INFO("cluster: go sleeping\n");
+                            LOG_DEBUG("cluster: go sleeping\n");
                             cluster_state = CLUSTER_STATE_INACTIVE;
                             cluster_sleep(CLUSTER_X * CLUSTER_D);
                         }
                         else {
-                            LOG_INFO("cluster: stay active\n");
+                            LOG_DEBUG("cluster: stay active\n");
                             cluster_period_counter = CLUSTER_X * CLUSTER_D;
                             cluster_second_timer();
                         }
@@ -350,7 +350,7 @@ static void _radio_sleep(void)
             LOG_DEBUG("cluster: radio sleeps already\n");
         }
         else {
-            LOG_WARNING("cluster: radio is in wrong state (%x), try again later\n", state);
+            LOG_DEBUG("cluster: radio is in wrong state (%x), try again later\n", state);
             xtimer_remove(&_sleep_timer);
             xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
         }
@@ -362,7 +362,7 @@ static void _radio_sleep(void)
 
 void cluster_sleep(uint8_t periods)
 {
-    LOG_INFO("cluster: going to sleep\n");
+    LOG_DEBUG("cluster: going to sleep\n");
     gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_BUT_OWN, &ccnl_relay, sizeof(ccnl_relay));
     LOG_INFO("\n\ncluster: change to state INACTIVE\n\n");
     cluster_state = CLUSTER_STATE_INACTIVE;
