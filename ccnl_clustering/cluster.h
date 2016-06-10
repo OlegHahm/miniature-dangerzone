@@ -4,6 +4,7 @@
 #include "random.h"
 #include "timex.h"
 #include "bloom.h"
+#include "ccnlriot.h"
 
 #define CLUSTER_DEPUTY              (1)
 #define CLUSTER_AUTOSTART           (0)
@@ -15,6 +16,8 @@
 #define CLUSTER_X                   (2)
 #define CLUSTER_P                   (0.99)
 #define CLUSTER_PERIOD              (17)
+#define CLUSTER_PRIO_CACHE          (CCNLRIOT_CACHE_SIZE * 0)
+
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)
 #define CLUSTER_EVENT_PERIOD_JITTER (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 
@@ -78,6 +81,7 @@ extern msg_t cluster_data_msg;
 extern uint32_t cluster_period_counter;
 extern xtimer_t cluster_timer;
 extern msg_t cluster_wakeup_msg;
+extern uint8_t cluster_prio_cache_cnt;
 
 /* time measurement */
 extern uint32_t cluster_time_sleeping;

@@ -10,6 +10,12 @@
 #include "ccnlriot.h"
 #include "log.h"
 
+typedef enum {
+    CCNL_HELPER_REMOVED_NOTHING     = (0x00),
+    CCNL_HELPER_REMOVED_NEWEST_FLAG = (0x01),
+    CCNL_HELPER_REMOVED_PRIO_FLAG   = (0x02)
+} ccnl_helper_removed_t;
+
 /* public variables */
 struct ccnl_prefix_s *ccnl_helper_all_pfx;
 
@@ -209,16 +215,25 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
 }
 #endif
 
-static void _unflag_cs(struct ccnl_relay_s *relay, char *source)
+static ccnl_helper_removed_t _unflag_cs(struct ccnl_relay_s *relay, char *source)
 {
+    ccnl_helper_removed_t unflagged = CCNL_HELPER_REMOVED_NOTHING;
     struct ccnl_content_s *c = relay->contents;
     while (c) {
         if ((c->pkt->pfx->compcnt > 3) && (memcmp(source, c->pkt->pfx->comp[2],
                                                   CLUSTER_CONT_LEN) == 0)) {
-            c->flags &= ~CCNL_CONTENT_FLAGS_USER;
+            if (c->flags & CCNL_CONTENT_FLAGS_USER1) {
+                unflagged |= CCNL_HELPER_REMOVED_NEWEST_FLAG;
+                c->flags &= ~CCNL_CONTENT_FLAGS_USER1;
+            }
+            if (c->flags & CCNL_CONTENT_FLAGS_STATIC) {
+                unflagged |= CCNL_HELPER_REMOVED_PRIO_FLAG;
+                c->flags &= ~CCNL_CONTENT_FLAGS_STATIC;
+            }
         }
         c = c->next;
     }
+    return unflagged;
 }
 
 static void _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_pkt_s *pkt)
@@ -252,8 +267,20 @@ static void _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     }
     /* no newer entry found, flag this one */
     if (newest == NULL) {
-        _unflag_cs(relay, (char*) c->pkt->pfx->comp[2]);
-        c->flags |= CCNL_CONTENT_FLAGS_USER;
+        ccnl_helper_removed_t unflagged = _unflag_cs(relay, (char*) c->pkt->pfx->comp[2]);
+        (void) unflagged;
+#if CLUSTER_PRIO_CACHE
+        /* if no newest flag was removed, we haven't had any value for this source */
+        if (!(unflagged & CCNL_HELPER_REMOVED_NEWEST_FLAG) &&
+            (cluster_prio_cache_cnt < CLUSTER_PRIO_CACHE)) {
+            cluster_prio_cache_cnt++;
+            c->flags |= CCNL_CONTENT_FLAGS_STATIC;
+        }
+        else if (unflagged & CCNL_HELPER_REMOVED_PRIO_FLAG) {
+            c->flags |= CCNL_CONTENT_FLAGS_STATIC;
+        }
+#endif
+        c->flags |= CCNL_CONTENT_FLAGS_USER1;
     }
 
     if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
@@ -358,8 +385,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     LOG_ERROR("ccnl_helper: we're doomed, WE'RE ALL DOOMED\n");
                     return 0;
                 }
+                /* this is our own content, so we know that it is always the newest */
                 _unflag_cs(relay, my_id);
-                c->flags |= CCNL_CONTENT_FLAGS_USER;
+                c->flags |= CCNL_CONTENT_FLAGS_USER1;
                 if (ccnl_content_add2cache(relay, c) == NULL) {
                     LOG_WARNING("ccnl_helper:  adding to cache failed, discard packet\n");
                     ccnl_free(c);
@@ -601,7 +629,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
                     oldest_same = c2;
                 }
             }
-            if (!(c2->flags & CCNL_CONTENT_FLAGS_USER)) {
+            if (!(c2->flags & CCNL_CONTENT_FLAGS_USER1)) {
                 if ((oldest_unflagged_ts == 0) || (c2_ts < oldest_unflagged_ts)) {
                     oldest_unflagged_ts = c2_ts;
                     oldest_unflagged = c2;
@@ -643,8 +671,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         mutex_lock(&(relay->cache_write_lock));
         return 1;
     }
-    LOG_DEBUG("ccnl_helper: falling back to default cache strategy\n");
-    return 0;
+    return 1;
 }
 
 

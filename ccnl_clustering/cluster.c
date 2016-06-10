@@ -28,6 +28,7 @@ uint32_t cluster_time_active = 0;
 bool cluster_sleeping = false;
 uint32_t cluster_ts_wakeup = 0;
 uint32_t cluster_ts_sleep = 0;
+uint8_t cluster_prio_cache_cnt = 0;
 
 /* internal variables */
 xtimer_t cluster_timer;
