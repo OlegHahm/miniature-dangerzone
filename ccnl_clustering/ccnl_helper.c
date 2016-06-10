@@ -209,6 +209,69 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
 }
 #endif
 
+static void _unflag_cs(struct ccnl_relay_s *relay, char *source)
+{
+    struct ccnl_content_s *c = relay->contents;
+    while (c) {
+        if ((c->pkt->pfx->compcnt > 3) && (memcmp(source, c->pkt->pfx->comp[2],
+                                                  CLUSTER_CONT_LEN) == 0)) {
+            c->flags &= ~CCNL_CONTENT_FLAGS_USER;
+        }
+        c = c->next;
+    }
+}
+
+static void _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_pkt_s *pkt)
+{
+    struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
+    if (!c) {
+        LOG_WARNING("DOOMED! DOOMED! DOOMED!\n");
+        return;
+    }
+    /* if someone is waiting for this content - should not hpapen!? */
+    ccnl_content_serve_pending(relay, c);
+
+    /* check if we have younger content for this source */
+    struct ccnl_content_s *newest = NULL;
+    /* get timestamp for incoming chunk */
+    long c_ts = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
+    long cit_ts;
+    struct ccnl_content_s *cit;
+    for (cit = relay->contents; cit; cit = cit->next) {
+        if (cit->pkt->pfx->compcnt < 4) {
+            LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
+            continue;
+        }
+        if (ccnl_prefix_cmp(cit->pkt->pfx, NULL, c->pkt->pfx, CMP_MATCH) >= 3) {
+            cit_ts = strtol((char*) cit->pkt->pfx->comp[3], NULL, 16);
+            if (cit_ts > c_ts) {
+                newest = cit;
+                break;
+            }
+        }
+    }
+    /* no newer entry found, flag this one */
+    if (newest == NULL) {
+        _unflag_cs(relay, (char*) c->pkt->pfx->comp[2]);
+        c->flags |= CCNL_CONTENT_FLAGS_USER;
+    }
+
+    if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
+        LOG_DEBUG("ccnl_helper:  adding content to cache\n");
+        if (ccnl_content_add2cache(relay, c) == NULL) {
+            LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
+            ccnl_free(c);
+            ccnl_free(pkt);
+            return;
+        }
+    }
+    else {
+        LOG_DEBUG("ccnl_helper: content not added to cache\n");
+        ccnl_free(c);
+        ccnl_free(pkt);
+    }
+}
+
 /**
  * @brief local callback to handle incoming content chunks
  *
@@ -295,6 +358,8 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     LOG_ERROR("ccnl_helper: we're doomed, WE'RE ALL DOOMED\n");
                     return 0;
                 }
+                _unflag_cs(relay, my_id);
+                c->flags |= CCNL_CONTENT_FLAGS_USER;
                 if (ccnl_content_add2cache(relay, c) == NULL) {
                     LOG_WARNING("ccnl_helper:  adding to cache failed, discard packet\n");
                     ccnl_free(c);
@@ -331,7 +396,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
                 }
                 else {
-                    ccnl_helper_create_int(pkt->pfx);
+                    _ccnl_helper_handle_content(relay, pkt);
                 }
 
                 if (cc->num >= 0) {
@@ -342,13 +407,15 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 }
 
                 cc->num = -1;
+                return 1;
             }
             else {
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
             }
 #else
             if (!cluster_is_registered || (pkt->pfx->comp[0][0] == cluster_registered_prefix[1])) {
-                ccnl_helper_create_int(pkt->pfx);
+                _ccnl_helper_handle_content(relay, pkt);
+                return 1;
             }
 #endif
         }
@@ -517,39 +584,66 @@ out:
  */
 int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c)
 {
-    struct ccnl_content_s *c2, *oldest = NULL;
+    struct ccnl_content_s *c2, *oldest = NULL, *oldest_same = NULL, *oldest_unflagged = NULL;
     long oldest_ts = 0;
+    long oldest_same_ts = 0;
+    long oldest_unflagged_ts = 0;
     for (c2 = relay->contents; c2; c2 = c2->next) {
+        if (c->pkt->pfx->compcnt < 4) {
+            LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
+            continue;
+        }
+        long c2_ts = strtol((char*) c2->pkt->pfx->comp[3], NULL, 16);
         if (!(c2->flags & CCNL_CONTENT_FLAGS_STATIC)) {
-            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, c->pkt->pfx, CMP_MATCH) >= 3) {
-                if (c->pkt->pfx->compcnt < 4) {
-                    LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
-                    continue;
+            if (ccnl_prefix_cmp(c->pkt->pfx, NULL, c2->pkt->pfx, CMP_MATCH) >= 3) {
+                if ((oldest_same_ts == 0) || (c2_ts < oldest_same_ts)) {
+                    oldest_same_ts = c2_ts;
+                    oldest_same = c2;
                 }
-                long c2_ts = strtol((char*) c2->pkt->pfx->comp[3], NULL, 16);
-                if ((oldest_ts == 0) || (c2_ts < oldest_ts)) {
-                    oldest_ts = c2_ts;
-                    oldest = c2;
+            }
+            if (!(c2->flags & CCNL_CONTENT_FLAGS_USER)) {
+                if ((oldest_unflagged_ts == 0) || (c2_ts < oldest_unflagged_ts)) {
+                    oldest_unflagged_ts = c2_ts;
+                    oldest_unflagged = c2;
                 }
+            }
+            if ((oldest_ts == 0) || (c2_ts < oldest_ts)) {
+                oldest_ts = c2_ts;
+                oldest = c2;
             }
         }
     }
     long c_ts = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
+    if (oldest_same_ts > c_ts) {
+        LOG_DEBUG("New value is older than oldest value for this ID, skipping\n");
+        return 1;
+    }
+    if (oldest_same) {
+        mutex_unlock(&(relay->cache_write_lock));
+        LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
+        ccnl_content_remove(relay, oldest_same);
+        mutex_lock(&(relay->cache_write_lock));
+        return 1;
+    }
+    if (oldest_unflagged) {
+        mutex_unlock(&(relay->cache_write_lock));
+        LOG_DEBUG("ccnl_helper: remove oldest unflagged entry from cache\n");
+        ccnl_content_remove(relay, oldest_unflagged);
+        mutex_lock(&(relay->cache_write_lock));
+        return 1;
+    }
     if (oldest_ts > c_ts) {
-        LOG_INFO("New value is older than oldest value for this ID, skipping\n");
+        LOG_DEBUG("New value is older than oldest value, skipping\n");
         return 1;
     }
     if (oldest) {
-#ifdef CCNL_RIOT
         mutex_unlock(&(relay->cache_write_lock));
-#endif
-        LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
+        LOG_DEBUG("ccnl_helper: remove oldest overall entry from cache\n");
         ccnl_content_remove(relay, oldest);
-#ifdef CCNL_RIOT
         mutex_lock(&(relay->cache_write_lock));
-#endif
         return 1;
     }
+    LOG_DEBUG("ccnl_helper: falling back to default cache strategy\n");
     return 0;
 }
 
