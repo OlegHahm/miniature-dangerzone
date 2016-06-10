@@ -163,6 +163,8 @@ void *_loop(void *arg)
         cluster_sleep(cluster_position);
     }
 #else
+    /* random startup delay */
+    xtimer_usleep(CLUSTER_STARTUP_DELAY);
     if (CLUSTER_GO_SLEEP) {
         LOG_INFO("\n\ncluster: starting INACTIVE\n\n");
         cluster_state = CLUSTER_STATE_INACTIVE;
