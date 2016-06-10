@@ -363,16 +363,21 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     /* we don't have a PIT entry for this */
     if (!i) {
+#if CLUSTER_DEBUG
+        cluster_state = CLUSTER_STATE_DEPUTY;
+#endif
         /* if we're not deputy (or becoming it), we assume that this is our
          * own content */
         if (cluster_state != CLUSTER_STATE_DEPUTY) {
             char my_id[9];
             snprintf(my_id, sizeof(my_id), "%08lX", (unsigned long) cluster_my_id);
+#if !CLUSTER_DEBUG
             if (memcmp(my_id, pkt->pfx->comp[2], 8) != 0) {
                 LOG_DEBUG("ccnl_helper: not my content, ignore it\n");
                 free_packet(pkt);
                 return 1;
             }
+#endif
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
