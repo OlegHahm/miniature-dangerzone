@@ -236,12 +236,12 @@ static ccnl_helper_removed_t _unflag_cs(struct ccnl_relay_s *relay, char *source
     return unflagged;
 }
 
-static void _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_pkt_s *pkt)
+static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_pkt_s *pkt)
 {
     struct ccnl_content_s *c = ccnl_content_new(relay, &pkt);
     if (!c) {
         LOG_WARNING("DOOMED! DOOMED! DOOMED!\n");
-        return;
+        return false;
     }
     /* if someone is waiting for this content - should not hpapen!? */
     ccnl_content_serve_pending(relay, c);
@@ -285,18 +285,27 @@ static void _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
 
     if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
         LOG_DEBUG("ccnl_helper:  adding content to cache\n");
-        if (ccnl_content_add2cache(relay, c) == NULL) {
-            LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
+        if (CLUSTER_DO_CACHE) {
+            if (ccnl_content_add2cache(relay, c) == NULL) {
+                LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
+                ccnl_free(c);
+                free_packet(pkt);
+                return false;
+            }
+        }
+        else {
             ccnl_free(c);
-            ccnl_free(pkt);
-            return;
+            free_packet(pkt);
+            return false;
         }
     }
     else {
         LOG_DEBUG("ccnl_helper: content not added to cache\n");
         ccnl_free(c);
-        ccnl_free(pkt);
+        free_packet(pkt);
+        return false;
     }
+    return true;
 }
 
 /**
@@ -429,7 +438,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
                 }
                 else {
-                    _ccnl_helper_handle_content(relay, pkt);
+                    if (!_ccnl_helper_handle_content(relay, pkt)) {
+                        return 0;
+                    }
                 }
 
                 if (cc->num >= 0) {
@@ -447,7 +458,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             }
 #else
             if (!cluster_is_registered || (pkt->pfx->comp[0][0] == cluster_registered_prefix[1])) {
-                _ccnl_helper_handle_content(relay, pkt);
+                if (!_ccnl_helper_handle_content(relay, pkt)) {
+                    return 0;
+                }
                 return 1;
             }
 #endif
@@ -607,6 +620,7 @@ out:
     return res;
 }
 
+#if CLUSTER_CACHE_RM_STRATEGY
 /**
  * @brief Caching strategy: oldest representative
  * Always cache at least one value per name and replace always the oldest value
@@ -678,7 +692,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
     }
     return 1;
 }
-
+#endif
 
 static xtimer_t _wait_timer = { .target = 0, .long_target = 0 };
 static msg_t _timeout_msg;

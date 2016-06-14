@@ -140,7 +140,9 @@ void *_loop(void *arg)
     /* set the CCN callbacks */
     ccnl_set_local_producer(ccnlriot_producer);
     ccnl_set_local_consumer(ccnlriot_consumer);
+#if CLUSTER_CACHE_RM_STRATEGY
     ccnl_set_cache_strategy_remove(cs_oldest_representative);
+#endif
 
 #if !CLUSTER_DEBUG
     /* start data generation timer */

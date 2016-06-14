@@ -16,12 +16,23 @@
 #define CLUSTER_X                   (2)
 #define CLUSTER_P                   (0.99)
 #define CLUSTER_PERIOD              (17)
-#define CLUSTER_PRIO_CACHE          (CCNLRIOT_CACHE_SIZE * 0)
+
+#define CLUSTER_CACHE_PROB          (1)
+/* 0 means LRU, 1 means "our" strategy */
+#define CLUSTER_CACHE_RM_STRATEGY   (0)
+
+#if CLUSTER_CACHE_RM_STRATEGY
+#   define CLUSTER_PRIO_CACHE       (CCNLRIOT_CACHE_SIZE / 3)
+#else
+#   define CLUSTER_PRIO_CACHE       (0)
+#endif
 
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)
 #define CLUSTER_EVENT_PERIOD_JITTER (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 
 #define CLUSTER_GO_SLEEP            (random_uint32() < (UINT32_MAX * CLUSTER_P))
+
+#define CLUSTER_DO_CACHE            (random_uint32() < (UINT32_MAX * CLUSTER_CACHE_PROB))
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 
