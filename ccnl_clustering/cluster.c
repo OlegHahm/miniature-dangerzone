@@ -243,6 +243,7 @@ void *_loop(void *arg)
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
 #if !CLUSTER_DEPUTY
+                /* give the transceiver some time to finish its job */
                 if (cluster_state == CLUSTER_STATE_INACTIVE) {
                     xtimer_usleep(5000);
                     _radio_sleep();
@@ -457,7 +458,7 @@ void cluster_new_data(void)
         snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX,
                  CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
     }
-    printf("cluster: %u NEW DATA: %s\n", (unsigned) xtimer_now(), pfx);
+    printf("NEW DATA: %s\n", pfx);
     /* schedule new data generation */
     uint32_t offset = CLUSTER_EVENT_PERIOD;
     LOG_DEBUG("cluster: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) cluster_pid);
@@ -474,13 +475,6 @@ void cluster_new_data(void)
 #endif
         free_prefix(prefix);
     }
-
-    /*
-    netopt_state_t state;
-    if (gnrc_netapi_get(CCNLRIOT_NETIF, NETOPT_STATE, 0, &state, sizeof(netopt_state_t)) > 0) {
-        LOG_DEBUG("cluster: current radio state is %X\n", state);
-    }
-    */
 }
 
 #if CLUSTER_DEPUTY
