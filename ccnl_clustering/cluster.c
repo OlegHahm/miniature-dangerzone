@@ -471,6 +471,7 @@ void cluster_new_data(void)
 #if CLUSTER_DEPUTY
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, false);
 #else
+        xtimer_usleep(500 * 1000);
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, true);
 #endif
         free_prefix(prefix);
