@@ -27,6 +27,8 @@
 #   define CLUSTER_PRIO_CACHE       (0)
 #endif
 
+#define CLUSTER_SENSOR_MAX_NR       (5)
+
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)
 #define CLUSTER_EVENT_PERIOD_JITTER (CLUSTER_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
 
@@ -71,6 +73,9 @@ typedef struct __attribute__((packed)) {
  * 3 bytes = / + PREFIX + \0 */
 extern char cluster_registered_prefix[3];
 extern bool cluster_is_registered;
+
+extern char cluster_sensors[CLUSTER_SENSOR_MAX_NR][3];
+extern uint8_t cluster_sensor_nr;
 
 /* state */
 extern cluster_state_t cluster_state;

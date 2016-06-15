@@ -39,12 +39,15 @@ static uint32_t _tlsf_heap[TLSF_BUFFER];
 
 char cluster_registered_prefix[3];
 bool cluster_is_registered = false;
+char cluster_sensors[CLUSTER_SENSOR_MAX_NR][3];
+uint8_t cluster_sensor_nr = 0;
 
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
 static int _debug_cache_date(int argc, char **argv);
 static int _start_dow(int argc, char **argv);
 static int _sub_prefix(int argc, char **argv);
+static int _add_sensor(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
@@ -54,6 +57,7 @@ const shell_command_t shell_commands[] = {
         _debug_cache_date},
     {"start", "Start the application", _start_dow},
     {"prefix", "Subscribe a certain prefix", _sub_prefix},
+    {"sensor", "Add a sensor with a certain prefix", _add_sensor},
     {NULL, NULL, NULL}
 };
 
@@ -136,6 +140,27 @@ static int _sub_prefix(int argc, char **argv)
     cluster_registered_prefix[1] = argv[1][0];
     cluster_registered_prefix[2] = '\0';
     cluster_is_registered = true;
+
+    return 0;
+}
+
+static int _add_sensor(int argc, char **argv)
+{
+    if (argc < 2) {
+        printf("Usage: %s <sensor prefix>\n", argv[0]);
+        return 1;
+    }
+
+    if (cluster_sensor_nr >= CLUSTER_SENSOR_MAX_NR) {
+        puts("Max. number of sensors already registered.");
+        return 1;
+    }
+
+    cluster_sensors[cluster_sensor_nr][0] = '/';
+    cluster_sensors[cluster_sensor_nr][1] = argv[1][0];
+    cluster_sensors[cluster_sensor_nr][0] = '\0';
+    
+    cluster_sensor_nr++;
 
     return 0;
 }

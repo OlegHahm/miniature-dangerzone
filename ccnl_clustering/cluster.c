@@ -450,9 +450,16 @@ void cluster_new_data(void)
     LOG_DEBUG("cluster: put data into cache via loopback\n");
     size_t prefix_len = sizeof(CCNLRIOT_SITE_PREFIX) + sizeof(CCNLRIOT_TYPE_PREFIX) + 9 + 9;
     char pfx[prefix_len];
-    if (cluster_is_registered) {
-        snprintf(pfx, prefix_len, "%s%s/%08lX/%s", cluster_registered_prefix,
-                 CCNLRIOT_TYPE_PREFIX, (long unsigned) cluster_my_id, val);
+    if (cluster_sensor_nr > 0) {
+        uint8_t current_sensor = (random_uint32() % cluster_sensor_nr);
+        snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_TYPE_PREFIX,
+                 cluster_sensors[current_sensor], (long unsigned) cluster_my_id,
+                 val);
+    }
+    else if (cluster_is_registered) {
+        snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_TYPE_PREFIX,
+                 cluster_registered_prefix, (long unsigned) cluster_my_id,
+                 val);
     }
     else {
         snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX,
