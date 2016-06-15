@@ -452,7 +452,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #else
             /* check if we're registered for a certain prefix and compare the first character of it */
             /* XXX: use memcmp */
-            if ((cluster_is_registered && (pkt->pfx->comp[0][1] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
+            if ((cluster_is_registered && (pkt->pfx->comp[1][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
                 if (!_ccnl_helper_handle_content(relay, pkt)) {
                     return 0;
                 }
@@ -655,7 +655,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
                 oldest_ts = c2_ts;
                 oldest = c2;
             }
-            if ((cluster_is_registered && (c2->pkt->pfx->comp[0][1] != cluster_registered_prefix[1]))) {
+            if ((cluster_is_registered && (c2->pkt->pfx->comp[1][0] != cluster_registered_prefix[1]))) {
                 if ((oldest_unregistered_ts == 0) || (c2_ts < oldest_unregistered_ts)) {
                     oldest_unregistered_ts = c2_ts;
                     oldest_unregistered = c2;

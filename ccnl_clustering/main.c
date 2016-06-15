@@ -129,17 +129,24 @@ static int _start_dow(int argc, char **argv)
     return 0;
 }
 
+static void _subsribe(char c) {
+    cluster_registered_prefix[0] = '/';
+    cluster_registered_prefix[1] = c;
+    cluster_registered_prefix[2] = '\0';
+    cluster_is_registered = true;
+}
+
 static int _sub_prefix(int argc, char **argv)
 {
+    if (cluster_is_registered) {
+        puts("Already registered, failing.");
+        return 1;
+    }
     if (argc < 2) {
         printf("Usage: %s <prefix>\n", argv[0]);
         return 1;
     }
-
-    cluster_registered_prefix[0] = '/';
-    cluster_registered_prefix[1] = argv[1][0];
-    cluster_registered_prefix[2] = '\0';
-    cluster_is_registered = true;
+    _subsribe(argv[1][0]);
 
     return 0;
 }
@@ -158,8 +165,14 @@ static int _add_sensor(int argc, char **argv)
 
     cluster_sensors[cluster_sensor_nr][0] = '/';
     cluster_sensors[cluster_sensor_nr][1] = argv[1][0];
-    cluster_sensors[cluster_sensor_nr][0] = '\0';
-    
+    cluster_sensors[cluster_sensor_nr][2] = '\0';
+
+    printf("added sensor %i: %s\n", cluster_sensor_nr, cluster_sensors[cluster_sensor_nr]);
+
+    if (!cluster_is_registered) {
+        _subsribe(cluster_sensors[cluster_sensor_nr][1]);
+    }
+
     cluster_sensor_nr++;
 
     return 0;
