@@ -285,15 +285,8 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
 
     if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
         LOG_DEBUG("ccnl_helper:  adding content to cache\n");
-        if (CLUSTER_DO_CACHE) {
-            if (ccnl_content_add2cache(relay, c) == NULL) {
-                LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
-                ccnl_free(c);
-                free_packet(pkt);
-                return false;
-            }
-        }
-        else {
+        if (ccnl_content_add2cache(relay, c) == NULL) {
+            LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
             ccnl_free(c);
             free_packet(pkt);
             return false;
@@ -457,7 +450,9 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
             }
 #else
-            if (!cluster_is_registered || (pkt->pfx->comp[0][0] == cluster_registered_prefix[1])) {
+            /* check if we're registered for a certain prefix and compare the first character of it */
+            /* XXX: use memcmp */
+            if ((cluster_is_registered && (pkt->pfx->comp[0][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
                 if (!_ccnl_helper_handle_content(relay, pkt)) {
                     return 0;
                 }
@@ -631,7 +626,9 @@ out:
  */
 int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c)
 {
-    struct ccnl_content_s *c2, *oldest = NULL, *oldest_same = NULL, *oldest_unflagged = NULL;
+    struct ccnl_content_s *c2, *oldest = NULL, *oldest_same = NULL,
+                          *oldest_unflagged = NULL, *oldest_unregistered = NULL;
+    long oldest_unregistered_ts = 0;
     long oldest_ts = 0;
     long oldest_same_ts = 0;
     long oldest_unflagged_ts = 0;
@@ -658,6 +655,12 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
                 oldest_ts = c2_ts;
                 oldest = c2;
             }
+            if ((cluster_is_registered && (c2->pkt->pfx->comp[0][0] != cluster_registered_prefix[1]))) {
+                if ((oldest_unregistered_ts == 0) || (c2_ts < oldest_unregistered_ts)) {
+                    oldest_unregistered_ts = c2_ts;
+                    oldest_unregistered = c2;
+                }
+            }
         }
     }
     long c_ts = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
@@ -676,6 +679,13 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         mutex_unlock(&(relay->cache_write_lock));
         LOG_DEBUG("ccnl_helper: remove oldest unflagged entry from cache\n");
         ccnl_content_remove(relay, oldest_unflagged);
+        mutex_lock(&(relay->cache_write_lock));
+        return 1;
+    }
+    if (oldest_unregistered) {
+        mutex_unlock(&(relay->cache_write_lock));
+        LOG_DEBUG("ccnl_helper: remove oldest entry that doesn't match our prefix from cache\n");
+        ccnl_content_remove(relay, oldest_unregistered);
         mutex_lock(&(relay->cache_write_lock));
         return 1;
     }
