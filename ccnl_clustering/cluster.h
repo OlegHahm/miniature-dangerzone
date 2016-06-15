@@ -6,7 +6,7 @@
 #include "bloom.h"
 #include "ccnlriot.h"
 
-#define CLUSTER_DEPUTY              (1)
+#define CLUSTER_DEPUTY              (0)
 #define CLUSTER_AUTOSTART           (0)
 #ifndef CLUSTER_DEBUG
 #   define CLUSTER_DEBUG               (0)
@@ -14,15 +14,16 @@
 
 #define CLUSTER_D                   (3)
 #define CLUSTER_X                   (2)
-#define CLUSTER_P                   (0.99)
+#define CLUSTER_P                   (0.95)
 #define CLUSTER_PERIOD              (17)
 
-#define CLUSTER_CACHE_PROB          (1)
+#define CLUSTER_CACHE_PROB          (.5)
 /* 0 means LRU, 1 means "our" strategy */
-#define CLUSTER_CACHE_RM_STRATEGY   (0)
+#define CLUSTER_CACHE_RM_STRATEGY   (1)
 
 #if CLUSTER_CACHE_RM_STRATEGY
-#   define CLUSTER_PRIO_CACHE       (CCNLRIOT_CACHE_SIZE / 3)
+//#   define CLUSTER_PRIO_CACHE       (CCNLRIOT_CACHE_SIZE / 3)
+#   define CLUSTER_PRIO_CACHE       (0)
 #else
 #   define CLUSTER_PRIO_CACHE       (0)
 #endif
@@ -38,7 +39,7 @@
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 
-#define CLUSTER_STARTUP_DELAY       (CLUSTER_D * (random_uint32() & 0x00000200) * SEC_IN_USEC)
+#define CLUSTER_STARTUP_DELAY       (CLUSTER_D * (random_uint32() & 0x000001FF) * SEC_IN_USEC)
 
 /* random interval between 50ms and ~1s */
 #define CLUSTER_BEACONING_PERIOD    ((random_uint32() & 0x000FFFFF) + 50000)
