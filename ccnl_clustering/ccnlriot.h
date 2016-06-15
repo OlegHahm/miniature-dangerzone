@@ -6,7 +6,7 @@
 
 #define CCNLRIOT_NETIF          (3)
 
-#define CCNLRIOT_CHANNEL        (26)
+#define CCNLRIOT_CHANNEL        (25)
 
 #define CCNLRIOT_INT_RETRIES    (3)
 #define CCNLRIOT_INT_TIMEOUT    (100000)

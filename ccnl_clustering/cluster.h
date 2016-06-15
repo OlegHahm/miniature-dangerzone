@@ -39,7 +39,7 @@
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 
-#define CLUSTER_STARTUP_DELAY       (CLUSTER_D * (random_uint32() & 0x000001FF) * SEC_IN_USEC)
+#define CLUSTER_STARTUP_DELAY       (CLUSTER_D * (random_uint32() & 0x000001FF) * MS_IN_USEC)
 
 /* random interval between 50ms and ~1s */
 #define CLUSTER_BEACONING_PERIOD    ((random_uint32() & 0x000FFFFF) + 50000)
