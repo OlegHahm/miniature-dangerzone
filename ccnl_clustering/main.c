@@ -169,9 +169,11 @@ static int _add_sensor(int argc, char **argv)
 
     printf("added sensor %i: %s\n", cluster_sensor_nr, cluster_sensors[cluster_sensor_nr]);
 
+#if CLUSTER_CACHE_RM_STRATEGY
     if (!cluster_is_registered) {
         _subsribe(cluster_sensors[cluster_sensor_nr][1]);
     }
+#endif
 
     cluster_sensor_nr++;
 
