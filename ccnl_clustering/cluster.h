@@ -28,6 +28,8 @@
 #   define CLUSTER_PRIO_CACHE       (0)
 #endif
 
+#define CLUSTER_UPDATE_INTERESTS    (5)
+
 #define CLUSTER_SENSOR_MAX_NR       (5)
 
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)

@@ -424,6 +424,15 @@ void cluster_wakeup(void)
         else {
             LOG_DEBUG("cluster: radio is already on\n");
         }
+#if (CLUSTER_DEPUTY == 0) && (CLUSTER_UPDATE_INTERESTS)
+        /* try to update the cache a bit */
+        unsigned cn;
+        for (cn = 0; (cn < CLUSTER_UPDATE_INTERESTS) && (ccnl_helper_int(ccnl_helper_all_pfx, &cn, false) != CCNLRIOT_LAST_CN); cn++) {
+            if (cn > CCNLRIOT_CACHE_SIZE) {
+                LOG_WARNING("cluster: asking too much! FAIL!\n");
+            }
+        }
+#endif
     }
     else {
         LOG_WARNING("cluster: error requesting radio state\n");

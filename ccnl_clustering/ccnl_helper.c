@@ -139,7 +139,6 @@ struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix)
     return ccnl_interest_new(&ccnl_relay, loopback_face, &pkt);
 }
 
-#if CLUSTER_DEPUTY
 /**
  * @brief send an acknowledgement
  **/
@@ -161,7 +160,6 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     free_packet(c->pkt);
     ccnl_free(c);
 }
-#endif
 
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
@@ -196,6 +194,7 @@ void ccnl_helper_clear_pit_for_own(void)
     LOG_DEBUG("ccnl_helper: clear PIT entries for own content\n");
     gnrc_netapi_set(ccnl_pid, NETOPT_CCN, CCNL_CTX_CLEAR_PIT_OWN, &ccnl_relay, sizeof(ccnl_relay));
 }
+#endif
 
 /**
  * @brief remove the PIT entry for the given chunk number for *
@@ -213,7 +212,6 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
         i = i->next;
     }
 }
-#endif
 
 static ccnl_helper_removed_t _unflag_cs(struct ccnl_relay_s *relay, char *source)
 {
@@ -326,6 +324,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         free_packet(pkt);
         return 1;
     }
+#endif
 
     /* check if prefix is for ALL and contains an ACK */
     if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) &&
@@ -342,7 +341,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         free_packet(pkt);
         return 1;
     }
-#endif
 
     struct ccnl_interest_s *i = NULL;
     /* if we don't have this content, we check if we have a matching PIT entry */
@@ -410,7 +408,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             return 1;
         }
         else {
-#if CLUSTER_DEPUTY
+#if CLUSTER_DEPUTY || CLUSTER_UPDATE_INTERESTS
             /* create an interest if we're waiting for *, because otherwise
              * our PIT entry won't match */
             if (pkt->contlen == sizeof(cluster_content_t)) {
@@ -529,8 +527,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         return 1;
     }
 
-#if CLUSTER_DEPUTY
-    /* check if this is a handover request */
+    /* check if this is a for any data */
     if (ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) {
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
             /* make sure interest contains a chunknumber */
@@ -541,10 +538,13 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 goto out;
             }
 
+#if CLUSTER_DEPUTY
+            /* check if this is a handover request */
             /* change state (will be done for each requested chunk, we don't care) */
             /* TODO: implement timeout to prevent that we stay in HANDOVER forever */
             LOG_INFO("\n\nccnl_helper: change to state HANDOVER\n\n");
             cluster_state = CLUSTER_STATE_HANDOVER;
+#endif
 
             /* find corresponding chunk in store */
             struct ccnl_content_s *cit = relay->contents;
@@ -611,7 +611,6 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 
 out:
-#endif /* CLUSTER_DEPUTY */
     return res;
 }
 
