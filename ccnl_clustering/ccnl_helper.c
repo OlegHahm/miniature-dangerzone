@@ -398,12 +398,13 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     ccnl_free(c);
                     free_packet(pkt);
                 }
-                /* inform potential waiters */
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
 #if CLUSTER_DEPUTY
+                /* inform potential waiters in order to send out interest for own content.
+                 * hence, this is only necessary in DoW mode */
+                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
                 m.content.ptr = (void*)new;
-#endif
                 msg_try_send(&m, cluster_pid);
+#endif
             }
             return 1;
         }
