@@ -723,6 +723,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             res = -ETIMEDOUT;
             break;
         }
+        xtimer_remove(&_wait_timer);
         LOG_DEBUG("remaining time: %u\n", (unsigned) remaining);
         xtimer_set_msg(&_wait_timer, remaining, &_timeout_msg, sched_active_pid);
 
