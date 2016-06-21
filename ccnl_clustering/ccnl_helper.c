@@ -206,6 +206,7 @@ static void _remove_pit(struct ccnl_relay_s *relay, int num)
         if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, i->pkt->pfx, CMP_MATCH) >= 1) &&
             (*(i->pkt->pfx->chunknum) == num)) {
             LOG_DEBUG("ccnl_helper: remove matching PIT entry\n");
+            /* XXX: Do this properly! */
             ccnl_interest_remove(relay, i);
             return;
         }
