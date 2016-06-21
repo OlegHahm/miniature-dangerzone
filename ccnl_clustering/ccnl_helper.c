@@ -737,7 +737,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
                 continue;
             }
             LOG_DEBUG("ccnl_helper: received something, that's good enough for me\n");
-            res = 1;
+            res = CCNLRIOT_RECEIVED_CHUNK;
             xtimer_remove(&_wait_timer);
             break;
         }
@@ -755,7 +755,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
         else if (m.type == CLUSTER_MSG_RECEIVED_INT) {
             if (wait_for_int) {
                 LOG_DEBUG("ccnl_helper: received an interest - we're waiting for that\n");
-                res = 1;
+                res = CCNLRIOT_RECEIVED_CHUNK;
                 xtimer_remove(&_wait_timer);
                 break;
             }
