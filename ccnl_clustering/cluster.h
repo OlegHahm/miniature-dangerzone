@@ -30,6 +30,8 @@
 
 #define CLUSTER_UPDATE_INTERESTS    (5)
 
+#define CLUSTER_RAND_UPDATES        (0)
+
 #define CLUSTER_SENSOR_MAX_NR       (5)
 
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)
@@ -38,6 +40,8 @@
 #define CLUSTER_GO_SLEEP            (random_uint32() < (UINT32_MAX * CLUSTER_P))
 
 #define CLUSTER_DO_CACHE            (random_uint32() < (UINT32_MAX * CLUSTER_CACHE_PROB))
+
+#define CLUSTER_RANDOM_CHUNK        (random_uint32() % CCNLRIOT_CACHE_SIZE)
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 

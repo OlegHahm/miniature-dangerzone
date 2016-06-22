@@ -428,6 +428,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 if (cc->num >= 0) {
                     _remove_pit(relay, cc->num);
                 }
+#if CLUSTER_DEPUTY
                 if (is_dup) {
                     LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
                 }
@@ -436,6 +437,18 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                         return 0;
                     }
                 }
+#else
+                /* check if we're registered for a certain prefix and compare the first character of it */
+                /* XXX: use memcmp */
+                if ((cluster_is_registered && (pkt->pfx->comp[1][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
+                    if (!_ccnl_helper_handle_content(relay, pkt)) {
+                        return 0;
+                    }
+                }
+                else {
+                    return 0;
+                }
+#endif
 
                 if (cc->num >= 0) {
                     /* in case we're waiting for * chunks, try to send a message */
@@ -569,6 +582,21 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 cit = cit->next;
             }
 
+#if !CLUSTER_DEPUTY
+            if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
+                if (failsafe != NULL) {
+                    LOG_WARNING("ccnl_helper: using failsafe!\n");
+                    cit = failsafe;
+                }
+                else {
+                    LOG_INFO("ccnl_helper: couldn't find anything matching, discard interest\n");
+                    free_packet(pkt);
+                    res = 1;
+                    goto out;
+                }
+            }
+#endif
+
             /* if we reached the end of the store, we send an ACK */
             if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
                 LOG_INFO("ccnl_helper: reached end of content store, send ack\n");
@@ -616,6 +644,14 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         res = 1;
         goto out;
     }
+#if !CLUSTER_DEPUTY
+    else {
+        LOG_DEBUG("ccnl_helper: we cannot serve this, discard interest\n");
+        free_packet(pkt);
+        res = 1;
+        goto out;
+    }
+#endif
 
     if (cluster_state == CLUSTER_STATE_HANDOVER) {
         LOG_DEBUG("ccnl_helper: in handover we handle nothing else\n");
