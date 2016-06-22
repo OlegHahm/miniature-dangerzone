@@ -427,7 +427,14 @@ void cluster_wakeup(void)
 #if (CLUSTER_DEPUTY == 0) && (CLUSTER_UPDATE_INTERESTS)
         /* try to update the cache a bit */
         unsigned cn;
-        for (cn = 0; (cn < CLUSTER_UPDATE_INTERESTS) && (ccnl_helper_int(ccnl_helper_all_pfx, &cn, false) != CCNLRIOT_LAST_CN); cn++) {
+        struct ccnl_prefix_s *tmp;
+        if (cluster_is_registered) {
+            tmp = ccnl_helper_my_pfx;
+        }
+        else {
+            tmp = ccnl_helper_all_pfx;
+        }
+        for (cn = 0; (cn < CLUSTER_UPDATE_INTERESTS) && (ccnl_helper_int(tmp, &cn, false) != CCNLRIOT_LAST_CN); cn++) {
             if (cn > CCNLRIOT_CACHE_SIZE) {
                 LOG_WARNING("cluster: asking too much! FAIL!\n");
             }

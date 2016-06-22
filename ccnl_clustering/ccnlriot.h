@@ -53,6 +53,7 @@
 #endif
 
 extern struct ccnl_prefix_s *ccnl_helper_all_pfx;
+extern struct ccnl_prefix_s *ccnl_helper_my_pfx;
 
 void ccnl_helper_init(void);
 

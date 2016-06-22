@@ -80,6 +80,8 @@ extern bool cluster_is_registered;
 extern char cluster_sensors[CLUSTER_SENSOR_MAX_NR][3];
 extern uint8_t cluster_sensor_nr;
 
+extern uint8_t cluster_my_prefix_interest_count;
+
 /* state */
 extern cluster_state_t cluster_state;
 

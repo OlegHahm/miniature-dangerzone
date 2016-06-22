@@ -134,6 +134,12 @@ static void _subsribe(char c) {
     cluster_registered_prefix[1] = c;
     cluster_registered_prefix[2] = '\0';
     cluster_is_registered = true;
+
+    unsigned cn = 0;
+    char tmp[5];
+    snprintf(tmp, 5, "%s/%c", CCNLRIOT_TYPE_PREFIX, c);
+    ccnl_helper_my_pfx = ccnl_URItoPrefix(tmp, CCNL_SUITE_NDNTLV, NULL, &cn);
+    printf("cluster_registered_prefix: %s\n", cluster_registered_prefix);
 }
 
 static int _sub_prefix(int argc, char **argv)

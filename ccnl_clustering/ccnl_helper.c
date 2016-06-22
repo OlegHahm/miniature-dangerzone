@@ -18,6 +18,7 @@ typedef enum {
 
 /* public variables */
 struct ccnl_prefix_s *ccnl_helper_all_pfx;
+struct ccnl_prefix_s *ccnl_helper_my_pfx;
 
 /* buffers for interests and content */
 static unsigned char _int_buf[CCNLRIOT_BUF_SIZE];
@@ -530,7 +531,8 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 
     /* check if this is a for any data */
-    if (ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) {
+    if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||
+        (cluster_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) {
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
             /* make sure interest contains a chunknumber */
             if ((pkt->pfx->chunknum == NULL) || (*(pkt->pfx->chunknum) == -1)) {
@@ -552,8 +554,18 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             struct ccnl_content_s *cit = relay->contents;
             LOG_DEBUG("ccnl_helper: received %s request for chunk number %i\n",
                       CCNLRIOT_ALL_PREFIX, *(pkt->pfx->chunknum));
-            int i;
-            for (i = 0; (i < *(pkt->pfx->chunknum)) && (i < CCNLRIOT_CACHE_SIZE) && (cit != NULL); i++) {
+#if CLUSTER_RAND_UPDATES
+            int pos = CLUSTER_RANDOM_CHUNK;
+#else
+            int pos = *(pkt->pfx->chunknum);
+#endif
+            int i = 0;
+            struct ccnl_content_s *failsafe = NULL;
+            while ((i < pos) && (i < CCNLRIOT_CACHE_SIZE) && (cit != NULL)) {
+                if (!cluster_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
+                    failsafe = cit;
+                    i++;
+                }
                 cit = cit->next;
             }
 
