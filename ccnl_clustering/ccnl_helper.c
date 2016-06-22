@@ -82,6 +82,8 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     struct ccnl_pkt_s *pk = ccnl_ndntlv_bytes2pkt(typ, olddata, &data, &arg_len);
     if (pk == NULL) {
         LOG_ERROR("ccnl_helper: something went terribly wrong!\n");
+        extern void ccnl_count_faces(struct ccnl_relay_s *ccnl);
+        ccnl_count_faces(&ccnl_relay);
         extern void ccnl_pit_size(struct ccnl_relay_s *ccnl);
         ccnl_pit_size(&ccnl_relay);
         return NULL;
@@ -583,6 +585,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 }
                 cit = cit->next;
             }
+            LOG_DEBUG("ccnl_helper: try to publish chunk #%i (pos: %i)\n", i, pos);
 
 #if !CLUSTER_DEPUTY
             if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
