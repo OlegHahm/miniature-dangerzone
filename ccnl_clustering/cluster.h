@@ -32,6 +32,12 @@
 
 #define CLUSTER_RAND_UPDATES        (0)
 
+#if CLUSTER_UPDATE_INTERESTS
+#   define CLUSTER_STAY_AWAKE_PFX   (1)
+#else
+#   define CLUSTER_STAY_AWAKE_PFX   (0)
+#endif
+
 #define CLUSTER_SENSOR_MAX_NR       (5)
 
 #define CLUSTER_EVENT_PERIOD        (CLUSTER_D * SEC_IN_USEC)

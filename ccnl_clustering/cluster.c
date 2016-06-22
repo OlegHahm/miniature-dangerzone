@@ -29,6 +29,7 @@ bool cluster_sleeping = false;
 uint32_t cluster_ts_wakeup = 0;
 uint32_t cluster_ts_sleep = 0;
 uint8_t cluster_prio_cache_cnt = 0;
+uint8_t cluster_my_prefix_interest_count = 0;
 
 /* internal variables */
 xtimer_t cluster_timer;
@@ -216,7 +217,15 @@ void *_loop(void *arg)
                         cluster_second_timer();
                     }
                     else {
-                        if (CLUSTER_GO_SLEEP) {
+                        bool force_awake = false;
+#if CLUSTER_STAY_AWAKE_PFX
+                        if (cluster_my_prefix_interest_count <= CLUSTER_UPDATE_INTERESTS / 2) {
+                            LOG_INFO("cluster: didn't see enough interests (%i < %i) for my prefix, stay awake\n", (int) cluster_my_prefix_interest_count, (CLUSTER_UPDATE_INTERESTS / 2));
+                            force_awake = true;
+                        }
+                        cluster_my_prefix_interest_count = 0;
+#endif
+                        if ((!force_awake) && CLUSTER_GO_SLEEP) {
                             LOG_DEBUG("cluster: go sleeping\n");
                             cluster_state = CLUSTER_STATE_INACTIVE;
                             cluster_sleep(CLUSTER_X * CLUSTER_D);

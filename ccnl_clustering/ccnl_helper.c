@@ -547,6 +547,8 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||
         (cluster_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) {
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
+
+            cluster_my_prefix_interest_count++;
             /* make sure interest contains a chunknumber */
             if ((pkt->pfx->chunknum == NULL) || (*(pkt->pfx->chunknum) == -1)) {
                 LOG_WARNING("ccnl_helper: no chunknumber? what a fool!\n");
