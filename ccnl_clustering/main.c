@@ -119,10 +119,12 @@ static int _debug_cache_date(int argc, char **argv)
 static int _start_dow(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    printf("Settings: %s D:%u X:%u p:%u P:%u CS:%u PRIO:%u CPROB: %u\n",
+    printf("Settings: %s D:%u X:%u p:%u P:%u CS:%u PRIO:%u CPROB: %u INTUPD:%u STAYAWAKE:%u, PUBOLD:%u\n",
            (CLUSTER_DEPUTY ? "Deputy" : ""), CLUSTER_D, CLUSTER_X,
            (unsigned) (100U * CLUSTER_P), CLUSTER_PERIOD, CCNLRIOT_CACHE_SIZE,
-           (unsigned) CLUSTER_PRIO_CACHE, (unsigned) (100U * CLUSTER_CACHE_PROB));
+           (unsigned) CLUSTER_PRIO_CACHE, (unsigned) (100U * CLUSTER_CACHE_PROB),
+           (unsigned) CLUSTER_UPDATE_INTERESTS, (unsigned) CLUSTER_STAY_AWAKE_PFX,
+           (unsigned) CLUSTER_PUBLISH_OLD);
 
     cluster_init();
     thread_yield_higher();
