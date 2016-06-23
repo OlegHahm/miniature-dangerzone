@@ -578,7 +578,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #if CLUSTER_PUBLISH_OLD
         (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1))) {
 #else
-        (1) {
+        (1)) {
 #endif
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
 
