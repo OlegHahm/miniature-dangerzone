@@ -1,7 +1,7 @@
 #include "msg.h"
 #include "xtimer.h"
-#include "bloom.h"
 #include "bitfield.h"
+#include "bloom.h"
 #include "hashes.h"
 #include "periph/cpuid.h"
 #include "net/netopt.h"

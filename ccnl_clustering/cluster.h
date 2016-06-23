@@ -47,7 +47,7 @@
 
 #define CLUSTER_DO_CACHE            (random_uint32() < (UINT32_MAX * CLUSTER_CACHE_PROB))
 
-#define CLUSTER_RANDOM_CHUNK        (random_uint32() % CCNLRIOT_CACHE_SIZE)
+#define CLUSTER_RANDOM_CHUNK        (random_uint32() % ccnl_relay.contentcnt)
 
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 
