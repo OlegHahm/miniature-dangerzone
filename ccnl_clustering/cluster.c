@@ -211,6 +211,7 @@ void *_loop(void *arg)
                         else {
                             LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
                             cluster_state = CLUSTER_STATE_DEPUTY;
+                            ccnl_helper_reset();
                             cluster_wakeup();
                         }
                         cluster_period_counter = CLUSTER_X * CLUSTER_D;
@@ -228,6 +229,15 @@ void *_loop(void *arg)
                         }
                         cluster_my_prefix_interest_count = 0;
 #endif
+
+#if CLUSTER_PUBLISH_OLD
+                        if (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1)) {
+                            LOG_DEBUG("cluster: publish some old date\n");
+                            ccnl_helper_publish_content();
+                        }
+                        LOG_DEBUG("cluster: currently flagged in cache: %u\n", (unsigned) ccnl_helper_flagged_cache);
+#endif
+
                         if ((!force_awake) && CLUSTER_GO_SLEEP) {
                             LOG_DEBUG("cluster: go sleeping\n");
                             cluster_state = CLUSTER_STATE_INACTIVE;

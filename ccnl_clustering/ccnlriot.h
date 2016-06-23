@@ -54,6 +54,9 @@
 
 extern struct ccnl_prefix_s *ccnl_helper_all_pfx;
 extern struct ccnl_prefix_s *ccnl_helper_my_pfx;
+extern uint8_t ccnl_helper_flagged_cache;
+
+void ccnl_helper_reset(void);
 
 void ccnl_helper_init(void);
 
@@ -64,7 +67,11 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
 int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                       struct ccnl_pkt_s *pkt);
+
+void ccnl_helper_publish_content(void);
+
 int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c);
+
 struct ccnl_interest_s *ccnl_helper_create_int(struct ccnl_prefix_s *prefix);
 struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t

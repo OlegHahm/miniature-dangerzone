@@ -19,6 +19,7 @@ typedef enum {
 /* public variables */
 struct ccnl_prefix_s *ccnl_helper_all_pfx;
 struct ccnl_prefix_s *ccnl_helper_my_pfx;
+uint8_t ccnl_helper_flagged_cache = 0;
 
 /* buffers for interests and content */
 static unsigned char _int_buf[CCNLRIOT_BUF_SIZE];
@@ -33,13 +34,37 @@ struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 /* internal variables */
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
+static bool _first_time_full = false;
 
 void ccnl_helper_init(void)
 {
     unsigned cn = 0;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
     ccnl_helper_all_pfx = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, &cn);
+    ccnl_helper_reset();
 }
+
+void ccnl_helper_reset(void)
+{
+    struct ccnl_content_s *cit;
+    for (cit = ccnl_relay.contents; cit; cit = cit->next) {
+        cit->flags &= ~CCNL_CONTENT_FLAGS_USER2;
+    }
+}
+
+static uint8_t _cache_flagged_check(uint8_t flag)
+{
+    uint8_t i = 0;
+    struct ccnl_content_s *cit;
+    for (cit = ccnl_relay.contents; cit; cit = cit->next) {
+        if (cit->flags & flag) {
+            i++;
+        }
+    }
+
+    return i;
+}
+
 
 /**
  * @brief create a content struct
@@ -287,6 +312,7 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
 
     if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
         LOG_DEBUG("ccnl_helper:  adding content to cache\n");
+        c->flags |= CCNL_CONTENT_FLAGS_USER2;
         if (ccnl_content_add2cache(relay, c) == NULL) {
             LOG_DEBUG("ccnl_helper:  adding to cache failed, discard packet\n");
             ccnl_free(c);
@@ -397,6 +423,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 /* this is our own content, so we know that it is always the newest */
                 _unflag_cs(relay, my_id);
                 c->flags |= CCNL_CONTENT_FLAGS_USER1;
+                c->flags |= CCNL_CONTENT_FLAGS_USER2;
                 if (ccnl_content_add2cache(relay, c) == NULL) {
                     LOG_WARNING("ccnl_helper:  adding to cache failed, discard packet\n");
                     ccnl_free(c);
@@ -546,8 +573,13 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 
     /* check if this is a for any data */
-    if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||
-        (cluster_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) {
+    if (((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||
+        (cluster_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) &&
+#if CLUSTER_PUBLISH_OLD
+        (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1))) {
+#else
+        (1) {
+#endif
         if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
 
             cluster_my_prefix_interest_count++;
@@ -669,6 +701,25 @@ out:
     return res;
 }
 
+#if CLUSTER_PUBLISH_OLD
+void ccnl_helper_publish_content(void)
+{
+    uint8_t i = 0, start_pos = (ccnl_relay.contentcnt - CLUSTER_PUBLISH_OLD);
+    struct ccnl_content_s *cit;
+
+    /* get to start position */
+    for (cit = ccnl_relay.contents; (cit && (i < start_pos)); cit = cit->next) {
+        i++;
+    }
+
+    /* now start publishing */
+    for (; cit; cit = cit->next) {
+        ccnl_broadcast(&ccnl_relay, cit->pkt);
+        LOG_DEBUG("ccnl_helper: try to publish chunk #%i\n", i);
+    }
+}
+#endif
+
 #if CLUSTER_CACHE_RM_STRATEGY
 /**
  * @brief Caching strategy: oldest representative
@@ -680,12 +731,17 @@ out:
  */
 int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *c)
 {
+    if (!_first_time_full) {
+        ccnl_helper_reset();
+        _first_time_full = true;
+    }
     struct ccnl_content_s *c2, *oldest = NULL, *oldest_same = NULL,
                           *oldest_unflagged = NULL, *oldest_unregistered = NULL;
     long oldest_unregistered_ts = 0;
     long oldest_ts = 0;
     long oldest_same_ts = 0;
     long oldest_unflagged_ts = 0;
+
     for (c2 = relay->contents; c2; c2 = c2->next) {
         if (c->pkt->pfx->compcnt < 4) {
             LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
@@ -727,6 +783,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
         ccnl_content_remove(relay, oldest_same);
         mutex_lock(&(relay->cache_write_lock));
+        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
         return 1;
     }
     if (oldest_unflagged) {
@@ -734,6 +791,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest unflagged entry from cache\n");
         ccnl_content_remove(relay, oldest_unflagged);
         mutex_lock(&(relay->cache_write_lock));
+        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
         return 1;
     }
     if (oldest_unregistered) {
@@ -741,6 +799,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest entry that doesn't match our prefix from cache\n");
         ccnl_content_remove(relay, oldest_unregistered);
         mutex_lock(&(relay->cache_write_lock));
+        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
         return 1;
     }
     if (oldest_ts > c_ts) {
@@ -752,6 +811,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest overall entry from cache\n");
         ccnl_content_remove(relay, oldest);
         mutex_lock(&(relay->cache_write_lock));
+        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
         return 1;
     }
     return 1;

@@ -29,6 +29,7 @@
 #endif
 
 #define CLUSTER_UPDATE_INTERESTS    (5)
+#define CLUSTER_PUBLISH_OLD         (3)
 
 #define CLUSTER_RAND_UPDATES        (0)
 
