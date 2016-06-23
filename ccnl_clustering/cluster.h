@@ -13,7 +13,7 @@
 #endif
 
 #define CLUSTER_D                   (3)
-#define CLUSTER_X                   (2)
+#define CLUSTER_X                   (4)
 #define CLUSTER_P                   (0.95)
 #define CLUSTER_PERIOD              (17)
 
