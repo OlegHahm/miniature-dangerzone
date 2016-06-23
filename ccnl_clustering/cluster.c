@@ -215,12 +215,15 @@ void *_loop(void *arg)
                         }
                         cluster_period_counter = CLUSTER_X * CLUSTER_D;
                         cluster_second_timer();
+#if CLUSTER_STAY_AWAKE_PFX
+                        cluster_my_prefix_interest_count = 0;
+#endif
                     }
                     else {
                         bool force_awake = false;
 #if CLUSTER_STAY_AWAKE_PFX
-                        if (cluster_my_prefix_interest_count <= CLUSTER_UPDATE_INTERESTS / 2) {
-                            LOG_INFO("cluster: didn't see enough interests (%i < %i) for my prefix, stay awake\n", (int) cluster_my_prefix_interest_count, (CLUSTER_UPDATE_INTERESTS / 2));
+                        if (cluster_my_prefix_interest_count <= CLUSTER_UPDATE_INTERESTS * 2) {
+                            LOG_INFO("cluster: didn't see enough interests (%i < %i) for my prefix, stay awake\n", (int) cluster_my_prefix_interest_count, (CLUSTER_UPDATE_INTERESTS * 2));
                             force_awake = true;
                         }
                         cluster_my_prefix_interest_count = 0;
