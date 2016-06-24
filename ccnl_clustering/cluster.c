@@ -191,6 +191,15 @@ void *_loop(void *arg)
                 LOG_DEBUG("cluster: SECOND: %u\n", (unsigned) cluster_period_counter);
                 xtimer_remove(&cluster_timer);
                 cluster_period_counter--;
+
+#if CLUSTER_PUBLISH_OLD
+                if (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1)) {
+                    LOG_DEBUG("cluster: publish some old date\n");
+                    ccnl_helper_publish_content();
+                }
+                LOG_DEBUG("cluster: currently flagged in cache: %u\n", (unsigned) ccnl_helper_flagged_cache);
+#endif
+
 #if CLUSTER_DEPUTY
                 if (xtimer_now() >= (_last_deputy_ts + (_sleep_period * SEC_IN_USEC))) {
                     if (cluster_period_counter > 0) {
@@ -228,14 +237,6 @@ void *_loop(void *arg)
                             force_awake = true;
                         }
                         cluster_my_prefix_interest_count = 0;
-#endif
-
-#if CLUSTER_PUBLISH_OLD
-                        if (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1)) {
-                            LOG_DEBUG("cluster: publish some old date\n");
-                            ccnl_helper_publish_content();
-                        }
-                        LOG_DEBUG("cluster: currently flagged in cache: %u\n", (unsigned) ccnl_helper_flagged_cache);
 #endif
 
                         if ((!force_awake) && CLUSTER_GO_SLEEP) {
