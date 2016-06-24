@@ -137,6 +137,8 @@
 #define CLUSTER_MSG_RECEIVED_INT    (0x4452)
 /** @} */
 
+#define CLUSTER_MSG_QUEUE_SIZE      (64)
+
 /** current state */
 typedef enum {
     CLUSTER_STATE_DEPUTY,
