@@ -77,7 +77,8 @@
 /** a node stays active if a certain threshold of interests for its prefix was
  * not observed during last cycle */
 #if CLUSTER_UPDATE_INTERESTS
-#   define CLUSTER_STAY_AWAKE_PFX   (1)
+#   define CLUSTER_STAY_AWAKE_PFX       (1)
+#   define CLUSTER_STAY_AWAKE_MIN_THR   (2)
 #else
 #   define CLUSTER_STAY_AWAKE_PFX   (0)
 #endif

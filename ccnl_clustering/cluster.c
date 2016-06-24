@@ -231,10 +231,12 @@ void *_loop(void *arg)
                     }
                     else {
                         bool force_awake = false;
+                        uint32_t active_period_duration = (CLUSTER_X * CLUSTER_D);
 #if CLUSTER_STAY_AWAKE_PFX
-                        if (cluster_my_prefix_interest_count <= CLUSTER_UPDATE_INTERESTS * 2) {
-                            LOG_INFO("cluster: didn't see enough interests (%i < %i) for my prefix, stay awake\n", (int) cluster_my_prefix_interest_count, (CLUSTER_UPDATE_INTERESTS * 2));
+                        if (cluster_my_prefix_interest_count < CLUSTER_STAY_AWAKE_MIN_THR) {
+                            LOG_INFO("cluster: didn't see enough interests (%i < %i) for my prefix, stay awake\n", (int) cluster_my_prefix_interest_count, CLUSTER_STAY_AWAKE_MIN_THR);
                             force_awake = true;
+                            active_period_duration = CLUSTER_D;
                         }
                         cluster_my_prefix_interest_count = 0;
 #endif
@@ -246,7 +248,7 @@ void *_loop(void *arg)
                         }
                         else {
                             LOG_DEBUG("cluster: stay active\n");
-                            cluster_period_counter = CLUSTER_X * CLUSTER_D;
+                            cluster_period_counter = active_period_duration;
                             cluster_second_timer();
                         }
                     }
