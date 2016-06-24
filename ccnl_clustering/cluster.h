@@ -63,14 +63,14 @@
 #endif
 /** @} */
 
-/** how many interests a node should send after waking up (either for /* or its
+/** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
 #define CLUSTER_UPDATE_INTERESTS    (5)
 /** how many chunks for oldest content a node should sent after detecting that
  * its cache has been completely refreshed */
 #define CLUSTER_PUBLISH_OLD         (3)
 
-/** if node is about to respond to an interest for /* or its prefix, it will
+/** if node is about to respond to an interest for * or its prefix, it will
  * select a random chunk from its cache for the response if this is set to 1*/
 #define CLUSTER_RAND_UPDATES        (0)
 
@@ -86,7 +86,7 @@
 /** the maximum number of sensors a node can have */
 #define CLUSTER_SENSOR_MAX_NR       (5)
 
-/** 
+/**
  * @}
  */
 
@@ -106,7 +106,7 @@
 #define CLUSTER_STAY_AWAKE_PERIOD   (100 * MS_IN_USEC)
 
 #define CLUSTER_STARTUP_DELAY       (CLUSTER_D * (random_uint32() & 0x000001FF) * MS_IN_USEC)
-/** 
+/**
  * @}
  */
 
