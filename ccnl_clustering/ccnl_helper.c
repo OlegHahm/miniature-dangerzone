@@ -32,8 +32,10 @@ void free_packet(struct ccnl_pkt_s *pkt);
 struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 
 /* internal variables */
+#if CLUSTER_DEPUTY
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
+#endif
 static bool _first_time_full = false;
 
 void ccnl_helper_init(void)
@@ -51,20 +53,6 @@ void ccnl_helper_reset(void)
         cit->flags &= ~CCNL_CONTENT_FLAGS_USER2;
     }
 }
-
-static uint8_t _cache_flagged_check(uint8_t flag)
-{
-    uint8_t i = 0;
-    struct ccnl_content_s *cit;
-    for (cit = ccnl_relay.contents; cit; cit = cit->next) {
-        if (cit->flags & flag) {
-            i++;
-        }
-    }
-
-    return i;
-}
-
 
 /**
  * @brief create a content struct
@@ -189,6 +177,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     ccnl_free(c);
 }
 
+#if CLUSTER_DEPUTY
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
     assert(pkt->content != NULL);
@@ -215,7 +204,6 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
     return false;
 }
 
-#if CLUSTER_DEPUTY
 void ccnl_helper_clear_pit_for_own(void)
 {
     /* check if we have a PIT entry for our own content and remove it */
@@ -279,12 +267,22 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     long c_ts = strtol((char*) c->pkt->pfx->comp[3], NULL, 16);
     long cit_ts;
     struct ccnl_content_s *cit;
+    ccnl_helper_removed_t unflagged = CCNL_HELPER_REMOVED_NOTHING;
     for (cit = relay->contents; cit; cit = cit->next) {
         if (cit->pkt->pfx->compcnt < 4) {
             LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
             continue;
         }
         if (ccnl_prefix_cmp(cit->pkt->pfx, NULL, c->pkt->pfx, CMP_MATCH) >= 3) {
+            /* unflag everything and flag the newest once we're done */
+            if (cit->flags & CCNL_CONTENT_FLAGS_USER1) {
+                cit->flags &= ~CCNL_CONTENT_FLAGS_USER1;
+                unflagged |= CCNL_HELPER_REMOVED_NEWEST_FLAG;
+            }
+            if (cit->flags & CCNL_CONTENT_FLAGS_STATIC) {
+                cit->flags &= ~CCNL_CONTENT_FLAGS_STATIC;
+                unflagged |= CCNL_HELPER_REMOVED_PRIO_FLAG;
+            }
             cit_ts = strtol((char*) cit->pkt->pfx->comp[3], NULL, 16);
             if (cit_ts > c_ts) {
                 newest = cit;
@@ -294,7 +292,6 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     }
     /* no newer entry found, flag this one */
     if (newest == NULL) {
-        ccnl_helper_removed_t unflagged = _unflag_cs(relay, (char*) c->pkt->pfx->comp[2]);
         (void) unflagged;
 #if CLUSTER_PRIO_CACHE
         /* if no newest flag was removed, we haven't had any value for this source */
@@ -308,6 +305,15 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
         }
 #endif
         c->flags |= CCNL_CONTENT_FLAGS_USER1;
+    }
+    /* if a newer entry was found, restore its flags */
+    else {
+        newest->flags |= CCNL_CONTENT_FLAGS_USER1;
+#if CLUSTER_PRIO_CACHE
+        if (unflagged & CCNL_HELPER_REMOVED_PRIO_FLAG) {
+            newest->flags |= CCNL_CONTENT_FLAGS_STATIC;
+        }
+#endif
     }
 
     if (relay->max_cache_entries != 0) { // it's set to -1 or a limit
@@ -373,6 +379,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 
     struct ccnl_interest_s *i = NULL;
+#if CLUSTER_DEPUTY
     /* if we don't have this content, we check if we have a matching PIT entry */
     bool is_dup = _cont_is_dup(pkt);
     if (!is_dup) {
@@ -390,8 +397,11 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             i = i->next;
         }
     }
+#endif
 
-    /* we don't have a PIT entry for this */
+    /* for the non-deputy approach this shouldn't happen anyway, since content
+     * dissemination is not interest driven
+     * we don't have a PIT entry for this */
     if (!i) {
 #if CLUSTER_DEBUG
         cluster_state = CLUSTER_STATE_DEPUTY;
@@ -525,6 +535,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
+#if CLUSTER_DEPUTY
     /* check if we have a PIT entry for this interest and a corresponding entry
      * in the content store */
     struct ccnl_interest_s *i = relay->pit;
@@ -564,6 +575,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             LOG_DEBUG("ccnl_helper: nope, we cannot serve this\n");
         }
     }
+#endif
 
     /* avoid interest flooding */
     if (cluster_state == CLUSTER_STATE_INACTIVE) {
@@ -742,10 +754,15 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
     long oldest_same_ts = 0;
     long oldest_unflagged_ts = 0;
 
+    unsigned count_user_flag2 = 0;
+
     for (c2 = relay->contents; c2; c2 = c2->next) {
         if (c->pkt->pfx->compcnt < 4) {
             LOG_WARNING("ccnl_helper: invalid prefix found in cache, skipping\n");
             continue;
+        }
+        if (c2->flags & CCNL_CONTENT_FLAGS_USER2) {
+            count_user_flag2++;
         }
         long c2_ts = strtol((char*) c2->pkt->pfx->comp[3], NULL, 16);
         if (!(c2->flags & CCNL_CONTENT_FLAGS_STATIC)) {
@@ -783,7 +800,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest entry for this prefix from cache\n");
         ccnl_content_remove(relay, oldest_same);
         mutex_lock(&(relay->cache_write_lock));
-        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
+        ccnl_helper_flagged_cache = count_user_flag2;
         return 1;
     }
     if (oldest_unflagged) {
@@ -791,7 +808,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest unflagged entry from cache\n");
         ccnl_content_remove(relay, oldest_unflagged);
         mutex_lock(&(relay->cache_write_lock));
-        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
+        ccnl_helper_flagged_cache = count_user_flag2;
         return 1;
     }
     if (oldest_unregistered) {
@@ -799,7 +816,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest entry that doesn't match our prefix from cache\n");
         ccnl_content_remove(relay, oldest_unregistered);
         mutex_lock(&(relay->cache_write_lock));
-        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
+        ccnl_helper_flagged_cache = count_user_flag2;
         return 1;
     }
     if (oldest_ts > c_ts) {
@@ -811,7 +828,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
         LOG_DEBUG("ccnl_helper: remove oldest overall entry from cache\n");
         ccnl_content_remove(relay, oldest);
         mutex_lock(&(relay->cache_write_lock));
-        ccnl_helper_flagged_cache = _cache_flagged_check(CCNL_CONTENT_FLAGS_USER2);
+        ccnl_helper_flagged_cache = count_user_flag2;
         return 1;
     }
     return 1;
