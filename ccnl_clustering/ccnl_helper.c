@@ -36,7 +36,10 @@ struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
 #endif
+
+#if CLUSTER_CACHE_RM_STRATEGY
 static bool _first_time_full = false;
+#endif
 
 void ccnl_helper_init(void)
 {
