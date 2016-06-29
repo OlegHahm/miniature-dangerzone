@@ -56,7 +56,7 @@
 /** autoconfiguration of prioritized content based on the first names that
  * arrive - this variable sets the threshold for this */
 #if CLUSTER_CACHE_RM_STRATEGY
-//#   define CLUSTER_PRIO_CACHE       (CCNLRIOT_CACHE_SIZE / 3)
+//#   define CLUSTER_PRIO_CACHE       (CCNLRIOT_CACHE_SIZE / 2)
 #   define CLUSTER_PRIO_CACHE       (0)
 #else
 #   define CLUSTER_PRIO_CACHE       (0)

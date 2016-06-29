@@ -625,6 +625,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #endif
             int i = 0;
             struct ccnl_content_s *failsafe = NULL;
+            (void) failsafe;
             while ((i < pos) && (i < CCNLRIOT_CACHE_SIZE) && (cit != NULL)) {
                 if (!cluster_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
                     failsafe = cit;
@@ -729,6 +730,7 @@ void ccnl_helper_publish_content(void)
 
     /* now start publishing */
     for (; cit; cit = cit->next) {
+//        if (!cluster_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
         ccnl_broadcast(&ccnl_relay, cit->pkt);
         LOG_DEBUG("ccnl_helper: try to publish chunk #%i\n", i);
     }
