@@ -52,7 +52,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
 static void _populate_data(struct ccnl_prefix_s *pfx);
 #endif
 static void _radio_sleep(void);
@@ -267,7 +267,7 @@ void *_loop(void *arg)
             case CLUSTER_MSG_NEWDATA:
                 LOG_DEBUG("cluster: received newdata msg\n");
                 cluster_new_data();
-#if !CLUSTER_DEPUTY
+#if !CLUSTER_INT_INT
                 /* give the transceiver some time to finish its job */
                 if (cluster_state == CLUSTER_STATE_INACTIVE) {
                     xtimer_usleep(5000);
@@ -295,7 +295,7 @@ void *_loop(void *arg)
                 break;
             case CLUSTER_MSG_RECEIVED:
                 LOG_DEBUG("cluster: received a content chunk ");
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
                 static char _prefix_str[CCNLRIOT_PFX_LEN];
                 struct ccnl_prefix_s *pfx = (struct ccnl_prefix_s*)m.content.ptr;
                 ccnl_prefix_to_path_detailed(_prefix_str, pfx, 1, 0, 0);
@@ -348,7 +348,7 @@ static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
 static void _radio_sleep(void)
 {
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
     if (cluster_prevent_sleep > 0) {
         if (ccnl_relay.pit == NULL) {
             LOG_DEBUG("cluster: no PIT entries, reset pending counter\n");
@@ -417,7 +417,9 @@ void cluster_takeover(void)
 {
     _last_deputy_ts = xtimer_now();
     LOG_INFO("\n\ncluster: change to state DEPUTY\n\n");
+#if CLUSTER_INT_INT
     ccnl_helper_clear_pit_for_own();
+#endif
     cluster_state = CLUSTER_STATE_DEPUTY;
     cluster_wakeup();
     unsigned cn = 0;
@@ -516,7 +518,7 @@ void cluster_new_data(void)
         LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, false);
 #else
         xtimer_usleep(500 * 1000);
@@ -526,7 +528,7 @@ void cluster_new_data(void)
     }
 }
 
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
 static void _populate_data(struct ccnl_prefix_s *pfx)
 {
     /* first wake up radio (if necessary) */

@@ -32,7 +32,7 @@ void free_packet(struct ccnl_pkt_s *pkt);
 struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 
 /* internal variables */
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
 static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
 #endif
@@ -180,7 +180,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     ccnl_free(c);
 }
 
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
     assert(pkt->content != NULL);
@@ -206,7 +206,9 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
     cc->num = old;
     return false;
 }
+#endif
 
+#if CLUSTER_INT_INT
 void ccnl_helper_clear_pit_for_own(void)
 {
     /* check if we have a PIT entry for our own content and remove it */
@@ -382,7 +384,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 
     struct ccnl_interest_s *i = NULL;
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
     /* if we don't have this content, we check if we have a matching PIT entry */
     bool is_dup = _cont_is_dup(pkt);
     if (!is_dup) {
@@ -424,7 +426,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
                 struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
 #endif
                 struct ccnl_pkt_s *tmp = pkt;
@@ -442,7 +444,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     ccnl_free(c);
                     free_packet(pkt);
                 }
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
                 /* inform potential waiters in order to send out interest for own content.
                  * hence, this is only necessary in DoW mode */
                 msg_t m = { .type = CLUSTER_MSG_RECEIVED };
@@ -453,6 +455,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             return 1;
         }
         else {
+            int res = 1;
 #if CLUSTER_DEPUTY || CLUSTER_UPDATE_INTERESTS
             /* create an interest if we're waiting for *, because otherwise
              * our PIT entry won't match */
@@ -470,13 +473,13 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 if (cc->num >= 0) {
                     _remove_pit(relay, cc->num);
                 }
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
                 if (is_dup) {
                     LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
                 }
                 else {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
-                        return 0;
+                        res = 0;
                     }
                 }
 #else
@@ -484,7 +487,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 /* XXX: use memcmp */
                 if ((cluster_is_registered && (pkt->pfx->comp[1][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
-                        return 0;
+                        res = 0;
                     }
                 }
                 else {
@@ -500,7 +503,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 }
 
                 cc->num = -1;
-                return 1;
+                return res;
             }
             else {
                 LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
@@ -538,7 +541,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
-#if CLUSTER_DEPUTY
+#if CLUSTER_INT_INT
     /* check if we have a PIT entry for this interest and a corresponding entry
      * in the content store */
     struct ccnl_interest_s *i = relay->pit;

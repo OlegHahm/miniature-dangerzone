@@ -63,6 +63,9 @@
 #endif
 /** @} */
 
+/** use interest-interest for dissemination of unsolicited content */
+#define CLUSTER_INT_INT             (0)
+
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
 #define CLUSTER_UPDATE_INTERESTS    (5)
