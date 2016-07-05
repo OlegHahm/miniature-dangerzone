@@ -700,7 +700,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         res = 1;
         goto out;
     }
-#if !CLUSTER_DEPUTY
+#if !CLUSTER_INT_INT
     else {
         LOG_DEBUG("ccnl_helper: we cannot serve this, discard interest\n");
         free_packet(pkt);
