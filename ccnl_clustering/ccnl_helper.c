@@ -455,8 +455,8 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             return 1;
         }
         else {
-            int res = 1;
 #if CLUSTER_DEPUTY || CLUSTER_UPDATE_INTERESTS
+            int res = 1;
             /* create an interest if we're waiting for *, because otherwise
              * our PIT entry won't match */
             if (pkt->contlen == sizeof(cluster_content_t)) {
@@ -1006,7 +1006,8 @@ int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_
         LOG_WARNING("\nccnl_helper: +++ SUCCESS +++\n");
     }
     else {
-        LOG_WARNING("\nccnl_helper: !!! TIMEOUT while waiting for chunk number %i!!!\n",
+        LOG_WARNING("\nccnl_helper: !!! TIMEOUT while waiting for %s number %i!!!\n",
+                    (wait_for_int ? "interest" : "chunk"),
                     ((chunknum != NULL) ? (int) *chunknum : -1));
     }
 
