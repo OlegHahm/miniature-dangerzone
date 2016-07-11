@@ -119,7 +119,7 @@ static int _debug_cache_date(int argc, char **argv)
 static int _start_dow(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    printf("Settings: %s D:%u X:%u p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u, PSR:%u\n",
+    printf("Settings: %s D:%u X:%u p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u PSR:%u\n",
            (DOW_DEPUTY ? "Deputy" : ""), DOW_D, DOW_X,
            (unsigned) (100U * DOW_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
            (unsigned) DOW_PRIO_CACHE, (unsigned) (100U * DOW_Q),
