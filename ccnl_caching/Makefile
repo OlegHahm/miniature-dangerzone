@@ -1,4 +1,4 @@
-APPLICATION = ccnl_clustering
+APPLICATION = ccnl_caching
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= native

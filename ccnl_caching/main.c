@@ -26,7 +26,7 @@
 #include "xtimer.h"
 #include "net/gnrc/netapi.h"
 
-#include "cluster.h"
+#include "dow.h"
 #include "ccnlriot.h"
 
 /* main thread's message queue */
@@ -37,10 +37,10 @@ static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
 static uint32_t _tlsf_heap[TLSF_BUFFER];
 #endif
 
-char cluster_registered_prefix[3];
-bool cluster_is_registered = false;
-char cluster_sensors[CLUSTER_SENSOR_MAX_NR][3];
-uint8_t cluster_sensor_nr = 0;
+char dow_registered_prefix[3];
+bool dow_is_registered = false;
+char dow_sensors[DOW_SENSOR_MAX_NR][3];
+uint8_t dow_sensor_nr = 0;
 
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
@@ -64,23 +64,23 @@ const shell_command_t shell_commands[] = {
 int _stats(int argc, char **argv) {
     (void) argc; (void) argv;
     printf("RX: %04" PRIu32 ", TX: %04" PRIu32 "\n", ccnl_relay.ifs[0].rx_cnt, ccnl_relay.ifs[0].tx_cnt);
-    if (cluster_sleeping) {
-        printf("active: %u, sleeping: %u\n", (unsigned) cluster_time_active, (unsigned) (cluster_time_sleeping + (xtimer_now() - cluster_ts_wakeup)));
+    if (dow_sleeping) {
+        printf("active: %u, sleeping: %u\n", (unsigned) dow_time_active, (unsigned) (dow_time_sleeping + (xtimer_now() - dow_ts_wakeup)));
     }
     else {
-        printf("active: %u, sleeping: %u\n", (unsigned) (cluster_time_active + (xtimer_now() - cluster_ts_sleep)), (unsigned) cluster_time_sleeping);
+        printf("active: %u, sleeping: %u\n", (unsigned) (dow_time_active + (xtimer_now() - dow_ts_sleep)), (unsigned) dow_time_sleeping);
     }
     return 0;
 }
 
 int _cs(int argc, char **argv) {
     (void) argc; (void) argv;
-#if CLUSTER_DEBUG
+#if DOW_DEBUG
     gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
 #else
     printf("%u CS command\n", (unsigned) xtimer_now());
-    //if ((cluster_state != CLUSTER_STATE_INACTIVE) && (cluster_state != CLUSTER_STATE_HANDOVER)) {
-    if (cluster_state != CLUSTER_STATE_INACTIVE)  {
+    //if ((dow_state != DOW_STATE_INACTIVE) && (dow_state != DOW_STATE_HANDOVER)) {
+    if (dow_state != DOW_STATE_INACTIVE)  {
         gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
         //ccnl_cs_dump(&ccnl_relay);
         printf("%u DONE\n", (unsigned) xtimer_now());
@@ -107,7 +107,7 @@ static int _debug_cache_date(int argc, char **argv)
     LOG_INFO("main: DEBUG DATA: %s\n", pfx);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
-        LOG_ERROR("cluster: We're doomed, WE ARE ALL DOOMED!\n");
+        LOG_ERROR("caching: We're doomed, WE ARE ALL DOOMED!\n");
     }
     else {
         ccnl_helper_create_cont(prefix, (unsigned char*) argv[2], strlen(argv[2]) + 1, true, false);
@@ -119,34 +119,34 @@ static int _debug_cache_date(int argc, char **argv)
 static int _start_dow(int argc, char **argv)
 {
     (void) argc; (void) argv;
-    printf("Settings: %s D:%u X:%u p:%u P:%u CS:%u PRIO:%u CPROB: %u INTUPD:%u STAYAWAKE:%u, PUBOLD:%u\n",
-           (CLUSTER_DEPUTY ? "Deputy" : ""), CLUSTER_D, CLUSTER_X,
-           (unsigned) (100U * CLUSTER_P), CLUSTER_PERIOD, CCNLRIOT_CACHE_SIZE,
-           (unsigned) CLUSTER_PRIO_CACHE, (unsigned) (100U * CLUSTER_CACHE_PROB),
-           (unsigned) CLUSTER_UPDATE_INTERESTS, (unsigned) CLUSTER_STAY_AWAKE_PFX,
-           (unsigned) CLUSTER_PUBLISH_OLD);
+    printf("Settings: %s D:%u X:%u p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u, PSR:%u\n",
+           (DOW_DEPUTY ? "Deputy" : ""), DOW_D, DOW_X,
+           (unsigned) (100U * DOW_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
+           (unsigned) DOW_PRIO_CACHE, (unsigned) (100U * DOW_Q),
+           (unsigned) DOW_PER, (unsigned) DOW_KEEP_ALIVE_PFX,
+           (unsigned) DOW_PSR);
 
-    cluster_init();
+    dow_init();
     thread_yield_higher();
     return 0;
 }
 
 static void _subsribe(char c) {
-    cluster_registered_prefix[0] = '/';
-    cluster_registered_prefix[1] = c;
-    cluster_registered_prefix[2] = '\0';
-    cluster_is_registered = true;
+    dow_registered_prefix[0] = '/';
+    dow_registered_prefix[1] = c;
+    dow_registered_prefix[2] = '\0';
+    dow_is_registered = true;
 
     unsigned cn = 0;
     char tmp[5];
     snprintf(tmp, 5, "%s/%c", CCNLRIOT_TYPE_PREFIX, c);
     ccnl_helper_my_pfx = ccnl_URItoPrefix(tmp, CCNL_SUITE_NDNTLV, NULL, &cn);
-    printf("cluster_registered_prefix: %s\n", cluster_registered_prefix);
+    printf("dow_registered_prefix: %s\n", dow_registered_prefix);
 }
 
 static int _sub_prefix(int argc, char **argv)
 {
-    if (cluster_is_registered) {
+    if (dow_is_registered) {
         puts("Already registered, failing.");
         return 1;
     }
@@ -166,24 +166,24 @@ static int _add_sensor(int argc, char **argv)
         return 1;
     }
 
-    if (cluster_sensor_nr >= CLUSTER_SENSOR_MAX_NR) {
+    if (dow_sensor_nr >= DOW_SENSOR_MAX_NR) {
         puts("Max. number of sensors already registered.");
         return 1;
     }
 
-    cluster_sensors[cluster_sensor_nr][0] = '/';
-    cluster_sensors[cluster_sensor_nr][1] = argv[1][0];
-    cluster_sensors[cluster_sensor_nr][2] = '\0';
+    dow_sensors[dow_sensor_nr][0] = '/';
+    dow_sensors[dow_sensor_nr][1] = argv[1][0];
+    dow_sensors[dow_sensor_nr][2] = '\0';
 
-    printf("added sensor %i: %s\n", cluster_sensor_nr, cluster_sensors[cluster_sensor_nr]);
+    printf("added sensor %i: %s\n", dow_sensor_nr, dow_sensors[dow_sensor_nr]);
 
-#if CLUSTER_CACHE_RM_STRATEGY
-    if (!cluster_is_registered) {
-        _subsribe(cluster_sensors[cluster_sensor_nr][1]);
+#if DOW_CACHE_REPL_STRAT
+    if (!dow_is_registered) {
+        _subsribe(dow_sensors[dow_sensor_nr][1]);
     }
 #endif
 
-    cluster_sensor_nr++;
+    dow_sensor_nr++;
 
     return 0;
 }
@@ -195,10 +195,10 @@ int main(void)
 #endif
     msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
 
-    printf("CCN cluster started\n");
+    printf("CCN caching started\n");
 
-#if CLUSTER_AUTOSTART
-    cluster_init();
+#if DOW_AUTOSTART
+    dow_init();
     thread_yield_higher();
 #endif
     /* start the shell */

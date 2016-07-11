@@ -6,7 +6,7 @@
 #include "net/gnrc/pktbuf.h"
 #include "ccnl-pkt-ndntlv.h"
 
-#include "cluster.h"
+#include "dow.h"
 #include "ccnlriot.h"
 #include "log.h"
 
@@ -32,12 +32,12 @@ void free_packet(struct ccnl_pkt_s *pkt);
 struct ccnl_prefix_s *ccnl_prefix_dup(struct ccnl_prefix_s *prefix);
 
 /* internal variables */
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
 static xtimer_t _sleep_timer = { .target = 0, .long_target = 0 };
-static msg_t _sleep_msg = { .type = CLUSTER_MSG_BACKTOSLEEP };
+static msg_t _sleep_msg = { .type = DOW_MSG_BACKTOSLEEP };
 #endif
 
-#if CLUSTER_CACHE_RM_STRATEGY
+#if DOW_CACHE_REPL_STRAT
 static bool _first_time_full = false;
 #endif
 
@@ -62,7 +62,7 @@ void ccnl_helper_reset(void)
  *
  * @param[in] prefix    name of the content
  * @param[in] value     content itself (will get filled into a
- *                      @ref cluster_content_t struct
+ *                      @ref dow_content_t struct
  * @param[in] cache     if true, sends data via loopback to self for caching
  *
  * @returns pointer to new content chunk
@@ -71,17 +71,17 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
                                                unsigned char *value, ssize_t
                                                len, bool cache, bool send)
 {
-    if (len > (CLUSTER_CONT_LEN + 1)) {
+    if (len > (DOW_CONT_LEN + 1)) {
         LOG_ERROR("ccnl_helper: Too long content. This is not acceptable!!!\n");
         return NULL;
     }
     int offs = CCNL_MAX_PACKET_SIZE;
 
-    cluster_content_t my_cont;
-    memset(&my_cont.value, 0, CLUSTER_CONT_LEN + 1);
+    dow_content_t my_cont;
+    memset(&my_cont.value, 0, DOW_CONT_LEN + 1);
     memcpy(my_cont.value, value, len);
     my_cont.num = -1;
-    len = sizeof(cluster_content_t);
+    len = sizeof(dow_content_t);
 
     ssize_t arg_len = ccnl_ndntlv_prependContent(prefix, (unsigned char*) &my_cont, len, NULL, NULL, &offs, _out);
 
@@ -171,7 +171,7 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     if (c == NULL) {
         return;
     }
-    cluster_content_t *cc = (cluster_content_t*) c->pkt->content;
+    dow_content_t *cc = (dow_content_t*) c->pkt->content;
     cc->num = num;
     ccnl_face_enqueue(relay, from, ccnl_buf_new(c->pkt->buf->data,
                                                 c->pkt->buf->datalen));
@@ -180,18 +180,18 @@ static void _send_ack(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     ccnl_free(c);
 }
 
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
 static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 {
     assert(pkt->content != NULL);
     /* save old value */
-    cluster_content_t *cc = (cluster_content_t*) pkt->content;
+    dow_content_t *cc = (dow_content_t*) pkt->content;
     int old = cc->num;
     /* set to -1 for comparison */
     cc->num = -1;
 
     for (struct ccnl_content_s *c = ccnl_relay.contents; c; c = c->next) {
-        cluster_content_t *ccc = (cluster_content_t*) c->pkt->content;
+        dow_content_t *ccc = (dow_content_t*) c->pkt->content;
         int cold = ccc->num;
         ccc->num = -1;
         if ((c->pkt->buf) && (pkt->buf) &&
@@ -208,7 +208,7 @@ static bool _cont_is_dup(struct ccnl_pkt_s *pkt)
 }
 #endif
 
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
 void ccnl_helper_clear_pit_for_own(void)
 {
     /* check if we have a PIT entry for our own content and remove it */
@@ -241,7 +241,7 @@ static ccnl_helper_removed_t _unflag_cs(struct ccnl_relay_s *relay, char *source
     struct ccnl_content_s *c = relay->contents;
     while (c) {
         if ((c->pkt->pfx->compcnt > 3) && (memcmp(source, c->pkt->pfx->comp[2],
-                                                  CLUSTER_CONT_LEN) == 0)) {
+                                                  DOW_CONT_LEN) == 0)) {
             if (c->flags & CCNL_CONTENT_FLAGS_USER1) {
                 unflagged |= CCNL_HELPER_REMOVED_NEWEST_FLAG;
                 c->flags &= ~CCNL_CONTENT_FLAGS_USER1;
@@ -298,11 +298,11 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     /* no newer entry found, flag this one */
     if (newest == NULL) {
         (void) unflagged;
-#if CLUSTER_PRIO_CACHE
+#if DOW_PRIO_CACHE
         /* if no newest flag was removed, we haven't had any value for this source */
         if (!(unflagged & CCNL_HELPER_REMOVED_NEWEST_FLAG) &&
-            (cluster_prio_cache_cnt < CLUSTER_PRIO_CACHE)) {
-            cluster_prio_cache_cnt++;
+            (dow_prio_cache_cnt < DOW_PRIO_CACHE)) {
+            dow_prio_cache_cnt++;
             c->flags |= CCNL_CONTENT_FLAGS_STATIC;
         }
         else if (unflagged & CCNL_HELPER_REMOVED_PRIO_FLAG) {
@@ -314,7 +314,7 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     /* if a newer entry was found, restore its flags */
     else {
         newest->flags |= CCNL_CONTENT_FLAGS_USER1;
-#if CLUSTER_PRIO_CACHE
+#if DOW_PRIO_CACHE
         if (unflagged & CCNL_HELPER_REMOVED_PRIO_FLAG) {
             newest->flags |= CCNL_CONTENT_FLAGS_STATIC;
         }
@@ -357,10 +357,10 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
-#if CLUSTER_DEPUTY
+#if DOW_DEPUTY
     /* XXX: might be unnecessary du to mutex now */
     /* if we're currently transferring our cache to the new deputy, we do not touch the content store */
-    if (cluster_state == CLUSTER_STATE_HANDOVER) {
+    if (dow_state == DOW_STATE_HANDOVER) {
         LOG_DEBUG("ccnl_helper: we're in handover state, cannot touch content store right now\n");
         free_packet(pkt);
         return 1;
@@ -370,21 +370,21 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     /* check if prefix is for ALL and contains an ACK */
     if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) &&
         (strncmp((char*) pkt->content, CCNLRIOT_CONT_ACK, strlen(CCNLRIOT_CONT_ACK)) == 0)) {
-        cluster_content_t *cc = (cluster_content_t*) pkt->content;
+        dow_content_t *cc = (dow_content_t*) pkt->content;
         LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
         if (cc->num >= 0) {
             _remove_pit(relay, cc->num);
         }
 
         LOG_DEBUG("ccnl_helper: received ACK, flag the content\n");
-        msg_t m = { .type = CLUSTER_MSG_RECEIVED_ACK };
-        msg_try_send(&m, cluster_pid);
+        msg_t m = { .type = DOW_MSG_RECEIVED_ACK };
+        msg_try_send(&m, dow_pid);
         free_packet(pkt);
         return 1;
     }
 
     struct ccnl_interest_s *i = NULL;
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
     /* if we don't have this content, we check if we have a matching PIT entry */
     bool is_dup = _cont_is_dup(pkt);
     if (!is_dup) {
@@ -408,15 +408,15 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
      * dissemination is not interest driven
      * we don't have a PIT entry for this */
     if (!i) {
-#if CLUSTER_DEBUG
-        cluster_state = CLUSTER_STATE_DEPUTY;
+#if DOW_DEBUG
+        dow_state = DOW_STATE_DEPUTY;
 #endif
         /* if we're not deputy (or becoming it), we assume that this is our
          * own content */
-        if (cluster_state != CLUSTER_STATE_DEPUTY) {
+        if (dow_state != DOW_STATE_DEPUTY) {
             char my_id[9];
-            snprintf(my_id, sizeof(my_id), "%08lX", (unsigned long) cluster_my_id);
-#if !CLUSTER_DEBUG
+            snprintf(my_id, sizeof(my_id), "%08lX", (unsigned long) dow_my_id);
+#if !DOW_DEBUG
             if (memcmp(my_id, pkt->pfx->comp[2], 8) != 0) {
                 LOG_DEBUG("ccnl_helper: not my content, ignore it\n");
                 free_packet(pkt);
@@ -426,7 +426,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* cache it */
             if (relay->max_cache_entries != 0) {
                 LOG_DEBUG("ccnl_helper: adding content to cache\n");
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
                 struct ccnl_prefix_s *new = ccnl_prefix_dup(pkt->pfx);
 #endif
                 struct ccnl_pkt_s *tmp = pkt;
@@ -444,24 +444,24 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                     ccnl_free(c);
                     free_packet(pkt);
                 }
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
                 /* inform potential waiters in order to send out interest for own content.
                  * hence, this is only necessary in DoW mode */
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED };
+                msg_t m = { .type = DOW_MSG_RECEIVED };
                 m.content.ptr = (void*)new;
-                msg_try_send(&m, cluster_pid);
+                msg_try_send(&m, dow_pid);
 #endif
             }
             return 1;
         }
         else {
-#if CLUSTER_DEPUTY || CLUSTER_UPDATE_INTERESTS
+#if DOW_DEPUTY || DOW_PER
             int res = 1;
             /* create an interest if we're waiting for *, because otherwise
              * our PIT entry won't match */
-            if (pkt->contlen == sizeof(cluster_content_t)) {
+            if (pkt->contlen == sizeof(dow_content_t)) {
                 LOG_DEBUG("ccnl_helper: seems to be the right content\n");
-                cluster_content_t *cc = (cluster_content_t*) pkt->content;
+                dow_content_t *cc = (dow_content_t*) pkt->content;
                 LOG_DEBUG("%" PRIu32 " ccnl_helper: rcvd prefix: %s\n", xtimer_now(),
                           ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
                 LOG_DEBUG("ccnl_helper: content number is %i\n", cc->num);
@@ -473,7 +473,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 if (cc->num >= 0) {
                     _remove_pit(relay, cc->num);
                 }
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
                 if (is_dup) {
                     LOG_DEBUG("ccnl_helper: we already have this content, do nothing\n");
                 }
@@ -485,7 +485,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #else
                 /* check if we're registered for a certain prefix and compare the first character of it */
                 /* XXX: use memcmp */
-                if ((cluster_is_registered && (pkt->pfx->comp[1][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
+                if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE) {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
                         res = 0;
                     }
@@ -498,20 +498,20 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 if (cc->num >= 0) {
                     /* in case we're waiting for * chunks, try to send a message */
                     LOG_DEBUG("ccnl_helper: inform waiters\n");
-                    msg_t m = { .type = CLUSTER_MSG_RECEIVED };
-                    msg_try_send(&m, cluster_pid);
+                    msg_t m = { .type = DOW_MSG_RECEIVED };
+                    msg_try_send(&m, dow_pid);
                 }
 
                 cc->num = -1;
                 return res;
             }
             else {
-                LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(cluster_content_t));
+                LOG_WARNING("ccnl_helper: content length is %i, was expecting %i\n", pkt->buf->datalen, sizeof(dow_content_t));
             }
 #else
             /* check if we're registered for a certain prefix and compare the first character of it */
             /* XXX: use memcmp */
-            if ((cluster_is_registered && (pkt->pfx->comp[1][0] == cluster_registered_prefix[1])) || CLUSTER_DO_CACHE) {
+            if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE) {
                 if (!_ccnl_helper_handle_content(relay, pkt)) {
                     return 0;
                 }
@@ -541,7 +541,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
 
-#if CLUSTER_INT_INT
+#if DOW_INT_INT
     /* check if we have a PIT entry for this interest and a corresponding entry
      * in the content store */
     struct ccnl_interest_s *i = relay->pit;
@@ -560,18 +560,18 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             if (ccnl_prefix_cmp(c->pkt->pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
                 LOG_DEBUG("ccnl_helper: indeed, we have the content, too -> we "
                           "will serve it, remove PIT entry. (Pending interests "
-                          "for own data: %u)\n", (unsigned) cluster_prevent_sleep);
+                          "for own data: %u)\n", (unsigned) dow_prevent_sleep);
                 /* inform ourselves that the interest was bounced back */
-                msg_t m = { .type = CLUSTER_MSG_RECEIVED_INT };
-                msg_try_send(&m, cluster_pid);
+                msg_t m = { .type = DOW_MSG_RECEIVED_INT };
+                msg_try_send(&m, dow_pid);
 
                 ccnl_interest_remove(relay, i);
-                cluster_prevent_sleep--;
+                dow_prevent_sleep--;
                 /* go to sleep if we're not currently in handover mode */
-                if (cluster_state != CLUSTER_STATE_HANDOVER) {
+                if (dow_state != DOW_STATE_HANDOVER) {
                     LOG_DEBUG("ccnl_helper: going back to sleep in %u microseconds (%i)\n",
-                              CLUSTER_STAY_AWAKE_PERIOD, (int) cluster_pid);
-                    xtimer_set_msg(&_sleep_timer, CLUSTER_STAY_AWAKE_PERIOD, &_sleep_msg, cluster_pid);
+                              DOW_KEEP_ALIVE_PERIOD, (int) dow_pid);
+                    xtimer_set_msg(&_sleep_timer, DOW_KEEP_ALIVE_PERIOD, &_sleep_msg, dow_pid);
                 }
                 return 0;
             }
@@ -584,7 +584,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #endif
 
     /* avoid interest flooding */
-    if (cluster_state == CLUSTER_STATE_INACTIVE) {
+    if (dow_state == DOW_STATE_INACTIVE) {
         LOG_DEBUG("ccnl_helper: pretend to be sleeping\n");
         free_packet(pkt);
         return 1;
@@ -592,15 +592,15 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
     /* check if this is a for any data */
     if (((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||
-        (cluster_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) &&
-#if CLUSTER_PUBLISH_OLD
+        (dow_is_registered && ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, pkt->pfx, CMP_MATCH) >= 2)) &&
+#if DOW_PSR
         (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1))) {
 #else
         (1)) {
 #endif
-        if ((cluster_state == CLUSTER_STATE_DEPUTY) || (cluster_state == CLUSTER_STATE_HANDOVER)) {
+        if ((dow_state == DOW_STATE_DEPUTY) || (dow_state == DOW_STATE_HANDOVER)) {
 
-            cluster_my_prefix_interest_count++;
+            dow_my_prefix_interest_count++;
             /* make sure interest contains a chunknumber */
             if ((pkt->pfx->chunknum == NULL) || (*(pkt->pfx->chunknum) == -1)) {
                 LOG_WARNING("ccnl_helper: no chunknumber? what a fool!\n");
@@ -609,20 +609,20 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 goto out;
             }
 
-#if CLUSTER_DEPUTY
+#if DOW_DEPUTY
             /* check if this is a handover request */
             /* change state (will be done for each requested chunk, we don't care) */
             /* TODO: implement timeout to prevent that we stay in HANDOVER forever */
             LOG_INFO("\n\nccnl_helper: change to state HANDOVER\n\n");
-            cluster_state = CLUSTER_STATE_HANDOVER;
+            dow_state = DOW_STATE_HANDOVER;
 #endif
 
             /* find corresponding chunk in store */
             struct ccnl_content_s *cit = relay->contents;
             LOG_DEBUG("ccnl_helper: received %s request for chunk number %i\n",
                       CCNLRIOT_ALL_PREFIX, *(pkt->pfx->chunknum));
-#if CLUSTER_RAND_UPDATES
-            int pos = CLUSTER_RANDOM_CHUNK;
+#if DOW_RAND_SEEDING
+            int pos = DOW_RANDOM_CHUNK;
 #else
             int pos = *(pkt->pfx->chunknum);
 #endif
@@ -630,7 +630,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             struct ccnl_content_s *failsafe = NULL;
             (void) failsafe;
             while ((i < pos) && (i < CCNLRIOT_CACHE_SIZE) && (cit != NULL)) {
-                if (!cluster_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
+                if (!dow_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
                     failsafe = cit;
                     i++;
                 }
@@ -638,7 +638,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             }
             LOG_DEBUG("ccnl_helper: try to publish chunk #%i (pos: %i)\n", i, pos);
 
-#if !CLUSTER_DEPUTY
+#if !DOW_DEPUTY
             if ((i >= CCNLRIOT_CACHE_SIZE) || (cit == NULL)) {
                 if (failsafe != NULL) {
                     LOG_WARNING("ccnl_helper: using failsafe!\n");
@@ -660,8 +660,8 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
                 /* we can go back to sleep now */
                 /* TODO: delay this */
-                msg_t m = { .type = CLUSTER_MSG_INACTIVE };
-                msg_send(&m, cluster_pid);
+                msg_t m = { .type = DOW_MSG_INACTIVE };
+                msg_send(&m, dow_pid);
                 free_packet(pkt);
                 res = 1;
                 goto out;
@@ -677,7 +677,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             pkt->pfx = new;
 
             LOG_DEBUG("ccnl_helper: setting content num to %i for %p\n", i, (void*) cit->pkt->content);
-            cluster_content_t *cc = (cluster_content_t*) cit->pkt->content;
+            dow_content_t *cc = (dow_content_t*) cit->pkt->content;
             cc->num = i;
 
             LOG_DEBUG("%" PRIu32 " ccnl_helper: publish content for prefix: %s\n", xtimer_now(),
@@ -700,7 +700,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         res = 1;
         goto out;
     }
-#if !CLUSTER_INT_INT
+#if !DOW_INT_INT
     else {
         LOG_DEBUG("ccnl_helper: we cannot serve this, discard interest\n");
         free_packet(pkt);
@@ -709,7 +709,7 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     }
 #endif
 
-    if (cluster_state == CLUSTER_STATE_HANDOVER) {
+    if (dow_state == DOW_STATE_HANDOVER) {
         LOG_DEBUG("ccnl_helper: in handover we handle nothing else\n");
         free_packet(pkt);
         res = 1;
@@ -720,10 +720,10 @@ out:
     return res;
 }
 
-#if CLUSTER_PUBLISH_OLD
+#if DOW_PSR
 void ccnl_helper_publish_content(void)
 {
-    uint8_t i = 0, start_pos = (ccnl_relay.contentcnt - CLUSTER_PUBLISH_OLD);
+    uint8_t i = 0, start_pos = (ccnl_relay.contentcnt - DOW_PSR);
     struct ccnl_content_s *cit;
 
     /* get to start position */
@@ -733,14 +733,14 @@ void ccnl_helper_publish_content(void)
 
     /* now start publishing */
     for (; cit; cit = cit->next) {
-//        if (!cluster_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
+//        if (!dow_is_registered || (ccnl_prefix_cmp(ccnl_helper_my_pfx, NULL, cit->pkt->pfx, CMP_MATCH) >= 2)) {
         ccnl_broadcast(&ccnl_relay, cit->pkt);
         LOG_DEBUG("ccnl_helper: try to publish chunk #%i\n", i);
     }
 }
 #endif
 
-#if CLUSTER_CACHE_RM_STRATEGY
+#if DOW_CACHE_REPL_STRAT
 /**
  * @brief Caching strategy: oldest representative
  * Always cache at least one value per name and replace always the oldest value
@@ -790,7 +790,7 @@ int cs_oldest_representative(struct ccnl_relay_s *relay, struct ccnl_content_s *
                 oldest_ts = c2_ts;
                 oldest = c2;
             }
-            if ((cluster_is_registered && (c2->pkt->pfx->comp[1][0] != cluster_registered_prefix[1]))) {
+            if ((dow_is_registered && (c2->pkt->pfx->comp[1][0] != dow_registered_prefix[1]))) {
                 if ((oldest_unregistered_ts == 0) || (c2_ts < oldest_unregistered_ts)) {
                     oldest_unregistered_ts = c2_ts;
                     oldest_unregistered = c2;
@@ -871,7 +871,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
         msg_receive(&m);
 
         /* we received something from local_consumer */
-        if (m.type == CLUSTER_MSG_RECEIVED) {
+        if (m.type == DOW_MSG_RECEIVED) {
             if (wait_for_int) {
                 LOG_DEBUG("ccnl_helper: that was an chunk - we're currently not interested in\n");
                 continue;
@@ -881,7 +881,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             xtimer_remove(&_wait_timer);
             break;
         }
-        else if (m.type == CLUSTER_MSG_RECEIVED_ACK) {
+        else if (m.type == DOW_MSG_RECEIVED_ACK) {
             if (wait_for_int) {
                 LOG_DEBUG("ccnl_helper: that was an chunk - we're currently not interested in\n");
                 continue;
@@ -892,7 +892,7 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             xtimer_remove(&_wait_timer);
             break;
         }
-        else if (m.type == CLUSTER_MSG_RECEIVED_INT) {
+        else if (m.type == DOW_MSG_RECEIVED_INT) {
             if (wait_for_int) {
                 LOG_DEBUG("ccnl_helper: received an interest - we're waiting for that\n");
                 res = CCNLRIOT_RECEIVED_CHUNK;
@@ -928,20 +928,20 @@ static int _wait_for_chunk(void *buf, size_t buf_len, bool wait_for_int)
             res = -ETIMEDOUT;
             break;
         }
-        else if (m.type == CLUSTER_MSG_NEWDATA) {
+        else if (m.type == DOW_MSG_NEWDATA) {
             LOG_INFO("ccnl_helper: received newdata msg while waiting for content, postpone it\n");
-            xtimer_set_msg(&cluster_data_timer, SEC_IN_USEC, &cluster_data_msg, cluster_pid);
+            xtimer_set_msg(&dow_data_timer, SEC_IN_USEC, &dow_data_msg, dow_pid);
         }
-        else if (m.type == CLUSTER_MSG_SECOND) {
-            //LOG_DEBUG("ccnl_helper: SECOND: %u\n", (unsigned) cluster_period_counter);
-            xtimer_remove(&cluster_timer);
-            if (cluster_period_counter == 1) {
+        else if (m.type == DOW_MSG_SECOND) {
+            //LOG_DEBUG("ccnl_helper: SECOND: %u\n", (unsigned) dow_period_counter);
+            xtimer_remove(&dow_timer);
+            if (dow_period_counter == 1) {
                 LOG_WARNING("ccnl_helper: we're late!\n");
             }
             else {
-                cluster_period_counter--;
+                dow_period_counter--;
             }
-            xtimer_set_msg(&cluster_timer, SEC_IN_USEC, &cluster_wakeup_msg, cluster_pid);
+            xtimer_set_msg(&dow_timer, SEC_IN_USEC, &dow_wakeup_msg, dow_pid);
         }
         else {
             LOG_DEBUG("ccnl_helper: Unknown message received, ignore it\n");

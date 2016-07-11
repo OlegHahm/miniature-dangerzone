@@ -3,7 +3,7 @@
 #include "bloom.h"
 
 #include "ccnlriot.h"
-#include "cluster.h"
+#include "dow.h"
 
 /* data format of beacons */
 #define BEACONING_MK    (0x1701)
@@ -14,9 +14,9 @@ typedef struct __attribute__((packed))  {
 } beacon_t;
 
 /* initialize some global variables */
-uint16_t cluster_position = 0;
+uint16_t dow_position = 0;
 
-uint16_t cluster_size = 1;
+uint16_t dow_size = 1;
 
 /* handle a received beacon */
 static void _handle_beacon(gnrc_pktsnip_t *pkt)
@@ -33,15 +33,15 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
         return;
     }
     LOG_DEBUG("beaconing: received a beacon, id is %" PRIu32 "\n", b.id);
-    if (bloom_check(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id))) {
+    if (bloom_check(&dow_neighbors, (uint8_t*) &(b.id), sizeof(b.id))) {
         LOG_DEBUG("beaconing: already know this neighbor\n");
     }
     /* if we don't know the neighbor we analyze its ID */
     else {
-        bloom_add(&cluster_neighbors, (uint8_t*) &(b.id), sizeof(b.id));
-        cluster_size++;
-        if (b.id < cluster_my_id) {
-            cluster_position++;
+        bloom_add(&dow_neighbors, (uint8_t*) &(b.id), sizeof(b.id));
+        dow_size++;
+        if (b.id < dow_my_id) {
+            dow_position++;
         }
     }
     gnrc_pktbuf_release(pkt);
@@ -50,7 +50,7 @@ static void _handle_beacon(gnrc_pktsnip_t *pkt)
 /* start sending beacons */
 void beaconing_start(void)
 {
-    uint8_t remaining_beacons = CLUSTER_BEACONING_COUNT;
+    uint8_t remaining_beacons = DOW_BEACONING_COUNT;
     bool end_beaconing = false;
 
     /* register for RX */
@@ -60,36 +60,36 @@ void beaconing_start(void)
     gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &_ne);
     /* schedule beacon */
     msg_t beacon_msg;
-    beacon_msg.type = CLUSTER_MSG_BEACON;
+    beacon_msg.type = DOW_MSG_BEACON;
     xtimer_t beacon_timer;
     beacon_timer.target = beacon_timer.long_target = 0;
-    /* let's delay the first beacon by CLUSTER_BEACONING_WAIT */
-    uint32_t tmp = CLUSTER_BEACONING_PERIOD + CLUSTER_BEACONING_WAIT;
+    /* let's delay the first beacon by DOW_BEACONING_WAIT */
+    uint32_t tmp = DOW_BEACONING_PERIOD + DOW_BEACONING_WAIT;
     xtimer_set_msg(&beacon_timer, tmp, &beacon_msg, sched_active_pid);
-    tmp -= CLUSTER_BEACONING_WAIT;
+    tmp -= DOW_BEACONING_WAIT;
     uint32_t start = xtimer_now();
     while (1) {
         msg_t m;
         msg_receive(&m);
         switch (m.type) {
-            case CLUSTER_MSG_BEACON:
+            case DOW_MSG_BEACON:
                 LOG_DEBUG("beaconing: ready to send next beacon\n");
                 beaconing_send();
-                tmp = CLUSTER_BEACONING_PERIOD;
+                tmp = DOW_BEACONING_PERIOD;
                 /* check if we need to do further beaconing */
                 if (--remaining_beacons > 0) {
                     xtimer_set_msg(&beacon_timer, tmp, &beacon_msg, sched_active_pid);
                 }
                 else {
-                    beacon_msg.type = CLUSTER_MSG_BEACON_END;
-                    tmp = 2 * CLUSTER_BEACONING_WAIT - (xtimer_now() - start);
+                    beacon_msg.type = DOW_MSG_BEACON_END;
+                    tmp = 2 * DOW_BEACONING_WAIT - (xtimer_now() - start);
                     LOG_INFO("beaconing: end beaconing period in %" PRIu32 \
                               " seconds\n", (tmp / SEC_IN_USEC));
 
                     xtimer_set_msg(&beacon_timer, tmp, &beacon_msg, sched_active_pid);
                 }
                 break;
-            case CLUSTER_MSG_BEACON_END:
+            case DOW_MSG_BEACON_END:
                 LOG_INFO("beaconing: end beaconing\n");
                 end_beaconing = true;
                 break;
@@ -115,7 +115,7 @@ void beaconing_send(void)
     gnrc_netif_hdr_t *nethdr;
 
     /* put packet together */
-    beacon_t b = { .magic_key = BEACONING_MK, .id = cluster_my_id };
+    beacon_t b = { .magic_key = BEACONING_MK, .id = dow_my_id };
     pkt = gnrc_pktbuf_add(NULL, &b, sizeof(b), GNRC_NETTYPE_UNDEF);
     if (pkt == NULL) {
         puts("error: packet buffer full");
