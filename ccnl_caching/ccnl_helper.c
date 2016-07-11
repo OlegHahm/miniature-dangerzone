@@ -106,7 +106,10 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     }
     c = ccnl_content_new(&ccnl_relay, &pk);
     if (send) {
-        ccnl_broadcast(&ccnl_relay, c->pkt);
+        for (int i = 0; i < 3; i++) {
+            ccnl_broadcast(&ccnl_relay, c->pkt);
+            xtimer_usleep(20000);
+        }
     }
     if (cache) {
         /* XXX: always use first (and only IF) */
