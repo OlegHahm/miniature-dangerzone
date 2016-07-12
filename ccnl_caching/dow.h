@@ -89,6 +89,9 @@
 /** the maximum number of sensors a node can have */
 #define DOW_SENSOR_MAX_NR           (5)
 
+/** how often broadcasts of unsolicited are repeated */
+#define DOW_BC_COUNT                (3)
+
 /**
  * @}
  */

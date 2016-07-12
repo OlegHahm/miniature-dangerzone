@@ -106,9 +106,11 @@ struct ccnl_content_s *ccnl_helper_create_cont(struct ccnl_prefix_s *prefix,
     }
     c = ccnl_content_new(&ccnl_relay, &pk);
     if (send) {
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < DOW_BC_COUNT; i++) {
             ccnl_broadcast(&ccnl_relay, c->pkt);
+#if (DOW_BC_COUNT > 1)
             xtimer_usleep(20000);
+#endif
         }
     }
     if (cache) {
