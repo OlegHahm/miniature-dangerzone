@@ -131,19 +131,6 @@ static int _start_dow(int argc, char **argv)
     return 0;
 }
 
-static void _subsribe(char c) {
-    dow_registered_prefix[0] = '/';
-    dow_registered_prefix[1] = c;
-    dow_registered_prefix[2] = '\0';
-    dow_is_registered = true;
-
-    unsigned cn = 0;
-    char tmp[5];
-    snprintf(tmp, 5, "%s/%c", CCNLRIOT_TYPE_PREFIX, c);
-    ccnl_helper_my_pfx = ccnl_URItoPrefix(tmp, CCNL_SUITE_NDNTLV, NULL, &cn);
-    printf("dow_registered_prefix: %s\n", dow_registered_prefix);
-}
-
 static int _sub_prefix(int argc, char **argv)
 {
     if (dow_is_registered) {
@@ -154,7 +141,7 @@ static int _sub_prefix(int argc, char **argv)
         printf("Usage: %s <prefix>\n", argv[0]);
         return 1;
     }
-    _subsribe(argv[1][0]);
+    ccnl_helper_subsribe(argv[1][0]);
 
     return 0;
 }
@@ -179,7 +166,7 @@ static int _add_sensor(int argc, char **argv)
 
 #if DOW_CACHE_REPL_STRAT
     if (!dow_is_registered) {
-        _subsribe(dow_sensors[dow_sensor_nr][1]);
+        ccnl_helper_subsribe(dow_sensors[dow_sensor_nr][1]);
     }
 #endif
 

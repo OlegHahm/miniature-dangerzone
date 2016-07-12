@@ -68,7 +68,21 @@
 
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
-#define DOW_PER                 (0)
+#define DOW_PER                 (1)
+
+/** adaptively choose prioritized prefix */
+#define DOW_APMDMR              (1)
+
+#if !DOW_PER
+#undef DOW_APMDMR
+#define DOW_APMDMR              (0)
+#endif
+
+#if DOW_APMDMR
+#   define DOW_FIRST_PHASE      (3)
+#   define DOW_APMDMR_MIN_INT   (3)
+#endif
+
 /** how many chunks for oldest content a node should sent after detecting that
  * its cache has been completely refreshed */
 #define DOW_PSR                 (0)
@@ -89,8 +103,15 @@
 /** the maximum number of sensors a node can have */
 #define DOW_SENSOR_MAX_NR           (5)
 
+/** maximum number of prefixes */
+#define DOW_MAX_PREFIXES            (10)
+
 /** how often broadcasts of unsolicited are repeated */
-#define DOW_BC_COUNT                (3)
+#ifdef CPU_NATIVE
+#   define DOW_BC_COUNT                (1)
+#else
+#   define DOW_BC_COUNT                (3)
+#endif
 
 /**
  * @}
@@ -158,6 +179,13 @@ typedef struct __attribute__((packed)) {
     char value[DOW_CONT_LEN + 1];
     int num;
 } dow_content_t;
+
+typedef struct {
+    char pfx;
+    unsigned count;
+} dow_pfx_presence_t;
+
+extern dow_pfx_presence_t dow_pfx_pres[DOW_MAX_PREFIXES];
 
 /** set if registered for a certain prefix
  * 3 bytes = / + PREFIX + \0 */

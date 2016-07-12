@@ -38,6 +38,9 @@ uint32_t dow_period_counter;
 uint32_t _sleep_period;
 uint32_t _last_deputy_ts;
 #endif
+#if DOW_APMDMR
+int32_t _dow_phase_counter = DOW_FIRST_PHASE;
+#endif
 msg_t dow_wakeup_msg = { .type = DOW_MSG_SECOND };
 
 /* bloom filter for beaconing */
@@ -56,6 +59,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 static void _populate_data(struct ccnl_prefix_s *pfx);
 #endif
 static void _radio_sleep(void);
+static void _send_interests(void);
 
 /* data timer variables */
 xtimer_t dow_data_timer = { .target = 0, .long_target = 0 };
@@ -191,6 +195,27 @@ void *_loop(void *arg)
                 LOG_DEBUG("dow: SECOND: %u\n", (unsigned) dow_period_counter);
                 xtimer_remove(&dow_timer);
                 dow_period_counter--;
+#if DOW_APMDMR
+                if (dow_state != DOW_STATE_INACTIVE) {
+                    _dow_phase_counter--;
+                    if (_dow_phase_counter == 0) {
+                        if (ccnl_helper_prefix_under_represented(dow_registered_prefix[1])) {
+                            LOG_WARNING("dow: my prefix is under-represented, do not switch\n");
+                        }
+                        else {
+                            for (unsigned i = 0; i < DOW_MAX_PREFIXES; i++) {
+                                if (ccnl_helper_prefix_under_represented(dow_pfx_pres[i].pfx)) {
+                                    LOG_WARNING("dow: switch to prefix: %c\n", dow_pfx_pres[i].pfx);
+                                    free_prefix(ccnl_helper_my_pfx);
+                                    ccnl_helper_subsribe(dow_pfx_pres[i].pfx);
+                                    break;
+                                }
+                            }
+                        }
+                        _send_interests();
+                    }
+                }
+#endif
 
 #if DOW_PSR
                 if (ccnl_helper_flagged_cache >= (CCNLRIOT_CACHE_SIZE - 1)) {
@@ -224,6 +249,10 @@ void *_loop(void *arg)
                             dow_wakeup();
                         }
                         dow_period_counter = DOW_X * DOW_D;
+#if DOW_APMDMR
+                        _dow_phase_counter = DOW_FIRST_PHASE;
+                        memset(dow_pfx_pres, 0, sizeof(dow_pfx_pres));
+#endif
                         dow_second_timer();
 #if DOW_KEEP_ALIVE_PFX
                         dow_my_prefix_interest_count = 0;
@@ -431,6 +460,23 @@ void dow_takeover(void)
 }
 #endif
 
+static void _send_interests(void)
+{
+    unsigned cn;
+    struct ccnl_prefix_s *tmp;
+    if (dow_is_registered) {
+        tmp = ccnl_helper_my_pfx;
+    }
+    else {
+        tmp = ccnl_helper_all_pfx;
+    }
+    for (cn = 0; (cn < DOW_PER) && (ccnl_helper_int(tmp, &cn, false) != CCNLRIOT_LAST_CN); cn++) {
+        if (cn > CCNLRIOT_CACHE_SIZE) {
+            LOG_WARNING("dow: asking too much! FAIL!\n");
+        }
+    }
+}
+
 void dow_wakeup(void)
 {
     if (dow_sleeping) {
@@ -453,19 +499,7 @@ void dow_wakeup(void)
         }
 #if (DOW_DEPUTY == 0) && (DOW_PER)
         /* try to update the cache a bit */
-        unsigned cn;
-        struct ccnl_prefix_s *tmp;
-        if (dow_is_registered) {
-            tmp = ccnl_helper_my_pfx;
-        }
-        else {
-            tmp = ccnl_helper_all_pfx;
-        }
-        for (cn = 0; (cn < DOW_PER) && (ccnl_helper_int(tmp, &cn, false) != CCNLRIOT_LAST_CN); cn++) {
-            if (cn > CCNLRIOT_CACHE_SIZE) {
-                LOG_WARNING("dow: asking too much! FAIL!\n");
-            }
-        }
+        _send_interests();
 #endif
     }
     else {

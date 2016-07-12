@@ -20,6 +20,7 @@ typedef enum {
 struct ccnl_prefix_s *ccnl_helper_all_pfx;
 struct ccnl_prefix_s *ccnl_helper_my_pfx;
 uint8_t ccnl_helper_flagged_cache = 0;
+dow_pfx_presence_t dow_pfx_pres[DOW_MAX_PREFIXES];
 
 /* buffers for interests and content */
 static unsigned char _int_buf[CCNLRIOT_BUF_SIZE];
@@ -47,6 +48,7 @@ void ccnl_helper_init(void)
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
     ccnl_helper_all_pfx = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, &cn);
     ccnl_helper_reset();
+    memset(dow_pfx_pres, 0, sizeof(dow_pfx_pres));
 }
 
 void ccnl_helper_reset(void)
@@ -56,6 +58,46 @@ void ccnl_helper_reset(void)
         cit->flags &= ~CCNL_CONTENT_FLAGS_USER2;
     }
 }
+
+void ccnl_helper_subsribe(char c) {
+    dow_registered_prefix[0] = '/';
+    dow_registered_prefix[1] = c;
+    dow_registered_prefix[2] = '\0';
+    dow_is_registered = true;
+
+    unsigned cn = 0;
+    char tmp[5];
+    snprintf(tmp, 5, "%s/%c", CCNLRIOT_TYPE_PREFIX, c);
+    ccnl_helper_my_pfx = ccnl_URItoPrefix(tmp, CCNL_SUITE_NDNTLV, NULL, &cn);
+    printf("dow_registered_prefix: %s\n", dow_registered_prefix);
+}
+
+#if DOW_APMDMR
+bool ccnl_helper_prefix_under_represented(char p)
+{
+    for (unsigned i = 0; i < DOW_MAX_PREFIXES; i++) {
+        if (dow_pfx_pres[i].pfx == 0) {
+            return false;
+        }
+        if ((dow_pfx_pres[i].pfx == p) && (dow_pfx_pres[i].count < DOW_APMDMR_MIN_INT)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void _prefix_seen_interest(char p)
+{
+    LOG_DEBUG("ccnl_helper: seen prefix %c\n", p);
+    for (unsigned i = 0; i < DOW_MAX_PREFIXES; i++) {
+        if ((dow_pfx_pres[i].pfx == p) || (dow_pfx_pres[i].pfx == 0)) {
+            dow_pfx_pres[i].pfx = p;
+            dow_pfx_pres[i].count++;
+            return;
+        }
+    }
+}
+#endif
 
 /**
  * @brief create a content struct
@@ -594,6 +636,14 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         free_packet(pkt);
         return 1;
     }
+
+#if DOW_APMDMR
+    if ((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) < 1) && (pkt->pfx->compcnt > 1)) {
+        char p = pkt->pfx->comp[1][0];
+        LOG_DEBUG("ccnl_helper: increase counter for %c (%s)\n", p, pkt->pfx->comp[1]);
+        _prefix_seen_interest(p);
+    }
+#endif
 
     /* check if this is a for any data */
     if (((ccnl_prefix_cmp(ccnl_helper_all_pfx, NULL, pkt->pfx, CMP_MATCH) >= 1) ||

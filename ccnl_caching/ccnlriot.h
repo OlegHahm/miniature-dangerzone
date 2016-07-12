@@ -60,6 +60,10 @@ void ccnl_helper_reset(void);
 
 void ccnl_helper_init(void);
 
+void ccnl_helper_subsribe(char c);
+
+bool ccnl_helper_prefix_under_represented(char p);
+
 int ccnlriot_stats(int argc, char **argv);
 
 int ccnl_helper_int(struct ccnl_prefix_s *prefix, unsigned *chunknum, bool wait_for_int);
