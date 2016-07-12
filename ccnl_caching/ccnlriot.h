@@ -19,7 +19,7 @@
 
 /* 10kB buffer for the heap should be enough for everyone - except native */
 #ifdef CPU_NATIVE
-#define TLSF_BUFFER     (40960 / sizeof(uint32_t))
+#define TLSF_BUFFER     (409600 / sizeof(uint32_t))
 #elif defined(CPU_SAMD21)
 #define TLSF_BUFFER     (10240 / sizeof(uint32_t))
 #else
