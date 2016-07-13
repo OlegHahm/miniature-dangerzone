@@ -59,7 +59,10 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 static void _populate_data(struct ccnl_prefix_s *pfx);
 #endif
 static void _radio_sleep(void);
+
+#if (DOW_DEPUTY == 0) && (DOW_PER)
 static void _send_interests(void);
+#endif
 
 /* data timer variables */
 xtimer_t dow_data_timer = { .target = 0, .long_target = 0 };
@@ -460,6 +463,7 @@ void dow_takeover(void)
 }
 #endif
 
+#if (DOW_DEPUTY == 0) && (DOW_PER)
 static void _send_interests(void)
 {
     unsigned cn;
@@ -476,6 +480,7 @@ static void _send_interests(void)
         }
     }
 }
+#endif
 
 void dow_wakeup(void)
 {
