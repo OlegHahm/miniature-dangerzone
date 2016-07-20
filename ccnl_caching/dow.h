@@ -23,13 +23,13 @@
 #endif
 
 /** Data generation interval D */
-#define DOW_D                   (3)
+#define DOW_D                   (100)
 
 /**
  * @brief values for non-round robin mode
  * @{ */
 /** multiplier for D for sleep-/awake-cycles in non round-robin mode */
-#define DOW_X                   (4)
+#define DOW_X                   (.02)
 /** sleep probability */
 #define DOW_P                   (0.95)
 /** @} */
@@ -46,12 +46,12 @@
  * @brief Caching strategy
  * @{ */
 /** caching probability for non-prioritized content */
-#define DOW_Q                   (.1)
+#define DOW_Q                   (.5)
 
 /** replacement strategy:
  * 0 means LRU, 1 means "our" strategy (oldest representative)
  */
-#define DOW_CACHE_REPL_STRAT          (0)
+#define DOW_CACHE_REPL_STRAT          (1)
 
 /** autoconfiguration of prioritized content based on the first names that
  * arrive - this variable sets the threshold for this */
@@ -68,10 +68,10 @@
 
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
-#define DOW_PER                 (1)
+#define DOW_PER                 (5)
 
 /** adaptively choose prioritized prefix */
-#define DOW_APMDMR              (1)
+#define DOW_APMDMR              (0)
 
 #if !DOW_PER
 #undef DOW_APMDMR
@@ -122,7 +122,8 @@
  * @{
  */
 #define DOW_EVENT_PERIOD        (DOW_D * SEC_IN_USEC)
-#define DOW_EVENT_PERIOD_JITTER (DOW_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
+//#define DOW_EVENT_PERIOD_JITTER (DOW_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
+#define DOW_EVENT_PERIOD_JITTER (random_uint32() & 0x5f5e100)
 
 #define DOW_GO_SLEEP            (random_uint32() < (UINT32_MAX * DOW_P))
 
@@ -132,7 +133,8 @@
 
 #define DOW_KEEP_ALIVE_PERIOD   (100 * MS_IN_USEC)
 
-#define DOW_STARTUP_DELAY       (DOW_D * (random_uint32() & 0x000001FF) * MS_IN_USEC)
+//#define DOW_STARTUP_DELAY       (DOW_D * (random_uint32() & 0x000001FF) * MS_IN_USEC)
+#define DOW_STARTUP_DELAY       (0)
 /**
  * @}
  */
