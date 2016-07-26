@@ -23,7 +23,7 @@
 #endif
 
 /** Data generation interval D */
-#define DOW_D                   (100)
+#define DOW_D                   (50)
 
 /**
  * @brief values for non-round robin mode
@@ -68,7 +68,7 @@
 
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
-#define DOW_PER                 (5)
+#define DOW_PER                 (0)
 
 /** adaptively choose prioritized prefix */
 #define DOW_APMDMR              (0)
@@ -206,6 +206,8 @@ extern dow_state_t dow_state;
 extern uint32_t dow_my_id;
 extern kernel_pid_t ccnl_pid;
 extern kernel_pid_t dow_pid;
+extern bool dow_manual_id;
+extern uint16_t dow_num_src;
 
 /* beaconing information */
 extern uint16_t dow_position;

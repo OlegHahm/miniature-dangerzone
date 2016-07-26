@@ -387,6 +387,15 @@ static bool _ccnl_helper_handle_content(struct ccnl_relay_s *relay, struct ccnl_
     return true;
 }
 
+static bool _check_in_range(uint32_t start, uint32_t val, uint32_t interval, uint32_t max) {
+    if (start > val) {
+        return (((max - start) + val) < interval);
+    }
+    else {
+        return ((val - start) < interval);
+    }
+}
+
 /**
  * @brief local callback to handle incoming content chunks
  *
@@ -532,7 +541,16 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #else
                 /* check if we're registered for a certain prefix and compare the first character of it */
                 /* XXX: use memcmp */
-                if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE) {
+
+                if (dow_manual_id) {
+                    uint32_t cont_id = (uint32_t) strtol((char*) pkt->pfx->comp[2], NULL, 16);
+                    if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE, dow_num_src)) {
+                        if (!_ccnl_helper_handle_content(relay, pkt)) {
+                            res = 0;
+                        }
+                    }
+                }
+                else if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE)) {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
                         res = 0;
                     }
@@ -558,7 +576,18 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 #else
             /* check if we're registered for a certain prefix and compare the first character of it */
             /* XXX: use memcmp */
-            if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE) {
+            if (dow_manual_id) {
+                uint32_t cont_id = (uint32_t) strtol((char*)pkt->pfx->comp[2], NULL, 16);
+                if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE, dow_num_src)) {
+                    if (!_ccnl_helper_handle_content(relay, pkt)) {
+                        return 0;
+                    }
+                    return 1;
+                }
+                free_packet(pkt);
+                return 1;
+            }
+            else if ((dow_is_registered && (pkt->pfx->comp[1][0] == dow_registered_prefix[1])) || DOW_DO_CACHE) {
                 if (!_ccnl_helper_handle_content(relay, pkt)) {
                     return 0;
                 }
