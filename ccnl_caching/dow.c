@@ -357,12 +357,14 @@ void *_loop(void *arg)
 
 void dow_init(void)
 {
+    if (dow_my_id == 0) {
 #ifdef CPU_NATIVE
-    cpuid_get(&dow_my_id);
+        cpuid_get(&dow_my_id);
 #else
-    uint8_t cpuid[CPUID_LEN];
-    cpuid_get(cpuid);
-    dow_my_id = djb2_hash(cpuid, CPUID_LEN);
+        uint8_t cpuid[CPUID_LEN];
+        cpuid_get(cpuid);
+        dow_my_id = djb2_hash(cpuid, CPUID_LEN);
+    }
 #endif
     LOG_INFO("dow: my ID  is %08lX\n", (unsigned long) dow_my_id);
 

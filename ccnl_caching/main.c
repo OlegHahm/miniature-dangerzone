@@ -118,8 +118,6 @@ static int _debug_cache_date(int argc, char **argv)
 
 static int _start_dow(int argc, char **argv)
 {
-    (void) argc; (void) argv;
-
     printf("Settings: %s D:%u X:", (DOW_DEPUTY ? "Deputy" : ""), DOW_D);
     if ((DOW_X) < 1) {
         printf("0.%u", (unsigned) (100 *  DOW_X));
@@ -133,6 +131,9 @@ static int _start_dow(int argc, char **argv)
            (unsigned) DOW_PER, (unsigned) DOW_KEEP_ALIVE_PFX,
            (unsigned) DOW_PSR, (unsigned) DOW_BC_COUNT);
 
+    if (argc > 1) {
+        dow_my_id = (uint32_t) strtol(argv[1], NULL, 10);
+    }
     dow_init();
     thread_yield_higher();
     return 0;
