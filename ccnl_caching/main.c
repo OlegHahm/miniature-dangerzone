@@ -43,6 +43,7 @@ char dow_sensors[DOW_SENSOR_MAX_NR][3];
 uint8_t dow_sensor_nr = 0;
 bool dow_manual_id = false;
 uint16_t dow_num_src = 0;
+bool dow_is_source = true;
 
 static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
@@ -139,6 +140,10 @@ static int _start_dow(int argc, char **argv)
     }
     if (argc > 2) {
         dow_num_src = (uint16_t) strtol(argv[2], NULL, 10);
+    }
+    if (argc > 3) {
+        dow_is_source = false;
+        puts("not producing data");
     }
 
     dow_init();

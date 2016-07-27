@@ -298,7 +298,9 @@ void *_loop(void *arg)
 #endif
             case DOW_MSG_NEWDATA:
                 LOG_DEBUG("dow: received newdata msg\n");
-                dow_new_data();
+                if (dow_is_source) {
+                    dow_new_data();
+                }
 #if !DOW_INT_INT
                 /* give the transceiver some time to finish its job */
                 if (dow_state == DOW_STATE_INACTIVE) {

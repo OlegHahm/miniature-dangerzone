@@ -223,6 +223,8 @@ extern xtimer_t dow_timer;
 extern msg_t dow_wakeup_msg;
 extern uint8_t dow_prio_cache_cnt;
 
+extern bool dow_is_source;
+
 /* time measurement */
 extern uint32_t dow_time_sleeping;
 extern uint32_t dow_time_active;
