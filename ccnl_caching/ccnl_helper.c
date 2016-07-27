@@ -544,7 +544,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 
                 if (dow_manual_id) {
                     uint32_t cont_id = (uint32_t) strtol((char*) pkt->pfx->comp[2], NULL, 16);
-                    if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE, dow_num_src)) {
+                    if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE-1, dow_num_src)) {
                         if (!_ccnl_helper_handle_content(relay, pkt)) {
                             res = 0;
                         }
@@ -578,7 +578,7 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* XXX: use memcmp */
             if (dow_manual_id) {
                 uint32_t cont_id = (uint32_t) strtol((char*)pkt->pfx->comp[2], NULL, 16);
-                if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE, dow_num_src)) {
+                if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE-1, dow_num_src)) {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
                         return 0;
                     }
