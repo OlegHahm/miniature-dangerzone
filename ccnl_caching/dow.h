@@ -31,7 +31,7 @@
 /** multiplier for D for sleep-/awake-cycles in non round-robin mode */
 #define DOW_X                   (.02)
 /** sleep probability */
-#define DOW_P                   (0.95)
+#define DOW_P                   (0.80)
 /** @} */
 
 /**
@@ -123,7 +123,10 @@
  */
 #define DOW_EVENT_PERIOD        (DOW_D * SEC_IN_USEC)
 //#define DOW_EVENT_PERIOD_JITTER (DOW_D * SEC_IN_USEC) + (random_uint32() & 0x000FFFFF)
-#define DOW_EVENT_PERIOD_JITTER (random_uint32() & 0x5f5e100)
+
+// 100s
+//#define DOW_EVENT_PERIOD_JITTER (random_uint32() & 0x5f5e100)
+#define DOW_EVENT_PERIOD_JITTER (random_uint32() & 0x2faf080)
 
 #define DOW_GO_SLEEP            (random_uint32() < (UINT32_MAX * DOW_P))
 
