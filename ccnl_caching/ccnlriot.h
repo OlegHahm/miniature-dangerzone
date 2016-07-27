@@ -34,7 +34,7 @@
 #ifdef CPU_SAMD21
 #define CCNLRIOT_CACHE_SIZE     (5)
 #else
-#define CCNLRIOT_CACHE_SIZE     (80)
+#define CCNLRIOT_CACHE_SIZE     (20)
 #endif
 
 #define CCNLRIOT_TIMEOUT            (0)
