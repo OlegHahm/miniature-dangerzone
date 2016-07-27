@@ -366,8 +366,8 @@ void dow_init(void)
         uint8_t cpuid[CPUID_LEN];
         cpuid_get(cpuid);
         dow_my_id = djb2_hash(cpuid, CPUID_LEN);
-    }
 #endif
+    }
     LOG_INFO("dow: my ID  is %08lX\n", (unsigned long) dow_my_id);
 
     random_init(dow_my_id);
