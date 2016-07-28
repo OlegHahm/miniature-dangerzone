@@ -53,6 +53,11 @@
  */
 #define DOW_CACHE_REPL_STRAT          (1)
 
+/**
+ * enable hardwired content
+ */
+#define DOW_HARDWIRED           (0)
+
 /** autoconfiguration of prioritized content based on the first names that
  * arrive - this variable sets the threshold for this */
 #if DOW_CACHE_REPL_STRAT

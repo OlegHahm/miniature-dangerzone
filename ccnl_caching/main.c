@@ -128,15 +128,18 @@ static int _start_dow(int argc, char **argv)
     else {
         printf("%u", (unsigned) DOW_X);
     }
-    printf(" p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u PSR:%u BC:%u\n",
+    printf(" p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u PSR:%u BC:%u %s\n",
            (unsigned) (100U * DOW_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
            (unsigned) DOW_PRIO_CACHE, (unsigned) (100U * DOW_Q),
            (unsigned) DOW_PER, (unsigned) DOW_KEEP_ALIVE_PFX,
-           (unsigned) DOW_PSR, (unsigned) DOW_BC_COUNT);
+           (unsigned) DOW_PSR, (unsigned) DOW_BC_COUNT,
+           (DOW_HARDWIRED ? "hardwired" : ""));
 
     if (argc > 1) {
         dow_my_id = (uint32_t) strtol(argv[1], NULL, 10);
+#if DOW_HARDWIRED
         dow_manual_id = true;
+#endif
     }
     if (argc > 2) {
         dow_num_src = (uint16_t) strtol(argv[2], NULL, 10);
