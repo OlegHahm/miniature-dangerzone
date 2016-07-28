@@ -129,7 +129,7 @@ static int _start_dow(int argc, char **argv)
         printf("%u", (unsigned) DOW_X);
     }
     printf(" p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u PSR:%u BC:%u %s\n",
-           (unsigned) (100U * DOW_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
+           (unsigned) (100U * DOW_START_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
            (unsigned) DOW_PRIO_CACHE, (unsigned) (100U * DOW_Q),
            (unsigned) DOW_PER, (unsigned) DOW_KEEP_ALIVE_PFX,
            (unsigned) DOW_PSR, (unsigned) DOW_BC_COUNT,

@@ -17,6 +17,7 @@ char _dow_stack[THREAD_STACKSIZE_MAIN];
 msg_t _mq[DOW_MSG_QUEUE_SIZE];
 
 /* public variables */
+float DOW_P = DOW_START_P;
 dow_state_t dow_state;
 bloom_t dow_neighbors;
 kernel_pid_t dow_pid = KERNEL_PID_UNDEF;

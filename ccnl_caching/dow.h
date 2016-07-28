@@ -31,7 +31,7 @@
 /** multiplier for D for sleep-/awake-cycles in non round-robin mode */
 #define DOW_X                   (.031)
 /** sleep probability */
-#define DOW_P                   (0.85)
+#define DOW_START_P             (0.90)
 /** @} */
 
 /**
@@ -174,6 +174,8 @@
 /** @} */
 
 #define DOW_MSG_QUEUE_SIZE      (64)
+
+extern float DOW_P;
 
 /** current state */
 typedef enum {
