@@ -540,8 +540,10 @@ void dow_new_data(void)
     unsigned data = xtimer_now();
 
 #if DOW_REBC_LAST
+    bool _sent_old = false;
     if ((_old_data != 0) && (_send_old_data)) {
         data = _old_data;
+        _sent_old = true;
         _send_old_data = false;
     }
     else {
@@ -573,7 +575,13 @@ void dow_new_data(void)
         snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_SITE_PREFIX,
                  CCNLRIOT_TYPE_PREFIX, (long unsigned) dow_my_id, val);
     }
+#if DOW_REBC_LAST
+    if (!_sent_old) {
+#endif
     printf("NEW DATA: %s\n", pfx);
+#if DOW_REBC_LAST
+    }
+#endif
     /* schedule new data generation */
     uint32_t offset = DOW_EVENT_PERIOD_JITTER;
 #ifdef DOW_REBC_LAST
