@@ -44,6 +44,11 @@ int32_t _dow_phase_counter = DOW_FIRST_PHASE;
 #endif
 msg_t dow_wakeup_msg = { .type = DOW_MSG_SECOND };
 
+#if DOW_REBC_LAST
+unsigned _old_data = 0;
+bool _send_old_data = false;
+#endif
+
 /* bloom filter for beaconing */
 #define BLOOM_BITS (1 << 12)
 #define BLOOM_HASHF (8)
@@ -533,6 +538,17 @@ void dow_new_data(void)
 
     /* XXX: implement event */
     unsigned data = xtimer_now();
+
+#if DOW_REBC_LAST
+    if ((_old_data != 0) && (_send_old_data)) {
+        data = _old_data;
+        _send_old_data = false;
+    }
+    else {
+        _old_data = data;
+        _send_old_data = true;
+    }
+#endif
     /* each byte needs 2 characters to be represented as a hex value */
     /* string representation */
     char val[(sizeof(data) * 2) + 1];
@@ -560,6 +576,9 @@ void dow_new_data(void)
     printf("NEW DATA: %s\n", pfx);
     /* schedule new data generation */
     uint32_t offset = DOW_EVENT_PERIOD_JITTER;
+#ifdef DOW_REBC_LAST
+    offset /= 2;
+#endif
     LOG_DEBUG("dow: Next event in %" PRIu32 " seconds (%i)\n", (offset / 1000000), (int) dow_pid);
     xtimer_set_msg(&dow_data_timer, offset, &dow_data_msg, dow_pid);
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);

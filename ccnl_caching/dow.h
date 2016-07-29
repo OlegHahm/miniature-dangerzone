@@ -71,6 +71,9 @@
 /** use interest-interest for dissemination of unsolicited content */
 #define DOW_INT_INT             (0)
 
+/** rebroadcast last value */
+#define DOW_REBC_LAST           (1)
+
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
 #define DOW_PER                 (0)
