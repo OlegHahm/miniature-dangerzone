@@ -63,6 +63,7 @@ hashfp_t _hashes[BLOOM_HASHF] = {
 };
 
 /* prototypes */
+static void _dow_beacon_id(void);
 #if DOW_INT_INT
 static void _populate_data(struct ccnl_prefix_s *pfx);
 #endif
@@ -192,6 +193,7 @@ void *_loop(void *arg)
     else {
         LOG_INFO("\n\ndow: starting as DEPUTY\n\n");
         dow_state = DOW_STATE_DEPUTY;
+        _dow_beacon_id();
         dow_period_counter = DOW_X * DOW_D;
         dow_second_timer();
     }
@@ -259,6 +261,7 @@ void *_loop(void *arg)
                         else {
                             LOG_INFO("\n\ndow: change to state DEPUTY\n\n");
                             dow_state = DOW_STATE_DEPUTY;
+                            _dow_beacon_id();
                             ccnl_helper_reset();
                             dow_wakeup();
                         }
@@ -616,3 +619,34 @@ static void _populate_data(struct ccnl_prefix_s *pfx)
     ccnl_helper_int(pfx, NULL, true);
 }
 #endif
+
+static void _dow_beacon_id(void)
+{
+    uint32_t tmp_id;
+#ifdef CPU_NATIVE
+    cpuid_get(&tmp_id);
+#else
+    uint8_t cpuid[CPUID_LEN];
+    cpuid_get(cpuid);
+    tmp_id = djb2_hash(cpuid, CPUID_LEN);
+#endif
+
+    /* each byte needs 2 characters to be represented as a hex value */
+    /* string representation */
+    char val[(sizeof(data) * 2) + 1];
+    snprintf(val, sizeof(val) + 1, "%08X", tmp_id);
+
+    size_t prefix_len = sizeof(CCNLRIOT_BEACON_PREFIX) + sizeof(CCNLRIOT_BEACON_PREFIX) + 9 + 9;
+    char pfx[prefix_len];
+    snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_BEACON_PREFIX,
+             CCNLRIOT_BEACON_PREFIX, (long unsigned) tmp_id, val);
+    }
+    struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
+    if (prefix == NULL) {
+        LOG_ERROR("dow: We're doomed, WE ARE ALL DOOMED!\n");
+    }
+    else {
+        ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), false, true);
+        free_prefix(prefix);
+    }
+}

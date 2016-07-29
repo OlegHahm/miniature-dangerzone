@@ -14,6 +14,7 @@
 #define CCNLRIOT_ALL_PREFIX     "/*"
 #define CCNLRIOT_SITE_PREFIX    "/s"
 #define CCNLRIOT_TYPE_PREFIX    "/t"
+#define CCNLRIOT_BEACON_PREFIX  "/#"
 
 #define CCNLRIOT_CONT_ACK       "ACK"
 
