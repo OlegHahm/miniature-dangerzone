@@ -409,6 +409,13 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     (void) from;
     (void) relay;
+
+    if (dow_state == DOW_STATE_STOPPED) {
+        LOG_DEBUG("ccnl_helper: we're in stopped, do nothing\n");
+        free_packet(pkt);
+        return 1;
+    }
+
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local consumer for prefix: %s\n", xtimer_now(),
               ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
@@ -612,6 +619,12 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
 {
     (void) from;
     int res = 0;
+
+    if (dow_state == DOW_STATE_STOPPED) {
+        LOG_DEBUG("ccnl_helper: we're in stopped, do nothing\n");
+        free_packet(pkt);
+        return 1;
+    }
 
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n",
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));

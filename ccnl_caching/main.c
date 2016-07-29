@@ -49,6 +49,7 @@ static int _stats(int argc, char **argv);
 static int _cs(int argc, char **argv);
 static int _debug_cache_date(int argc, char **argv);
 static int _start_dow(int argc, char **argv);
+static int _stop_dow(int argc, char **argv);
 static int _sub_prefix(int argc, char **argv);
 static int _add_sensor(int argc, char **argv);
 
@@ -59,6 +60,7 @@ const shell_command_t shell_commands[] = {
     {"dc", "Create a content chunk and put it into cache for debug purposes",
         _debug_cache_date},
     {"start", "Start the application", _start_dow},
+    {"stop", "Stop the application", _stop_dow},
     {"prefix", "Subscribe a certain prefix", _sub_prefix},
     {"sensor", "Add a sensor with a certain prefix", _add_sensor},
     {NULL, NULL, NULL}
@@ -83,7 +85,7 @@ int _cs(int argc, char **argv) {
 #else
     printf("%u CS command\n", (unsigned) xtimer_now());
     //if ((dow_state != DOW_STATE_INACTIVE) && (dow_state != DOW_STATE_HANDOVER)) {
-    if (dow_state != DOW_STATE_INACTIVE)  {
+    if ((dow_state != DOW_STATE_INACTIVE) && (dow_state != DOW_STATE_STOPPED)) {
         gnrc_netapi_get(ccnl_pid, NETOPT_CCN, CCNL_CTX_PRINT_CS, &ccnl_relay, sizeof(ccnl_relay));
         //ccnl_cs_dump(&ccnl_relay);
         printf("%u DONE\n", (unsigned) xtimer_now());
@@ -151,6 +153,14 @@ static int _start_dow(int argc, char **argv)
 
     dow_init();
     thread_yield_higher();
+    return 0;
+}
+
+static int _stop_dow(int argc, char **argv)
+{
+    (void) argc;
+    (void) argv;
+    dow_state = DOW_STATE_STOPPED;
     return 0;
 }
 

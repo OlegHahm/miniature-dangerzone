@@ -182,6 +182,7 @@ typedef enum {
     DOW_STATE_DEPUTY,
     DOW_STATE_HANDOVER,
     DOW_STATE_INACTIVE,
+    DOW_STATE_STOPPED,
 } dow_state_t;
 
 /** data type for the used contend */

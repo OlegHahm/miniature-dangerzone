@@ -191,9 +191,12 @@ void *_loop(void *arg)
 #endif
 #endif
 
-    while (1) {
+    while (dow_state != DOW_STATE_STOPPED) {
         msg_t m;
         msg_receive(&m);
+        if (dow_state == DOW_STATE_STOPPED) {
+            break;
+        }
         switch (m.type) {
             case DOW_MSG_SECOND:
                 LOG_DEBUG("dow: SECOND: %u\n", (unsigned) dow_period_counter);
