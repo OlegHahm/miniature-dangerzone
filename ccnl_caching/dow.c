@@ -32,6 +32,8 @@ uint32_t dow_ts_sleep = 0;
 uint8_t dow_prio_cache_cnt = 0;
 uint8_t dow_my_prefix_interest_count = 0;
 
+unsigned dow_cache_size = CCNLRIOT_CACHE_SIZE;
+
 /* internal variables */
 xtimer_t dow_timer;
 uint32_t dow_period_counter;
@@ -142,7 +144,7 @@ void *_loop(void *arg)
     extern int debug_level;
     debug_level = LOG_DEBUG;
 
-    ccnl_relay.max_cache_entries = CCNLRIOT_CACHE_SIZE;
+    ccnl_relay.max_cache_entries = dow_cache_size;
     ccnl_pid = ccnl_start();
 
     if (ccnl_open_netif(CCNLRIOT_NETIF, GNRC_NETTYPE_CCN) < 0) {

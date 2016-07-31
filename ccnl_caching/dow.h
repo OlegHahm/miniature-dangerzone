@@ -237,6 +237,8 @@ extern uint8_t dow_prio_cache_cnt;
 
 extern bool dow_is_source;
 
+extern unsigned dow_cache_size;
+
 /* time measurement */
 extern uint32_t dow_time_sleeping;
 extern uint32_t dow_time_active;

@@ -52,6 +52,8 @@ static int _start_dow(int argc, char **argv);
 static int _stop_dow(int argc, char **argv);
 static int _sub_prefix(int argc, char **argv);
 static int _add_sensor(int argc, char **argv);
+static int _set_p(int argc, char **argv);
+static int _set_cs(int argc, char **argv);
 
 const shell_command_t shell_commands[] = {
 /*  {name, desc, cmd },                         */
@@ -63,6 +65,8 @@ const shell_command_t shell_commands[] = {
     {"stop", "Stop the application", _stop_dow},
     {"prefix", "Subscribe a certain prefix", _sub_prefix},
     {"sensor", "Add a sensor with a certain prefix", _add_sensor},
+    {"prob", "Set sleep probability", _set_p},
+    {"cachesize", "Set cache size", _set_cs},
     {NULL, NULL, NULL}
 };
 
@@ -131,7 +135,7 @@ static int _start_dow(int argc, char **argv)
         printf("%u", (unsigned) DOW_X);
     }
     printf(" p:%u Y:%u CS:%u P-MDMR:%u Q:%u PER:%u KEEP_ALIVE:%u PSR:%u BC:%u %s\n",
-           (unsigned) (100U * DOW_START_P), DOW_Y, CCNLRIOT_CACHE_SIZE,
+           (unsigned) (100U * DOW_P), DOW_Y, dow_cache_size,
            (unsigned) DOW_PRIO_CACHE, (unsigned) (100U * DOW_Q),
            (unsigned) DOW_PER, (unsigned) DOW_KEEP_ALIVE_PFX,
            (unsigned) DOW_PSR, (unsigned) DOW_BC_COUNT,
@@ -205,6 +209,26 @@ static int _add_sensor(int argc, char **argv)
 
     dow_sensor_nr++;
 
+    return 0;
+}
+
+int _set_p(int argc, char **argv)
+{
+    if (argc < 2) {
+        puts("Usage: prob <p>");
+        return 1;
+    }
+    DOW_P = strtof(argv[1], NULL);
+    return 0;
+}
+
+int _set_cs(int argc, char **argv)
+{
+    if (argc < 2) {
+        puts("Usage: cachesize <p>");
+        return 1;
+    }
+    dow_cache_size = (unsigned) strtol(argv[1], NULL, 10);
     return 0;
 }
 
