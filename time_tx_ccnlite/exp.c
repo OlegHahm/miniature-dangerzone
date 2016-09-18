@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2016 Freie Universität Berlin
+ * Copyright (C) 2016 INRIA
  *
  * This file is subject to the terms and conditions of the GNU Lesser
  * General Public License v2.1. See the file LICENSE in the top level
@@ -11,6 +12,7 @@
  *
  * @file
  * @author Martine Lenders <mlenders@inf.fu-berlin.de>
+ * @author Oliver Hahm <oliver.hahm@inria.fr>
  */
 
 #include <inttypes.h>
@@ -28,7 +30,6 @@
 
 #define BUF_SIZE (134)
 #define PFX_LEN (96 + 1)
-#define TIMER_WINDOW_SIZE   (16)
 
 static uint32_t start_time;
 
@@ -73,8 +74,8 @@ void exp_run(void)
 #endif
     for (comp_cnt = 0; comp_cnt < (PFX_LEN / 4); comp_cnt++) {
         free_prefix(prefix);
-        _pfx_url[comp_cnt * 4] = '/';
-        memcpy(&_pfx_url[(comp_cnt * 4) + 1], EXP_NAME_COMP, strlen(EXP_NAME_COMP) + 1);
+        _pfx_url[comp_cnt * 3] = '/';
+        memcpy(&_pfx_url[(comp_cnt * 3) + 1], EXP_NAME_COMP, strlen(EXP_NAME_COMP) + 1);
         memcpy(_tmp_url, _pfx_url, PFX_LEN);
         prefix = ccnl_URItoPrefix(_tmp_url, CCNL_SUITE_NDNTLV, NULL, 0);
         for (unsigned id = 0; id < EXP_RUNS; id++) {
@@ -82,11 +83,11 @@ void exp_run(void)
                 ccnl_interest_remove(&ccnl_relay, i);
             }
 
-            start_time = xtimer_now();
 
             char *tmp_pfx = ccnl_prefix_to_path(prefix);
             //printf("%u/%u: Send interest for %s\n", comp_cnt, (unsigned) id, tmp_pfx);
             ccnl_free(tmp_pfx);
+            start_time = xtimer_now();
             i = ccnl_send_interest(prefix, _int_buf, BUF_SIZE);
 #if EXP_PACKET_DELAY
             xtimer_usleep(EXP_PACKET_DELAY);
