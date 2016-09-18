@@ -1,0 +1,41 @@
+APPLICATION := $(shell basename $(CURDIR))_$(shell basename $(realpath $(CURDIR)/..))
+
+USEMODULE += gnrc_netdev2
+USEMODULE += random
+USEPKG += tlsf
+
+USEPKG += ccn-lite
+USEMODULE += ccn-lite-utils
+
+BOARD ?= iotlab-m3
+
+RIOTBASE ?= $(CURDIR)/../../RIOT
+
+DISABLE_MODULE += auto_init
+
+USEMODULE += inet_csum
+USEMODULE += netdev2_ieee802154
+USEMODULE += netdev2_test
+USEMODULE += sema
+USEMODULE += xtimer
+
+CFLAGS += -DAPPLICATION_NAME='"$(APPLICATION)"'
+
+STACKTEST ?= 0
+
+ifneq (0,$(STACKTEST))
+  CFLAGS += -DEXP_STACKTEST
+  CFLAGS += -DDEVELHELP
+endif
+
+CFLAGS += -DGNRC_PKTBUF_SIZE=1676
+CFLAGS += -DDEVELHELP
+CFLAGS += -DUSE_LINKLAYER
+CFLAGS += -DUSE_RONR
+CFLAGS += -DCCNL_UAPI_H_
+CFLAGS += -DUSE_SUITE_NDNTLV
+CFLAGS += -DNEEDS_PREFIX_MATCHING
+CFLAGS += -DNEEDS_PACKET_CRAFTING
+
+
+include $(RIOTBASE)/Makefile.include
