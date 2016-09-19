@@ -21,6 +21,8 @@
 #include "thread.h"
 #include "xtimer.h"
 
+#include "net/gnrc/netapi.h"
+#include "net/gnrc/pktbuf.h"
 #include "netdev.h"
 #include "stack.h"
 #include "ccn-lite-riot.h"
@@ -52,7 +54,8 @@ static int _netdev2_send(netdev2_t *dev, const struct iovec *vector, int count)
     }
 
 #ifndef EXP_STACKTEST
-    printf("%u,%" PRIu32 "\n", (unsigned)res, (stop - start_time));
+    extern uint32_t ccnl_t1, ccnl_t2;
+    printf("%u,%" PRIu32 ", %" PRIu32 "\n", (unsigned)res, (stop - start_time), ((ccnl_t1 - start_time) + (stop - ccnl_t2)));
 #else
     (void)stop;
     (void)start;
@@ -65,7 +68,9 @@ void exp_run(void)
     uint16_t comp_cnt;
     netdev2_test_set_send_cb(&netdevs[0], _netdev2_send);
     struct ccnl_prefix_s *prefix = NULL;
-    struct ccnl_interest_s *i = NULL;
+    ccnl_interest_t riot_int;
+    gnrc_pktsnip_t *pkt;
+    unsigned end = EXP_RUNS * 3;
 
 #ifdef EXP_STACKTEST
     puts("thread,stack_size,stack_free");
@@ -78,22 +83,33 @@ void exp_run(void)
         memcpy(&_pfx_url[(comp_cnt * 3) + 1], EXP_NAME_COMP, strlen(EXP_NAME_COMP) + 1);
         memcpy(_tmp_url, _pfx_url, PFX_LEN);
         prefix = ccnl_URItoPrefix(_tmp_url, CCNL_SUITE_NDNTLV, NULL, 0);
-        for (unsigned id = 0; id < EXP_RUNS; id++) {
-            if (i != NULL) {
-                ccnl_interest_remove(&ccnl_relay, i);
+        for (unsigned id = 0; id < end; id++) {
+            if (ccnl_relay.pit != NULL) {
+                ccnl_interest_remove(&ccnl_relay, ccnl_relay.pit);
             }
-
 
             char *tmp_pfx = ccnl_prefix_to_path(prefix);
             //printf("%u/%u: Send interest for %s\n", comp_cnt, (unsigned) id, tmp_pfx);
             ccnl_free(tmp_pfx);
             start_time = xtimer_now();
-            i = ccnl_send_interest(prefix, _int_buf, BUF_SIZE);
+            riot_int.prefix = prefix;
+            riot_int.buf = _int_buf;
+            riot_int.buflen = BUF_SIZE;
+            pkt = gnrc_pktbuf_add(NULL, &riot_int, sizeof(riot_int), GNRC_NETTYPE_CCN);
+            gnrc_netapi_send(stack_ccnl_pid, pkt);
+
+            //i = ccnl_send_interest(prefix, _int_buf, BUF_SIZE);
 #if EXP_PACKET_DELAY
             xtimer_usleep(EXP_PACKET_DELAY);
 #endif
+            if (comp_cnt > 0) {
+                end = EXP_RUNS;
+            }
         }
     }
+            if (ccnl_relay.pit != NULL) {
+                ccnl_interest_remove(&ccnl_relay, ccnl_relay.pit);
+            }
 #ifdef EXP_STACKTEST
     for (kernel_pid_t i = 0; i <= KERNEL_PID_LAST; i++) {
         const thread_t *p = (thread_t *)sched_threads[i];

@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+extern kernel_pid_t stack_ccnl_pid;
+
 /**
  * @brief   Initialize stack.
  */

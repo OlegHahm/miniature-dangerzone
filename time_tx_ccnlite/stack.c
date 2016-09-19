@@ -29,10 +29,11 @@
 #define _MAC_STACKSIZE      (THREAD_STACKSIZE_DEFAULT)
 #define _MAC_PRIO           (THREAD_PRIORITY_MAIN - 4)
 
+kernel_pid_t stack_ccnl_pid;
+
 static char _mac_stacks[_MAC_STACKSIZE][NETDEV_NUMOF];
 static gnrc_netdev2_t _gnrc_adapters[NETDEV_NUMOF];
 static kernel_pid_t _pids[NETDEV_NUMOF];
-
 void stack_init(void)
 {
     /* netdev needs to be set-up */
@@ -51,7 +52,7 @@ void stack_init(void)
 
     ccnl_core_init();
 
-    ccnl_start();
+    stack_ccnl_pid = ccnl_start();
 
     /* get the default interface */
     kernel_pid_t ifs[GNRC_NETIF_NUMOF];
