@@ -37,7 +37,7 @@
 #define BUF_SIZE (134)
 #define IEEE802154_MAX_FRAME_SIZE   (125U)
 #define MHR_LEN                     (23U)
-#define THREAD_PRIO                 (THREAD_PRIORITY_MAIN - 1)
+#define THREAD_PRIO                 (THREAD_PRIORITY_MAIN - 2)
 #define THREAD_STACK_SIZE           (THREAD_STACKSIZE_DEFAULT + \
                                      THREAD_EXTRA_STACKSIZE_PRINTF)
 #define THREAD_MSG_QUEUE_SIZE       (8)
@@ -109,8 +109,8 @@ void *_thread(void *arg)
         if ((res = ccnl_wait_for_chunk(_cont_buf, BUF_SIZE, 1000000)) > 0) {
             uint32_t stop = xtimer_now();
 #ifndef EXP_STACKTEST
-            printf("%d,%" PRIu32 "\n", (unsigned) ccnl_buf_len,
-                   stop - mytimer);
+    extern uint32_t ccnl_t1, ccnl_t2, ccnl_t3, gnrc_netdev_t1;
+    printf("%u,%" PRIu32 ", %" PRIu32 "\n", (unsigned) ccnl_buf_len, (stop - mytimer), ((ccnl_t1 - gnrc_netdev_t1) + (ccnl_t3 - ccnl_t2)));
 #else
             (void)stop;
             (void)id;
@@ -135,6 +135,7 @@ void exp_run(void)
     struct ccnl_prefix_s *prefix = NULL;
     struct ccnl_prefix_s *prefix_int = NULL;
     uint16_t comp_cnt;
+    unsigned end = EXP_RUNS * 3;
 
     ccnl_relay.max_cache_entries = 0;
     prepare_mhrs();
@@ -160,7 +161,7 @@ void exp_run(void)
         prefix_int = ccnl_URItoPrefix(_tmp_url, CCNL_SUITE_NDNTLV, NULL, 0);
         _init_chunk(prefix);
 
-        for (unsigned id = 0; id < EXP_RUNS; id++) {
+        for (unsigned id = 0; id < end; id++) {
             _create_interest(prefix_int);
             ccnl_interest_append_pending(_tmp_int, loopback_face);
 
@@ -174,6 +175,9 @@ void exp_run(void)
 #if EXP_PACKET_DELAY
             xtimer_usleep(EXP_PACKET_DELAY);
 #endif
+            if (comp_cnt > 0) {
+                end = EXP_RUNS;
+            }
         }
     }
 #ifdef EXP_STACKTEST
