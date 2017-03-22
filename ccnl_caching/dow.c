@@ -602,6 +602,9 @@ void dow_new_data(void)
 #if DOW_INT_INT
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, false);
 #else
+#if DOW_PSR2
+        ccnl_helper_publish_content();
+#endif
         xtimer_usleep(500 * 1000);
         ccnl_helper_create_cont(prefix, (unsigned char*) val, sizeof(val), true, true);
 #endif

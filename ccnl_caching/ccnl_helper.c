@@ -817,10 +817,14 @@ out:
     return res;
 }
 
-#if DOW_PSR
+#if DOW_PSR || DOW_PSR2
 void ccnl_helper_publish_content(void)
 {
+#if DOW_PSR
     uint8_t i = 0, start_pos = (ccnl_relay.contentcnt - DOW_PSR);
+#elif DOW_PSR2
+    uint8_t i = 0, start_pos = (ccnl_relay.contentcnt - DOW_PSR2);
+#endif
     struct ccnl_content_s *cit;
 
     /* get to start position */

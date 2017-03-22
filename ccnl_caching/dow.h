@@ -95,6 +95,8 @@
  * its cache has been completely refreshed */
 #define DOW_PSR                 (0)
 
+#define DOW_PSR2                (0)
+
 /** if node is about to respond to an interest for * or its prefix, it will
  * select a random chunk from its cache for the response if this is set to 1*/
 #define DOW_RAND_SEEDING        (0)
