@@ -634,7 +634,7 @@ static void _dow_beacon_id(void)
     /* each byte needs 2 characters to be represented as a hex value */
     /* string representation */
     char val[(sizeof(tmp_id) * 2) + 1];
-    snprintf(val, sizeof(val) + 1, "%08X", tmp_id);
+    snprintf(val, sizeof(val) + 1, "%08" PRIx32, tmp_id);
 
     size_t prefix_len = sizeof(CCNLRIOT_BEACON_PREFIX) + sizeof(CCNLRIOT_BEACON_PREFIX) + 9 + 9;
     char pfx[prefix_len];
