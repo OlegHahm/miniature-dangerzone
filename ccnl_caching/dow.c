@@ -640,7 +640,6 @@ static void _dow_beacon_id(void)
     char pfx[prefix_len];
     snprintf(pfx, prefix_len, "%s%s/%08lX/%s", CCNLRIOT_BEACON_PREFIX,
              CCNLRIOT_BEACON_PREFIX, (long unsigned) tmp_id, val);
-    }
     struct ccnl_prefix_s *prefix = ccnl_URItoPrefix(pfx, CCNL_SUITE_NDNTLV, NULL, 0);
     if (prefix == NULL) {
         LOG_ERROR("dow: We're doomed, WE ARE ALL DOOMED!\n");
