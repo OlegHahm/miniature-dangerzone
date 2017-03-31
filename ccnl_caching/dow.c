@@ -658,6 +658,7 @@ double dow_estimate_p(double ratio, int n, int l)
     /* ratio is the target data availability */
     /* n is the number of caches potentially available */
     /* l is the lifetime of the data */
+    /* p is sleep probability */
     
     /* set up dichotomy parameters for sleep proba p */
     double p, p_up, p_lo;
@@ -668,6 +669,7 @@ double dow_estimate_p(double ratio, int n, int l)
     /* initialize estimated cache hit ratio based on current value of p */
     double avg = 0;
 
+    /* start dichotmomy */
     for (int i=1; i<8; i++) {
         /* compute estimation */
         double temp = p + pow(p,l) - pow(p,l+1);
@@ -678,6 +680,7 @@ double dow_estimate_p(double ratio, int n, int l)
         else p_up = p;
         p = (p_up+p_lo)/2;
         }
-        
+
+    /* return estimated sleep probability */        
     return p;
 }
