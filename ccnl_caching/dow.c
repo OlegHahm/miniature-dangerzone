@@ -672,9 +672,9 @@ double dow_estimate_p(double ratio, int n, int l)
         /* compute estimation */
         double temp = p + pow(p,l) - pow(p,l+1);
         avg = 1.0 - p * pow(temp,n-1); 
-        /* if estimation is below target, search below current p */
+        /* if estimation is above target, search above current p */
         if(avg > ratio) p_lo = p;
-        /* if estimation is above target, search above p */
+        /* if estimation is below target, search below p */
         else p_up = p;
         p = (p_up+p_lo)/2;
         }
