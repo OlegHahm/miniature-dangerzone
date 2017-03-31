@@ -652,3 +652,32 @@ static void _dow_beacon_id(void)
         free_prefix(prefix);
     }
 }
+
+double dow_estimate_p(double ratio, int n, int l)
+{
+    /* ratio is the target data availability */
+    /* n is the number of caches potentially available */
+    /* l is the lifetime of the data */
+    
+    /* set up dichotomy parameters for sleep proba p */
+    double p, p_up, p_lo;
+    p_up=1; 
+    p_lo=0;
+    p = (p_up + p_lo) / 2;
+    
+    /* initialize estimated cache hit ratio based on current value of p */
+    double avg = 0;
+
+    for (int i=1; i<8; i++) {
+        /* compute estimation */
+        double temp = p + pow(p,l) - pow(p,l+1);
+        avg = 1.0 - p * pow(temp,n-1); 
+        /* if estimation is below target, search below current p */
+        if(avg > ratio) p_lo = p;
+        /* if estimation is above target, search above p */
+        else p_up = p;
+        p = (p_up+p_lo)/2;
+        }
+        
+    return p;
+}
