@@ -46,7 +46,7 @@
  * @brief Caching strategy
  * @{ */
 /** caching probability for non-prioritized content */
-#define DOW_Q                   (.5)
+#define DOW_Q                   (0.5)
 
 /** replacement strategy:
  * 0 means LRU, 1 means "our" strategy (oldest representative)
@@ -72,7 +72,7 @@
 #define DOW_INT_INT             (0)
 
 /** rebroadcast last value */
-#define DOW_REBC_LAST           (1)
+#define DOW_REBC_LAST           (0)
 
 /** how many interests a node should send after waking up (either for * or its
  * preferred prefix */
@@ -96,6 +96,9 @@
 #define DOW_PSR                 (0)
 
 #define DOW_PSR2                (0)
+
+/** estimate number of sources and caches and auto adjust p accordingly */
+#define DOW_AUTOP               (1)
 
 /** if node is about to respond to an interest for * or its prefix, it will
  * select a random chunk from its cache for the response if this is set to 1*/
@@ -226,6 +229,12 @@ extern uint16_t dow_num_src;
 /* beaconing information */
 extern uint16_t dow_position;
 extern bloom_t dow_neighbors;
+#if DOW_AUTOP
+extern bloom_t dow_sources;
+extern bloom_t dow_caches;
+extern uint16_t dow_no_of_sources;
+extern uint16_t dow_no_of_caches;
+#endif
 extern uint16_t dow_size;
 
 /* state control */
@@ -236,6 +245,7 @@ extern uint32_t dow_period_counter;
 extern xtimer_t dow_timer;
 extern msg_t dow_wakeup_msg;
 extern uint8_t dow_prio_cache_cnt;
+extern uint32_t dow_highest_id;
 
 extern bool dow_is_source;
 

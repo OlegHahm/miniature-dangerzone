@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "msg.h"
 #include "xtimer.h"
 #include "bitfield.h"
@@ -9,7 +11,6 @@
 #include "net/gnrc/netapi.h"
 
 #include "dow.h"
-#include "config.h"
 #include "ccnlriot.h"
 
 /* buffers */
@@ -20,6 +21,12 @@ msg_t _mq[DOW_MSG_QUEUE_SIZE];
 float DOW_P = DOW_START_P;
 dow_state_t dow_state;
 bloom_t dow_neighbors;
+#if DOW_AUTOP
+bloom_t dow_sources;
+bloom_t dow_caches;
+uint16_t dow_no_of_sources;
+uint16_t dow_no_of_caches;
+#endif
 kernel_pid_t dow_pid = KERNEL_PID_UNDEF;
 kernel_pid_t ccnl_pid = KERNEL_PID_UNDEF;
 uint32_t dow_my_id;
@@ -31,6 +38,7 @@ uint32_t dow_ts_wakeup = 0;
 uint32_t dow_ts_sleep = 0;
 uint8_t dow_prio_cache_cnt = 0;
 uint8_t dow_my_prefix_interest_count = 0;
+uint32_t dow_highest_id = 0;
 
 unsigned dow_cache_size = CCNLRIOT_CACHE_SIZE;
 
@@ -51,7 +59,7 @@ unsigned _old_data = 0;
 bool _send_old_data = false;
 #endif
 
-/* bloom filter for beaconing */
+/* bloom filter for beaconing and counting */
 #define BLOOM_BITS (1 << 12)
 #define BLOOM_HASHF (8)
 
@@ -61,6 +69,10 @@ hashfp_t _hashes[BLOOM_HASHF] = {
     (hashfp_t) djb2_hash, (hashfp_t) kr_hash, (hashfp_t) dek_hash,
     (hashfp_t) rotating_hash, (hashfp_t) one_at_a_time_hash,
 };
+
+#if DOW_AUTOP
+BITFIELD(_bf_sources, BLOOM_BITS);
+#endif
 
 /* prototypes */
 static void _dow_beacon_id(void);
@@ -117,6 +129,10 @@ void *_loop(void *arg)
 
 #if DOW_DEPUTY
     bloom_init(&dow_neighbors, BLOOM_BITS, _bf, _hashes, BLOOM_HASHF);
+#endif
+
+#if DOW_AUTOP
+    bloom_init(&dow_sources, BLOOM_BITS, _bf_sources, _hashes, BLOOM_HASHF);
 #endif
 
     /* configure the channel */
@@ -198,6 +214,11 @@ void *_loop(void *arg)
         dow_second_timer();
     }
 #endif
+#endif
+
+#if DOW_AUTOP 
+    double dow_estimate_p(double ratio, int n, int l);
+    dow_estimate_p(.9, dow_no_of_caches, 4);
 #endif
 
     while (dow_state != DOW_STATE_STOPPED) {
@@ -653,8 +674,31 @@ static void _dow_beacon_id(void)
     }
 }
 
+#if 0
+static float _dow_probability_bisect(void)
+{
+    float prob = 0.2;
+    double E;
+    unsigned S, L, n;
+    L = 3;
+    n = dow_no_of_caches;
+    S = dow_no_of_sources;
+    for (unsigned i = 0; i < 10; i++) {
+        if (E < (S * (1 - ((1 - p) * pow((1 - p + p * pow((1 - p), L)), (n-1)))))) {
+
+        }
+    }
+    return prob;
+}
+#endif
+
+#if DOW_AUTOP 
 double dow_estimate_p(double ratio, int n, int l)
 {
+    return 0.0;
+}
+#endif
+#if 0
     /* ratio is the target data availability */
     /* n is the number of caches potentially available */
     /* l is the lifetime of the data */
@@ -684,3 +728,4 @@ double dow_estimate_p(double ratio, int n, int l)
     /* return estimated sleep probability */        
     return p;
 }
+#endif

@@ -12,11 +12,13 @@
 #define CCNLRIOT_INT_TIMEOUT    (100000)
 
 #define CCNLRIOT_ALL_PREFIX     "/*"
+#define CCNLRIOT_BOOT_PREFIX    "/b"
 #define CCNLRIOT_SITE_PREFIX    "/s"
 #define CCNLRIOT_TYPE_PREFIX    "/t"
 #define CCNLRIOT_BEACON_PREFIX  "/#"
 
 #define CCNLRIOT_CONT_ACK       "ACK"
+#define CCNLRIOT_CONT_BOOT      "BOOT"
 
 /* 10kB buffer for the heap should be enough for everyone - except native */
 #ifdef CPU_NATIVE
@@ -35,7 +37,7 @@
 #ifdef CPU_SAMD21
 #define CCNLRIOT_CACHE_SIZE     (5)
 #else
-#define CCNLRIOT_CACHE_SIZE     (20)
+#define CCNLRIOT_CACHE_SIZE     (80)
 #endif
 
 #define CCNLRIOT_TIMEOUT            (0)
@@ -54,6 +56,9 @@
 #endif
 
 extern struct ccnl_prefix_s *ccnl_helper_all_pfx;
+#if DOW_AUTOP
+extern struct ccnl_prefix_s *ccnl_helper_boot_pfx;
+#endif
 extern struct ccnl_prefix_s *ccnl_helper_my_pfx;
 extern uint8_t ccnl_helper_flagged_cache;
 

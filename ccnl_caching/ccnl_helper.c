@@ -18,6 +18,9 @@ typedef enum {
 
 /* public variables */
 struct ccnl_prefix_s *ccnl_helper_all_pfx;
+#if DOW_AUTOP
+struct ccnl_prefix_s *ccnl_helper_boot_pfx;
+#endif
 struct ccnl_prefix_s *ccnl_helper_my_pfx;
 uint8_t ccnl_helper_flagged_cache = 0;
 dow_pfx_presence_t dow_pfx_pres[DOW_MAX_PREFIXES];
@@ -47,6 +50,10 @@ void ccnl_helper_init(void)
     unsigned cn = 0;
     char all_pfx[] = CCNLRIOT_ALL_PREFIX;
     ccnl_helper_all_pfx = ccnl_URItoPrefix(all_pfx, CCNL_SUITE_NDNTLV, NULL, &cn);
+#if DOW_AUTOP
+    char boot_pfx[] = CCNLRIOT_BOOT_PREFIX;
+    ccnl_helper_boot_pfx = ccnl_URItoPrefix(boot_pfx, CCNL_SUITE_NDNTLV, NULL, &cn);
+#endif
     ccnl_helper_reset();
     memset(dow_pfx_pres, 0, sizeof(dow_pfx_pres));
 }
@@ -416,6 +423,11 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
         return 1;
     }
 
+    uint32_t cont_id = (uint32_t) strtol((char*)pkt->pfx->comp[2], NULL, 16);
+    if (cont_id > dow_highest_id) {
+        dow_highest_id = cont_id;
+    }
+
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local consumer for prefix: %s\n", xtimer_now(),
               ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
@@ -550,7 +562,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
                 /* XXX: use memcmp */
 
                 if (dow_manual_id) {
-                    uint32_t cont_id = (uint32_t) strtol((char*) pkt->pfx->comp[2], NULL, 16);
                     if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE-1, dow_num_src)) {
                         if (!_ccnl_helper_handle_content(relay, pkt)) {
                             res = 0;
@@ -584,7 +595,6 @@ int ccnlriot_consumer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
             /* check if we're registered for a certain prefix and compare the first character of it */
             /* XXX: use memcmp */
             if (dow_manual_id) {
-                uint32_t cont_id = (uint32_t) strtol((char*)pkt->pfx->comp[2], NULL, 16);
                 if (_check_in_range(dow_my_id, cont_id, CCNLRIOT_CACHE_SIZE-1, dow_num_src)) {
                     if (!_ccnl_helper_handle_content(relay, pkt)) {
                         return 0;
@@ -629,6 +639,16 @@ int ccnlriot_producer(struct ccnl_relay_s *relay, struct ccnl_face_s *from,
     LOG_DEBUG("%" PRIu32 " ccnl_helper: local producer for prefix: %s\n",
               xtimer_now(), ccnl_prefix_to_path_detailed(_prefix_str, pkt->pfx, 1, 0, 0));
     memset(_prefix_str, 0, CCNLRIOT_PFX_LEN);
+
+#if DOW_AUTOP
+    if (ccnl_prefix_cmp(ccnl_helper_boot_pfx, NULL, pkt->pfx, CMP_EXACT) == 0) {
+        LOG_DEBUG("ccnl_helper: found interest for boot chunk\n");
+        struct ccnl_content_s *c =
+            ccnl_helper_create_cont(ccnl_helper_boot_pfx, (unsigned char*) CCNLRIOT_CONT_BOOT,
+                                    strlen(CCNLRIOT_CONT_BOOT) + 1, false, true);
+        (void) c;
+    }
+#endif
 
 #if DOW_INT_INT
     /* check if we have a PIT entry for this interest and a corresponding entry
